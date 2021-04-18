@@ -1,0 +1,23 @@
+[package]
+name = "garlic_crust"
+version = "0.1.0"
+authors = ["qm210 <quantenmace@gmail.com>"]
+edition = "2018"
+
+[features]
+logger = []
+fullscreen = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+panic = 'abort'
+
+[profile.dev]
+lto = true
+opt-level = 0
+panic = "abort"
+
+[dependencies]
+winapi = { version = "0.3.8", features = ["winuser", "libloaderapi", "processthreadsapi", "fileapi", "handleapi", "mmreg", "mmsystem", "mmeapi" ] }
