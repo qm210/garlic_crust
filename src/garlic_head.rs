@@ -13,7 +13,7 @@ pub fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
         data[sample] = amp;
 
-        if time > 0.5 {
+        if time % 1. > 0.5 {
             synth.frequency = 440.;
         } else {
             synth.frequency = 220.;
