@@ -12,9 +12,11 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         }
     );
 
+    // loop with counter at that position made 0 bytes difference
     for sample in 0..SAMPLES {
+
         let time: TimeFloat = sample as TimeFloat / SAMPLERATE;
-        let amp: AmpFloat = synth.next().unwrap();
+        let amp: AmpFloat = synth.next_frame(); //synth.next().unwrap();
 
         data[sample] = amp;
 
@@ -27,6 +29,4 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         //     unsafe { super::log!("Time", time, 10. + amp) };
         // }
     }
-
-
 }

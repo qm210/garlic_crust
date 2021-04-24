@@ -80,11 +80,15 @@ impl GarlicCrust {
 impl Iterator for GarlicCrust {
     type Item = AmpFloat;
     fn next(&mut self) -> Option<Self::Item> {
+        Some(self.next_frame())
+    }
+}
 
+impl GarlicCrust {
+    pub fn next_frame(&mut self) -> AmpFloat {
         let amp_value: AmpFloat = self.volume * self.osc.evaluate_at(self.phase);
         self.phase += self.frequency / SAMPLERATE;
-
-        Some(amp_value)
+        amp_value
     }
 }
 
