@@ -1,13 +1,15 @@
-use super::math_util::sin;
+// use super::math_util::sin;
+
+use libm::{sinf as sin, fmodf as fmod};
 
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
 
-pub const TAU: f32 = 3.14159265358979323846264338327950288_f32 * 2.0;
+pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
 pub const SAMPLERATE: f32 = 44100.;
 
 #[derive(Debug)]
-enum BaseWave {
+pub enum BaseWave {
     Sine,
     Saw,
     Square,
@@ -15,8 +17,8 @@ enum BaseWave {
 
 #[derive(Debug)]
 pub struct Oscillator {
-    shape: BaseWave,
-    volume: AmpFloat,
+    pub shape: BaseWave,
+    pub volume: AmpFloat,
 }
 
 impl Oscillator {
@@ -24,7 +26,8 @@ impl Oscillator {
     fn evaluate_at(&self, phase: TimeFloat) -> AmpFloat {
         let basewave_value: AmpFloat = match self.shape {
             BaseWave::Sine => sin(TAU * phase),
-//            BaseWave::Saw => (TAU * phase)
+            BaseWave::Square => (20. * sin(TAU * phase)).clamp(-1., 1.),
+            BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
             _ => 0.
         };
 
@@ -45,7 +48,7 @@ impl Default for Oscillator {
 pub struct GarlicCrust {
     pub osc: Oscillator,
     pub volume: AmpFloat,
-    pub frequency: f32,
+    pub frequency: TimeFloat,
     //pub note_pitch: u32,
     pub note_duration: TimeFloat,
 
@@ -53,10 +56,16 @@ pub struct GarlicCrust {
 }
 
 impl GarlicCrust {
+    #[inline]
+    pub fn create_default() -> Self {
+        let default_osc = Oscillator::default();
+        Self::create(default_osc)
+    }
+
     #[inline] // todo: think about #[inline]
-    pub fn create() -> Self {
+    pub fn create(osc: Oscillator) -> Self {
         GarlicCrust {
-            osc: Oscillator::default(),
+            osc: osc,
             volume: 1.,
             frequency: 220., // could also use 220_f32, might switch to f64 sometime
             //note_pitch: 48,

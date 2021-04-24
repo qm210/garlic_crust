@@ -1,6 +1,5 @@
 use core::mem::MaybeUninit;
 
-
 #[inline(always)]
 pub fn sin(a: f32) -> f32 {
 

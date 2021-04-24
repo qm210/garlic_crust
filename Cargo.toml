@@ -21,3 +21,7 @@ panic = "abort"
 
 [dependencies]
 winapi = { version = "0.3.8", features = ["winuser", "libloaderapi", "processthreadsapi", "fileapi", "handleapi", "mmreg", "mmsystem", "mmeapi" ] }
+libm = "0.2.1"
+libc = "0.2.93"
+# libc = { version = "0.2.93", default-features = false, features = [] }
+# chrono = { version = "0.4.19" }

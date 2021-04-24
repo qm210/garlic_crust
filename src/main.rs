@@ -1,7 +1,7 @@
 #![feature(llvm_asm)]
 #![no_main]
 #![no_std]
-#![windows_subsystem = "console"]
+#![windows_subsystem = "windows"]
 #![feature(core_intrinsics)]
 #![allow(unused_variables)]
 
@@ -180,7 +180,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
     reserved: 0,
 };
 
-static mut GARLIC_DATA : [f32; garlic_head::SAMPLES] = [0.0; garlic_head::SAMPLES];
+static mut GARLIC_DATA : [garlic_crust::AmpFloat; garlic_head::SAMPLES] = [0.0; garlic_head::SAMPLES];
 
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
@@ -197,7 +197,7 @@ pub extern "system" fn mainCRTStartup() {
         winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
     }
 
-    let mut time: f32 = 0.;
+    let mut time: garlic_crust::TimeFloat = 0.;
 
     loop {
 
@@ -211,7 +211,7 @@ pub extern "system" fn mainCRTStartup() {
 
         // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
 
-        time += 1.0 / 60.0f32;
+        time += 1.0 / 60.0;
 
         if time > garlic_head::SECONDS {
             break;
