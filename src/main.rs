@@ -1,15 +1,17 @@
 #![feature(llvm_asm)]
 #![no_main]
 #![no_std]
-#![windows_subsystem = "windows"]
+#![windows_subsystem = "console"]
 #![feature(core_intrinsics)]
+#![allow(unused_variables)]
 
 #[cfg(windows)] extern crate winapi;
 
 pub mod util;
-mod music;
+mod math_util;
+mod garlic_crust;
+mod garlic_head;
 
-use core::mem::MaybeUninit;
 use core::panic::PanicInfo;
 
 use winapi::um::wingdi::{
@@ -19,7 +21,6 @@ use winapi::um::wingdi::{
     wglCreateContext,
     SetPixelFormat,
 
-    DEVMODEA,
     PFD_TYPE_RGBA,
     PFD_DOUBLEBUFFER,
     PFD_SUPPORT_OPENGL,
@@ -28,7 +29,6 @@ use winapi::um::wingdi::{
 };
 
 use winapi::shared::minwindef::{
-    HINSTANCE,
     LRESULT,
     LPARAM,
     LPVOID,
@@ -41,8 +41,6 @@ use winapi::shared::windef::{
     HGLRC,
     HWND,
     HMENU,
-    HICON,
-    HBRUSH,
 };
 
 use winapi::um::libloaderapi::GetModuleHandleA;
@@ -50,30 +48,22 @@ use winapi::um::libloaderapi::GetModuleHandleA;
 use winapi::um::winuser::{
     CreateWindowExA,
     DefWindowProcA,
-    DispatchMessageA,
     GetDC,
     PostQuitMessage,
     RegisterClassA,
-    TranslateMessage,
-    PeekMessageA,
     MessageBoxA,
 
-    MB_ICONERROR,
-    MSG,
     WNDCLASSA,
     CS_OWNDC,
     CS_HREDRAW,
     CS_VREDRAW,
     CW_USEDEFAULT,
-    PM_REMOVE,
     WS_OVERLAPPEDWINDOW,
-    WS_MAXIMIZE,
-    WS_POPUP,
     WS_VISIBLE,
+    MB_ICONERROR,
 };
 
 
-#[cfg(not(feature = "logger"))]
 pub unsafe extern "system" fn window_proc(hwnd: HWND,
     msg: UINT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
 
@@ -167,19 +157,21 @@ pub unsafe extern fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 
     dest
 }
 
-static waveFormat : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg::WAVEFORMATEX{
+const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
+
+static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg::WAVEFORMATEX{
     wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT,
     nChannels : 1,
-    nSamplesPerSec : 44100,
-    nAvgBytesPerSec : 44100*4,
+    nSamplesPerSec : SAMPLERATE_INT,
+    nAvgBytesPerSec : SAMPLERATE_INT * 4,
     nBlockAlign : 4,
     wBitsPerSample: 32,
     cbSize:0
  };
 
- static mut waveHeader : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::WAVEHDR{
+static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::WAVEHDR{
     lpData: 0 as *mut i8,
-    dwBufferLength: 44100*4*120,
+    dwBufferLength: 4*(garlic_head::SAMPLES as u32),
     dwBytesRecorded: 0,
     dwUser: 0,
     dwFlags: 0,
@@ -188,23 +180,25 @@ static waveFormat : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg:
     reserved: 0,
 };
 
-static mut music_data : [f32;44100*120] = [ 0.0;44100*120];
+static mut GARLIC_DATA : [f32; garlic_head::SAMPLES] = [0.0; garlic_head::SAMPLES];
+
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
-    let ( window, hdc ) = create_window(  );
+    let ( _, hdc ) = create_window(  );
 
-    let mut time : f32 = 0.0;
+    unsafe {
+        garlic_head::render_track(&mut GARLIC_DATA);
+        log!("Render finished");
 
-    unsafe{
-        music::make_music( &mut music_data );
-        waveHeader.lpData = music_data.as_mut_ptr() as *mut i8;
-        let mut hWaveOut : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
-        winapi::um::mmeapi::waveOutOpen( &mut hWaveOut, winapi::um::mmsystem::WAVE_MAPPER, &waveFormat, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
-        winapi::um::mmeapi::waveOutPrepareHeader(hWaveOut, &mut waveHeader, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
-        winapi::um::mmeapi::waveOutWrite(hWaveOut, &mut waveHeader, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+        WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
+        let mut h_waveout : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
+        winapi::um::mmeapi::waveOutOpen( &mut h_waveout, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
+        winapi::um::mmeapi::waveOutPrepareHeader(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+        winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
     }
 
-    unsafe { SwapBuffers(hdc); }
+    let mut time: f32 = 0.;
+
     loop {
 
         unsafe{
@@ -213,11 +207,18 @@ pub extern "system" fn mainCRTStartup() {
             }
         }
 
+        unsafe { SwapBuffers(hdc); }
+
+        // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
+
         time += 1.0 / 60.0f32;
+
+        if time > garlic_head::SECONDS {
+            break;
+        }
     }
 
     unsafe{
-        // Tying to exit normally seems to crash after certain APIs functions have been called. ( Like ChoosePixelFormat )
         winapi::um::processthreadsapi::ExitProcess(0);
     }
 }

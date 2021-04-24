@@ -4,13 +4,11 @@ use winapi::um::winnt::{
     FILE_ATTRIBUTE_NORMAL,
     FILE_APPEND_DATA,
     GENERIC_READ,
-    GENERIC_WRITE
 };
 
 use winapi::um::fileapi::{
     OPEN_ALWAYS,
     OPEN_EXISTING,
-    CREATE_ALWAYS,
     WriteFile,
     ReadFile,
     CreateFileA,
@@ -31,8 +29,8 @@ macro_rules! log {
 #[macro_export]
 macro_rules! log {
     ($text:expr) => { };
-    ($text:expr, $val:expr) => {};
-    ($text:expr, $val1:expr, $val2:expr) => {};
+    ($text:expr, $val:expr) => { };
+    ($text:expr, $val1:expr, $val2:expr) => { };
     ($text:expr, $val1:expr, $val2:expr, $val3:expr) => {};
 }
 

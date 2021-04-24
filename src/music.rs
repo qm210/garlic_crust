@@ -1,13 +1,12 @@
 
 static mut sounds : [[f32;44100*9];7] = [[0.0;44100*9];7];
-static frequencies : [ f32; 7] = [
-    349.0,     //F4
-    415.0,     //Ab4            1.189
-    523.0,     //C5             1.26
-    554.0,     //Db5            1.059
-    622.0,     //Eb5            1.122
-    698.0,     //F5             1.22
-    831.0];     //Ab5
+// const FREQ_F4: f32 = 349.;
+// const FREQ_AB4: f32 = 415.;
+const FREQ_C5: f32 = 523.;
+// const FREQ_Db5: f32 = 554.;
+// const FREQ_EB5: f32 = 622.;
+// const FREQ_F5: f32 = 698.;
+// const FREQ_AB5: f32 = 831.;
 
 fn play( dst: &mut [f32;44100*120], dst_offset : usize, signal : &[f32;44100*9], sample_duration : f32 ) {
     let mut dst_pos = 0;
@@ -29,46 +28,40 @@ fn play( dst: &mut [f32;44100*120], dst_offset : usize, signal : &[f32;44100*9],
 }
 
 pub fn make_music( music: &mut [f32;44100*120]) {
-    unsafe{ super::log!( "Make instruments!"); };
+    super::log!( "Make instruments!");
 
     let mut i = 0;
-    loop{
-        let mut scale = 1.0;
-        // # Could combine into a single loop that doubles the scales when loop % 11 == 0. Possibly slightly shorter
-        unsafe{
+    let mut scale = 1.0;
+
+    unsafe{
+        loop{
+            let mut d = 0;
             loop{
-                let mut d = 0;
-                loop{
-                    let frequency : f32 = frequencies.get_unchecked(i)/scale;
-                    let mut position : f32 = 0.0;
-                    let mut sample_no = 0;
-                    loop {
-                        let sample_duration : f32 = frequency / 44100.0f32;
-                        position = position + sample_duration;
-                        if position > 0.5 {
-                            position -= 1.0f32;
-                        }
-                        let val = core::intrinsics::fabsf32(position)*4f32-1.0f32;
-                        *sounds.get_unchecked_mut(i).get_unchecked_mut(sample_no) += val/55.0f32;
-                        sample_no += 1;
-                        if sample_no == 44100*9 {
-                            break;
-                        }
+                let frequency : f32 = FREQ_C5/scale;
+                let mut position : f32 = 0.0;
+                let mut sample_no = 0;
+                loop {
+                    let sample_duration : f32 = frequency / 44100.0f32;
+                    position = position + sample_duration;
+                    if position > 0.5 {
+                        position -= 1.0f32;
                     }
-                    d += 1;
-                    if d == 11 {
+                    let val = core::intrinsics::fabsf32(position)*4f32-1.0f32;
+                    *sounds.get_unchecked_mut(i).get_unchecked_mut(sample_no) += val/55.0f32;
+                    sample_no += 1;
+                    if sample_no == 44100*9 {
                         break;
                     }
                 }
-                scale *= 2.0f32;
-                if scale >= 32.0 {
+                d += 1;
+                if d == 11 {
                     break;
                 }
             }
-        }
-        i += 1;
-        if i == 7 {
-            break;
+            scale *= 2.0f32;
+            if scale >= 32.0 {
+                break;
+            }
         }
     }
 
@@ -77,15 +70,9 @@ pub fn make_music( music: &mut [f32;44100*120]) {
         let mut s = 0;
         loop {
             let mut i = 0;
-            loop{
-                let nt = 1.;
-                if nt > 0.9 {
-                    play( music, dst, &sounds[i], 1.0 / 44100.0 );
-                }
-                i += 1;
-                if i == 7 {
-                    break;
-                }
+            let nt = 1.;
+            if nt > 0.9 {
+                play( music, dst, &sounds[i], 1.0 / 44100.0 );
             }
             dst += 44100;
             s += 1;
