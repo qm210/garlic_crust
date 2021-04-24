@@ -1,6 +1,6 @@
-// use super::math_util::sin;
+use super::math_util::sin;
 
-use libm::{sinf as sin, fmodf as fmod};
+use libm::{fmodf as fmod};
 
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
