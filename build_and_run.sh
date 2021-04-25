@@ -1,4 +1,6 @@
-xargo rustc --release --target i686-pc-windows-msvc -- --verbose && ./target/i686-pc-windows-msvc/release/garlic_crust.exe
+rm target/i686-pc-windows-msvc/release/garlic_crust.exe
+./build.sh
+./target/i686-pc-windows-msvc/release/garlic_crust.exe
 
 # Troubleshooting
 #

@@ -24,3 +24,4 @@ winapi = { version = "0.3.8", features = ["winuser", "libloaderapi", "processthr
 libm = "0.2.1"
 libc = "0.2.93"
 # libc = { version = "0.2.93", default-features = false, features = [] }
+naive-timer = "0.1.0"

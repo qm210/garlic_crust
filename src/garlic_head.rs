@@ -20,13 +20,11 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
         data[sample] = amp;
 
-        if libm::fmodf(time, 1.) > 0.5 {
+        if false && libm::fmodf(time, 1.) > 0.5 {
             synth.frequency = 440.;
         } else {
             synth.frequency = 220.;
         }
-        // if sample < 600 {
-        //     unsafe { super::log!("Time", time, 10. + amp) };
-        // }
+
     }
 }

@@ -77,6 +77,7 @@ impl GarlicCrust {
 
 }
 
+// qm: no actual advantage by this implementation
 impl Iterator for GarlicCrust {
     type Item = AmpFloat;
     fn next(&mut self) -> Option<Self::Item> {
@@ -88,6 +89,9 @@ impl GarlicCrust {
     pub fn next_frame(&mut self) -> AmpFloat {
         let amp_value: AmpFloat = self.volume * self.osc.evaluate_at(self.phase);
         self.phase += self.frequency / SAMPLERATE;
+        if self.phase > 1. {
+            self.phase -= 1.;
+        }
         amp_value
     }
 }

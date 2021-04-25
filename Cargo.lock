@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "libc",
  "libm",
+ "naive-timer",
  "winapi",
 ]
 
@@ -22,6 +23,12 @@ name = "libm"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a"
+
+[[package]]
+name = "naive-timer"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "523f4e2949ed4f0ece8a0fc50b7bd66da15db52f8f41ecd4e662b334460f18fa"
 
 [[package]]
 name = "winapi"
