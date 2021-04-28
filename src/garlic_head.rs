@@ -3,11 +3,25 @@ use super::garlic_crust::{GarlicCrust, TimeFloat, AmpFloat, SAMPLERATE, Oscillat
 pub const SECONDS: TimeFloat = 3.;
 pub const SAMPLES: usize = (SAMPLERATE * SECONDS) as usize;
 
+// in case I need alloc --> https://docs.rust-embedded.org/book/collections/
+
+use heapless::Vec;
+
 pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
+    /*
+    let (track_header, track_iter) = midly::parse(include_bytes!("../baroque0.mid")).unwrap();
+
+    for (i, event_iter) in track_iter.enumerate() {
+        super::log!("track {} has {} events", i as f32, event_iter.unwrap().size_hint());
+        for (e, event) in event_iter.unwrap().enumerate() {
+            super::log!("event {} {}", e as f32, event);
+        }
+    }
+    */
     let mut synth = GarlicCrust::create(
         Oscillator {
-            shape: BaseWave::Square,
+            shape: BaseWave::Sine,
             volume: 0.7
         }
     );
@@ -28,3 +42,4 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
     }
 }
+

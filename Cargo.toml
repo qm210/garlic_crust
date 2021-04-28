@@ -23,5 +23,5 @@ panic = "abort"
 winapi = { version = "0.3.8", features = ["winuser", "libloaderapi", "processthreadsapi", "fileapi", "handleapi", "mmreg", "mmsystem", "mmeapi" ] }
 libm = "0.2.1"
 libc = "0.2.93"
-# libc = { version = "0.2.93", default-features = false, features = [] }
-naive-timer = "0.1.0"
+midly = { version = "0.5.1", default-features = false, features = [] }
+heapless = "0.6.1"

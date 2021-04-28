@@ -1,9 +1,10 @@
 #![feature(llvm_asm)]
 #![no_main]
 #![no_std]
-#![windows_subsystem = "windows"]
+#![windows_subsystem = "console"]
 #![feature(core_intrinsics)]
 #![allow(unused_variables)]
+#![feature(static_nobundle)]
 
 #[cfg(windows)] extern crate winapi;
 
@@ -78,9 +79,20 @@ pub unsafe extern "system" fn window_proc(hwnd: HWND,
 
 #[cfg(feature = "logger")]
 fn show_error( message : *const i8 ) {
-    unsafe{
+    unsafe {
         MessageBoxA(0 as HWND, message, "Window::create\0".as_ptr() as *const i8, MB_ICONERROR);
     }
+}
+
+// import printf() from C
+#[cfg_attr(all(windows, target_env="msvc"),
+    link(name="legacy_stdio_definitions", kind="static-nobundle"),
+    link(name="msvcrt", kind="static-nobundle"),
+    link(name="ucrt", kind="static-nobundle"),
+    link(name="user32", kind="static-nobundle")
+)]
+extern "C" {
+    pub fn printf(format: *const u8, ...) -> i32;
 }
 
 fn create_window( ) -> ( HWND, HDC ) {
@@ -186,6 +198,8 @@ static mut GARLIC_DATA : [garlic_crust::AmpFloat; garlic_head::SAMPLES] = [0.0; 
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
 
+    unsafe { printf(b"Hello, World!\n" as *const u8); }
+
     unsafe {
         garlic_head::render_track(&mut GARLIC_DATA);
         log!("Render finished");
@@ -201,7 +215,7 @@ pub extern "system" fn mainCRTStartup() {
 
     loop {
 
-        unsafe{
+        unsafe {
             if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 {
                 break;
             }
@@ -218,7 +232,7 @@ pub extern "system" fn mainCRTStartup() {
         }
     }
 
-    unsafe{
+    unsafe {
         winapi::um::processthreadsapi::ExitProcess(0);
     }
 }
@@ -226,3 +240,5 @@ pub extern "system" fn mainCRTStartup() {
 // Compiling with no_std seems to require the following symbol to be set if there is any floating point code anywhere in the code
 #[no_mangle]
 pub static _fltused : i32 = 1;
+
+// some day: get why we are not more similar to https://riptutorial.com/rust/example/5870/sharp--no-std--hello--world-
