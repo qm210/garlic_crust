@@ -28,7 +28,6 @@ impl Oscillator {
             BaseWave::Sine => sin(TAU * phase),
             BaseWave::Square => (20. * sin(TAU * phase)).clamp(-1., 1.),
             BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
-            _ => 0.
         };
 
         basewave_value * self.volume

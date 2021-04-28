@@ -26,6 +26,17 @@ macro_rules! log {
 }
 
 #[cfg(not(feature = "logger"))]
+#[cfg(debug_assertions)] // QM: this is my msvcrt-printf attempt
+#[macro_export]
+macro_rules! log {
+    ($text:expr) => { crate::printf($text.as_bytes().as_ptr()) };
+    ($text:expr, $val:expr) => { crate::printf($text.as_bytes().as_ptr(), $val) };
+    ($text:expr, $val1:expr, $val2:expr) => { crate::printf($text.as_bytes().as_ptr(), $val1, $val2) };
+    ($text:expr, $val1:expr, $val2:expr, $val3:expr) => {crate::printf($text.as_bytes().as_ptr(), $val1, $val2, $val3) };
+}
+
+#[cfg(not(feature = "logger"))]
+#[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! log {
     ($text:expr) => { };

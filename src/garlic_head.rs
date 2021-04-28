@@ -19,9 +19,18 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         }
     }
     */
+
+    super::log!("lel %f\n\0", 2.);
+
+    /*
+    unsafe {
+        printf_compat::format("%d", [0.2], printf_compat::output(&mut s))
+    }
+    */
+
     let mut synth = GarlicCrust::create(
         Oscillator {
-            shape: BaseWave::Sine,
+            shape: BaseWave::Square,
             volume: 0.7
         }
     );
@@ -34,12 +43,11 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
         data[sample] = amp;
 
-        if false && libm::fmodf(time, 1.) > 0.5 {
-            synth.frequency = 440.;
+        if libm::fmodf(time, 1.) > 0.5 {
+            synth.frequency = 110.;
         } else {
-            synth.frequency = 220.;
+            synth.frequency = 55.;
         }
-
     }
 }
 

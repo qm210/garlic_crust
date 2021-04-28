@@ -3,8 +3,9 @@
 #![no_std]
 #![windows_subsystem = "console"]
 #![feature(core_intrinsics)]
-#![allow(unused_variables)]
 #![feature(static_nobundle)]
+//#![feature(c_variadic)] // printf-compat experiment
+#![allow(unused_variables, unused_imports)] // QM: clean up later
 
 #[cfg(windows)] extern crate winapi;
 
@@ -92,6 +93,7 @@ fn show_error( message : *const i8 ) {
     link(name="user32", kind="static-nobundle")
 )]
 extern "C" {
+    #[no_mangle]
     pub fn printf(format: *const u8, ...) -> i32;
 }
 
@@ -198,11 +200,9 @@ static mut GARLIC_DATA : [garlic_crust::AmpFloat; garlic_head::SAMPLES] = [0.0; 
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
 
-    unsafe { printf(b"Hello, World!\n" as *const u8); }
-
     unsafe {
         garlic_head::render_track(&mut GARLIC_DATA);
-        log!("Render finished");
+        log!("Render finished\n\0");
 
         WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
         let mut h_waveout : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
