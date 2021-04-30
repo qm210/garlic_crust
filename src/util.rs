@@ -29,10 +29,10 @@ macro_rules! log {
 #[cfg(debug_assertions)] // QM: this is my msvcrt-printf attempt
 #[macro_export]
 macro_rules! log {
-    ($text:expr) => { crate::printf($text.as_bytes().as_ptr()) };
-    ($text:expr, $val:expr) => { crate::printf($text.as_bytes().as_ptr(), $val) };
-    ($text:expr, $val1:expr, $val2:expr) => { crate::printf($text.as_bytes().as_ptr(), $val1, $val2) };
-    ($text:expr, $val1:expr, $val2:expr, $val3:expr) => {crate::printf($text.as_bytes().as_ptr(), $val1, $val2, $val3) };
+    ($text:expr) => { crate::printf(concat!($text,"\n\0").as_bytes().as_ptr()) };
+    ($text:expr, $val:expr) => { crate::printf(concat!($text,"\n\0").as_ptr(), $val) };
+    ($text:expr, $val1:expr, $val2:expr) => { crate::printf(concat!($text,"\n\0").as_bytes().as_ptr(), $val1, $val2) };
+    ($text:expr, $val1:expr, $val2:expr, $val3:expr) => {crate::printf(concat!($text,"\n\0").as_bytes().as_ptr(), $val1, $val2, $val3) };
 }
 
 #[cfg(not(feature = "logger"))]
@@ -44,6 +44,8 @@ macro_rules! log {
     ($text:expr, $val1:expr, $val2:expr) => { };
     ($text:expr, $val1:expr, $val2:expr, $val3:expr) => {};
 }
+
+// below are the sphere_dance functions to log to dbg_out.txt
 
 #[cfg(feature = "logger")]
 pub unsafe fn log0( message : &str ) {

@@ -10,7 +10,7 @@
 #[cfg(windows)] extern crate winapi;
 
 pub mod util;
-mod math_util;
+pub mod math_util;
 mod garlic_crust;
 mod garlic_head;
 

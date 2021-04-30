@@ -1,4 +1,4 @@
-use super::garlic_crust::{GarlicCrust, TimeFloat, AmpFloat, SAMPLERATE, Oscillator, BaseWave};
+use super::garlic_crust::*;
 
 pub const SECONDS: TimeFloat = 3.;
 pub const SAMPLES: usize = (SAMPLERATE * SECONDS) as usize;
@@ -20,34 +20,55 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     }
     */
 
-    super::log!("lel %f\n\0", 2.);
-
     /*
     unsafe {
         printf_compat::format("%d", [0.2], printf_compat::output(&mut s))
     }
     */
 
-    let mut synth = GarlicCrust::create(
-        Oscillator {
+    // TODO: track will be a byte array.
+    let track_event_array: [TrackEvent; 4] = [
+        TrackEvent {time: 0., message: TrackEventMessage::NoteOn, parameter: 36.},
+        TrackEvent {time: 1., message: TrackEventMessage::NoteOff, parameter: 0.},
+        TrackEvent {time: 1.5, message: TrackEventMessage::NoteOn, parameter: 34.},
+        TrackEvent {time: 2.5, message: TrackEventMessage::EndOfTrack, parameter: 0.}
+    ];
+
+    // don't quite get how to avoid "borrow of moved value" with Vec.
+    let mut track_events: Vec<TrackEvent, heapless::consts::U8> = Vec::new();
+
+    track_events.extend_from_slice(&track_event_array).unwrap();
+
+    let track = InstrumentTrack {
+        config: InstrumentConfig {
             shape: BaseWave::Square,
-            volume: 0.7
-        }
-    );
+            volume: 0.1,
+        },
+        events: track_events,
+    };
+
+    let mut synth = GarlicCrust::create_from(track.config);
+
+    let mut event_counter = 0;
+    let mut next_event = &track_event_array[event_counter];
 
     // loop with counter at that position made 0 bytes difference
     for sample in 0..SAMPLES {
 
         let time: TimeFloat = sample as TimeFloat / SAMPLERATE;
+
+        while !synth.eot && next_event.time <= time {
+            synth.handle_event(&next_event);
+            event_counter += 1;
+            if event_counter == track_event_array.len() {
+                synth.eot = true; // is redundant if there always is a TrackEventMessage::EndOfTrack at the end of each track. but people need to feel safe and secure
+            } else {
+                next_event = &track_event_array[event_counter];
+            }
+        }
+
         let amp: AmpFloat = synth.next_frame(); //synth.next().unwrap();
 
         data[sample] = amp;
-
-        if libm::fmodf(time, 1.) > 0.5 {
-            synth.frequency = 110.;
-        } else {
-            synth.frequency = 55.;
-        }
     }
 }
-

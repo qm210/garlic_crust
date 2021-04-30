@@ -35,3 +35,12 @@ pub fn cos(a: f32) -> f32 {
 
     res
 }
+
+pub fn approx(a: f32, b: f32, prec: u8) -> bool {
+    libm::fabsf(a-b) < libm::powf(10., -(prec as f32))
+}
+
+#[inline(always)]
+pub fn approx4(a: f32, b: f32) -> bool {
+    libm::fabsf(a-b) < 0.0001
+}
