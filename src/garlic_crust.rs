@@ -13,6 +13,7 @@ pub enum BaseWave {
     Sine,
     Saw,
     Square,
+    Zero,
 }
 
 #[derive(Debug)]
@@ -24,12 +25,20 @@ pub struct Oscillator {
 impl Oscillator {
     fn evaluate_at(&self, phase: TimeFloat) -> AmpFloat {
         let basewave_value: AmpFloat = match self.shape {
-            BaseWave::Sine => sin(TAU * phase),
+            BaseWave::Sine => 0.5 * (sin(TAU * phase) + sin(TAU * phase * 1.01)),
             BaseWave::Square => (20. * sin(TAU * phase)).clamp(-1., 1.),
-            BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
+            BaseWave::Saw => 2. * (fmod(phase, 1.) + fmod(1.1*phase, 1.)) - 1.,
+            _ => 0.,
         };
 
-        basewave_value * self.volume
+        (basewave_value * self.volume).clamp(-1., 1.)
+    }
+
+    fn none() -> Oscillator {
+        Oscillator {
+            shape: BaseWave::Zero,
+            volume: 0.,
+        }
     }
 }
 
@@ -44,7 +53,8 @@ impl Default for Oscillator {
 
 #[derive(Debug)]
 pub struct GarlicCrust {
-    pub osc: Oscillator,
+    pub oscA: Oscillator,
+    pub oscB: Oscillator,
     pub volume: AmpFloat,
     pub frequency: TimeFloat,
     phase: TimeFloat,
@@ -57,7 +67,8 @@ pub struct GarlicCrust {
 impl Default for GarlicCrust {
     fn default() -> GarlicCrust {
         GarlicCrust {
-            osc: Oscillator::default(),
+            oscA: Oscillator::default(),
+            oscB: Oscillator::none(),
             volume: 1.,
             frequency: 220.,
             phase: 0.,
@@ -71,7 +82,7 @@ impl Default for GarlicCrust {
 impl GarlicCrust {
     pub fn create_default() -> Self {
         GarlicCrust {
-            osc: Oscillator::default(),
+            oscA: Oscillator::default(),
             volume: 1.,
             ..Default::default()
         }
@@ -79,7 +90,7 @@ impl GarlicCrust {
 
     pub fn create_from(config: InstrumentConfig) -> Self {
         GarlicCrust {
-            osc: Oscillator {
+            oscA: Oscillator {
                 shape: config.shape,
                 volume: 1.
             },
@@ -105,7 +116,7 @@ impl GarlicCrust {
         if self.eot {
             return 0.;
         }
-        let amp_value: AmpFloat = if self.mute {0.} else { self.volume * self.osc.evaluate_at(self.phase)};
+        let amp_value: AmpFloat = if self.mute {0.} else { self.volume * self.oscA.evaluate_at(self.phase)};
         self.phase += self.frequency / SAMPLERATE;
         if self.phase > 1. {
             self.phase -= 1.;
