@@ -34,20 +34,12 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         TrackEvent {time: 2.5, message: TrackEventMessage::EndOfTrack, parameter: 0.}
     ];
 
-    // don't quite get how to avoid "borrow of moved value" with Vec.
-    let mut track_events: Vec<TrackEvent, heapless::consts::U8> = Vec::new();
-
-    track_events.extend_from_slice(&track_event_array).unwrap();
-
-    let track = InstrumentTrack {
-        config: InstrumentConfig {
-            shape: BaseWave::Square,
-            volume: 0.1,
-        },
-        events: track_events,
+    let track_config = InstrumentConfig {
+        shape: BaseWave::Square,
+        volume: 0.1,
     };
 
-    let mut synth = GarlicCrust::create_from(track.config);
+    let mut synth = GarlicCrust::create_from(track_config);
 
     let mut event_counter = 0;
     let mut next_event = &track_event_array[event_counter];
