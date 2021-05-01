@@ -101,16 +101,6 @@ impl GarlicCrust {
 
 }
 
-// qm: no actual advantage by this implementation... right?
-/*
-impl Iterator for GarlicCrust {
-    type Item = AmpFloat;
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(self.next_frame())
-    }
-}
-*/
-
 impl GarlicCrust {
     pub fn next_frame(&mut self) -> AmpFloat {
         if self.eot {
@@ -198,10 +188,12 @@ use crate::garlic_head::*; // until I figure out how to pass a TrackArray as Gen
 // HERE COME THE OPERATORS
 
 pub fn dummyOperator(input: &TrackArray, sequence: &[TrackEvent]) -> TrackArray {
-    let mut output: TrackArray = emptyTrackArray;
+    let mut output: TrackArray = EmptyTrackArray();
+    crate::log!("lel");
     for i in 0 .. input.len() {
         output[i] = input[i] + 0.1337;
     }
+
 
     output
 }

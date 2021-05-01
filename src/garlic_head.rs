@@ -4,7 +4,7 @@ pub const SECONDS: TimeFloat = 4.;
 pub const SAMPLES: usize = (SAMPLERATE * SECONDS) as usize;
 
 pub type TrackArray = [AmpFloat; SAMPLES];
-pub const emptyTrackArray: TrackArray = [0.; SAMPLES];
+pub const fn EmptyTrackArray() -> TrackArray { [0.1; SAMPLES] }
 
 mod garlic_clove1;
 
@@ -21,9 +21,15 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     ];
 
     // our tooling has to know: which track is used by which clove?
-    let data = garlic_clove1::process(&sequence1);
+    let track1: TrackArray = garlic_clove1::process(&sequence1);
 
+    //POST PROCESSSING WOULD HAPPEN HERE
 
+    for sample in 0..SAMPLES {
+        data[sample] = 3.; // track1[sample];
+    }
+
+    super::printf("Lel %e\n\0".as_ptr(), data[10] as cty::c_double);
 }
 
 /*
