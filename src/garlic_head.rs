@@ -3,20 +3,30 @@ use super::garlic_crust::*;
 pub const SECONDS: TimeFloat = 4.;
 pub const SAMPLES: usize = (SAMPLERATE * SECONDS) as usize;
 
+pub type TrackArray = [AmpFloat; SAMPLES];
+pub const emptyTrackArray: TrackArray = [0.; SAMPLES];
+
+mod garlic_clove1;
+
+// TODO: track could be a byte array. if that saves us something?
+
 pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
-    // TODO: track will be a byte array.
-    let track_event_array: [TrackEvent; 4] = [
+    // TODO: think about -- could the sequences be "const"?
+    let sequence1: [TrackEvent; 4] = [
         TrackEvent {time: 0., message: TrackEventMessage::NoteOn, parameter: 36.},
         TrackEvent {time: 1., message: TrackEventMessage::NoteOff, parameter: 0.},
         TrackEvent {time: 1.5, message: TrackEventMessage::NoteOn, parameter: 34.},
         TrackEvent {time: 2.5, message: TrackEventMessage::EndOfTrack, parameter: 0.}
     ];
 
-    let track_config = InstrumentConfig {
-        shape: BaseWave::Saw,
-        volume: 0.2,
-    };
+    // our tooling has to know: which track is used by which clove?
+    let data = garlic_clove1::process(&sequence1);
+
+
+}
+
+/*
 
     let mut synth = GarlicCrust::create_from(track_config);
 
@@ -42,4 +52,6 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
         data[sample] = amp;
     }
-}
+
+
+*/

@@ -192,11 +192,23 @@ pub fn note_frequency(note_number: f32) -> f32 {
     440. * libm::powf(2., (note_number - 69.)/12.)
 }
 
+// trait HasLength { fn len(&self) -> usize; }
+use crate::garlic_head::*; // until I figure out how to pass a TrackArray as Generic (does it have len()?)
+
+// HERE COME THE OPERATORS
+
+fn dummyOperator(input: &TrackArray, sequence: &[TrackEvent]) -> TrackArray {
+    let mut output: TrackArray = emptyTrackArray;
+    for i in 0 .. input.len() {
+        output[i] = input[i] + 0.1337;
+    }
+
+    output
+}
 
 // LIST OF INVESTIGATIONS, watch for Size / Performance:
 // ... probably after first track exists, to see REAL difference
 //
-// loop vs for loop
+// loop vs for loop -- no difference at all (sizewise)
 // unsafe get_unchecked_mut vs. get_mut & unwrap
 // math_util::sin vs other sin?
-// directly read value without Iterator / Option / Some
