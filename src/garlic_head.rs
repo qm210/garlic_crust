@@ -8,8 +8,6 @@ pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 pub type TrackArray = [AmpFloat; SAMPLES];
 pub type BlockArray = [AmpFloat; BLOCK_SIZE];
 
-pub const fn EMPTY_BLOCKARRAY() -> BlockArray { [0.; BLOCK_SIZE] }
-
 mod garlic_clove1;
 
 // TODO: track could be a byte array. if that saves us something?
@@ -36,9 +34,17 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         block_cursor += BLOCK_SIZE;
     }
 
-    //POST PROCESSSING (e.g. channel combining) WOULD HAPPEN HERE
+    //POST PROCESSSING (e.g. channel combining) COULD HAPPEN HERE
 
-    super::printf("Lel %e\n\0".as_ptr(), data[10] as f64);
+    let mut clipping_count = 0;
+    for sample in 0 .. SAMPLES {
+        if data[sample] > 1. || data[sample] < -1. {
+            clipping_count += 1;
+            data[sample] = data[sample].clamp(-1., 1.);
+        }
+    }
+
+    super::printf("Clipping counter: %d\n\0".as_ptr(), clipping_count);
 }
 
 /*

@@ -187,9 +187,12 @@ use crate::garlic_head::*; // until I figure out how to pass a TrackArray as Gen
 
 // HERE COME THE OPERATORS
 
+pub fn empty_operator(sequence: &[TrackEvent], block_cursor: usize) -> BlockArray {
+    [0.; BLOCK_SIZE]
+}
 
 pub fn dummy_operator(input: &BlockArray, sequence: &[TrackEvent], block_cursor: usize) -> BlockArray {
-    let mut output = EMPTY_BLOCKARRAY();
+    let mut output = [0.; BLOCK_SIZE];
 
     for i in 0 .. BLOCK_SIZE {
         output[i] = input[i] + 0.1337;
