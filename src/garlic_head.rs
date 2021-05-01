@@ -1,10 +1,14 @@
 use super::garlic_crust::*;
 
 pub const SECONDS: TimeFloat = 4.;
-pub const SAMPLES: usize = (SAMPLERATE * SECONDS) as usize;
+pub const BLOCK_SIZE: usize = 4096;
+pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
+pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 
 pub type TrackArray = [AmpFloat; SAMPLES];
-pub const fn EmptyTrackArray() -> TrackArray { [0.1; SAMPLES] }
+pub type BlockArray = [AmpFloat; BLOCK_SIZE];
+
+pub const fn EMPTY_BLOCKARRAY() -> BlockArray { [0.; BLOCK_SIZE] }
 
 mod garlic_clove1;
 
@@ -20,16 +24,21 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         TrackEvent {time: 2.5, message: TrackEventMessage::EndOfTrack, parameter: 0.}
     ];
 
-    // our tooling has to know: which track is used by which clove?
-    let track1: TrackArray = garlic_clove1::process(&sequence1);
+    let mut block_cursor = 0;
+    while block_cursor < BLOCK_SIZE {
+        // our tooling has to know: which track is used by which clove?
+        let track1 = garlic_clove1::process(&sequence1, block_cursor);
 
-    //POST PROCESSSING WOULD HAPPEN HERE
+        for sample in 0 .. BLOCK_SIZE {
+            data[block_cursor + sample] = track1[sample];
+        }
 
-    for sample in 0..SAMPLES {
-        data[sample] = 3.; // track1[sample];
+        block_cursor += BLOCK_SIZE;
     }
 
-    super::printf("Lel %e\n\0".as_ptr(), data[10] as cty::c_double);
+    //POST PROCESSSING (e.g. channel combining) WOULD HAPPEN HERE
+
+    super::printf("Lel %e\n\0".as_ptr(), data[10] as f64);
 }
 
 /*
