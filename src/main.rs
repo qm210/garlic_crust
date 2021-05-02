@@ -5,12 +5,12 @@
 #![feature(core_intrinsics)]
 #![feature(static_nobundle)]
 //#![feature(c_variadic)] // printf-compat experiment
-#![allow(unused_variables, unused_imports)] // QM: clean up later
+// #![allow(unused_variables, unused_imports)] // QM: clean up later
 
 #[cfg(windows)] extern crate winapi;
 
 pub mod util;
-pub mod math_util;
+pub mod math;
 mod garlic_crust;
 mod garlic_head;
 

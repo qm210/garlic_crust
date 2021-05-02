@@ -1,12 +1,46 @@
-use super::math_util::sin;
-use super::math_util::approx4;
+use super::math::sin;
 use libm::{fmodf as fmod};
+use crate::garlic_head::{BLOCK_SIZE, BlockArray};
 
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
 
 pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
 pub const SAMPLERATE: f32 = 44100.;
+
+// idea: any input can be either an array (first prio, if not None), a function (second prio, if not None), or a constant (fallback, has to be given)
+pub struct Edge {
+    array: Option<BlockArray>,
+    function: Option<fn(playhead: TimeFloat) -> AmpFloat>, // hm. is it good to have fn(globaltime, playhead) instead of just fn(playhead) ?
+    constant: AmpFloat,
+}
+pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
+
+impl Edge {
+    pub fn Constant(value: f32) -> Edge {
+        Edge {
+            array: None,
+            function: None,
+            constant: value,
+        }
+    }
+
+    pub fn Function(function: PlayFunc) -> Edge {
+        Edge {
+            array: None,
+            function: Some(function),
+            constant: 0.,
+        }
+    }
+
+    pub fn Array(block: &BlockArray) -> Edge {
+        Edge {
+            array: Some(*block),
+            function: None,
+            constant: 0.
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum BaseWave {
@@ -20,6 +54,9 @@ pub enum BaseWave {
 pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: AmpFloat,
+//    pub envelope_function: Option<fn(TimeFloat) -> AmpFloat>,
+    pub phase: TimeFloat,
+    pub seq_cursor: usize,
 }
 
 impl Oscillator {
@@ -38,17 +75,41 @@ impl Oscillator {
         Oscillator {
             shape: BaseWave::Zero,
             volume: 0.,
+            phase: 0.,
+            seq_cursor: 0,
         }
+    }
+
+    pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
+        let mut output = [0.; BLOCK_SIZE];
+
+        for block_sample in 0 .. BLOCK_SIZE {
+            let sample = block_sample + block_offset;
+        }
+
+        output
     }
 }
 
+/*
 impl Default for Oscillator {
     fn default() -> Self {
         Oscillator {
             shape: BaseWave::Sine,
-            volume: 1 as AmpFloat,
+            volume: 1.,
+            phase: 0.,
+            seq_cursor: 0,
         }
     }
+}
+*/
+
+#[derive(Debug)]
+pub struct Envelope {
+    pub attack: TimeFloat,
+    pub decay: TimeFloat,
+    pub sustain: f32,
+    pub seq_cursor: usize,
 }
 
 #[derive(Debug)]
@@ -64,6 +125,7 @@ pub struct GarlicCrust {
     mute: bool,
 }
 
+/*
 impl Default for GarlicCrust {
     fn default() -> GarlicCrust {
         GarlicCrust {
@@ -88,19 +150,20 @@ impl GarlicCrust {
         }
     }
 
-    pub fn create_from(config: InstrumentConfig) -> Self {
+    pub fn create_from(param: OscillatorParam) -> Self {
         GarlicCrust {
             oscA: Oscillator {
-                shape: config.shape,
+                shape: param.shape,
                 volume: 1.
+                envelop
             },
-            volume: config.volume,
+            volume: param.volume,
             ..Default::default()
         }
     }
 
 }
-
+*/
 impl GarlicCrust {
     pub fn next_frame(&mut self) -> AmpFloat {
         if self.eot {
@@ -116,65 +179,50 @@ impl GarlicCrust {
         amp_value
     }
 
-    pub fn handle_event(&mut self, event: &TrackEvent) {
+    pub fn handle_event(&mut self, event: &SeqEvent) {
         unsafe { crate::log!("Type %s", message_to_str(&event.message).as_ptr());}
 
         match event.message {
-            TrackEventMessage::NoteOn => {
+            SeqMsg::NoteOn => {
                 self.frequency = note_frequency(event.parameter);
                 self.mute = false;
                 self.cursor = 0.;
             },
-            TrackEventMessage::NoteOff => {
+            SeqMsg::NoteOff => {
                 self.mute = true;
             },
-            TrackEventMessage::Frequency => {
+            SeqMsg::Frequency => {
                 self.frequency = event.parameter;
             },
-            TrackEventMessage::Volume => {
+            SeqMsg::Volume => {
                 self.volume = event.parameter;
             },
-            TrackEventMessage::EndOfTrack => {
-                self.eot = true;
-            }
         }
     }
 }
 
-pub struct InstrumentConfig {
-    pub shape: BaseWave,
-    pub volume: AmpFloat,
-}
-
-pub struct InstrumentTrack<N: heapless::ArrayLength<TrackEvent>> {
-    pub config: InstrumentConfig,
-    pub events: heapless::Vec<TrackEvent, N>,
-}
-
 #[derive(Clone, Debug)]
-pub struct TrackEvent {
+pub struct SeqEvent {
     pub time: TimeFloat,
-    pub message: TrackEventMessage,
+    pub message: SeqMsg,
     pub parameter: f32,
 }
 
 #[derive(Clone, Debug)]
-pub enum TrackEventMessage {
+pub enum SeqMsg {
     NoteOn,
     NoteOff,
     Frequency,
     Volume,
-    EndOfTrack,
 }
 
 // would this work?
-pub fn message_to_str(msg: &TrackEventMessage) -> &str {
+pub fn message_to_str(msg: &SeqMsg) -> &str {
     match msg {
-        TrackEventMessage::NoteOn => "noteon\0",
-        TrackEventMessage::NoteOff => "noteoff\0",
-        TrackEventMessage::Frequency => "setfreq\0",
-        TrackEventMessage::Volume => "setvol\0",
-        TrackEventMessage::EndOfTrack => "EOT\0",
+        SeqMsg::NoteOn => "noteon\0",
+        SeqMsg::NoteOff => "noteoff\0",
+        SeqMsg::Frequency => "setfreq\0",
+        SeqMsg::Volume => "setvol\0",
     }
 }
 
@@ -182,28 +230,9 @@ pub fn note_frequency(note_number: f32) -> f32 {
     440. * libm::powf(2., (note_number - 69.)/12.)
 }
 
-// trait HasLength { fn len(&self) -> usize; }
-use crate::garlic_head::*; // until I figure out how to pass a TrackArray as Generic (does it have len()?)
-
-// HERE COME THE OPERATORS
-
-pub fn empty_operator(sequence: &[TrackEvent], block_cursor: usize) -> BlockArray {
-    [0.; BLOCK_SIZE]
-}
-
-pub fn dummy_operator(input: &BlockArray, sequence: &[TrackEvent], block_cursor: usize) -> BlockArray {
-    let mut output = [0.; BLOCK_SIZE];
-
-    for i in 0 .. BLOCK_SIZE {
-        output[i] = input[i] + 0.1337;
-    }
-
-    output
-}
-
 // LIST OF INVESTIGATIONS, watch for Size / Performance:
 // ... probably after first track exists, to see REAL difference
 //
 // loop vs for loop -- no difference at all (sizewise)
 // unsafe get_unchecked_mut vs. get_mut & unwrap
-// math_util::sin vs other sin?
+// math::sin vs other sin?

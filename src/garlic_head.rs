@@ -12,26 +12,31 @@ mod garlic_clove1;
 
 // TODO: track could be a byte array. if that saves us something?
 
+// TODO: Give BPM information via Dynamo210-style Garlic Clock
+
 pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
     // TODO: think about -- could the sequences be "const"?
-    let sequence1: [TrackEvent; 4] = [
-        TrackEvent {time: 0., message: TrackEventMessage::NoteOn, parameter: 36.},
-        TrackEvent {time: 1., message: TrackEventMessage::NoteOff, parameter: 0.},
-        TrackEvent {time: 1.5, message: TrackEventMessage::NoteOn, parameter: 34.},
-        TrackEvent {time: 2.5, message: TrackEventMessage::EndOfTrack, parameter: 0.}
+    let sequence1: [SeqEvent; 4] = [
+        SeqEvent {time: 0., message: SeqMsg::NoteOn, parameter: 36.},
+        SeqEvent {time: 1., message: SeqMsg::NoteOff, parameter: 0.},
+        SeqEvent {time: 1.5, message: SeqMsg::NoteOn, parameter: 34.},
+        SeqEvent {time: 2.5, message: SeqMsg::NoteOff, parameter: 0.}
     ];
 
-    let mut block_cursor = 0;
-    while block_cursor < BLOCK_SIZE {
+    // we need global initialization, one per clove and each their sequence
+    let clove1_state1 = garlic_clove1::create_state();
+
+    let mut block_offset = 0;
+    while block_offset < BLOCK_SIZE {
         // our tooling has to know: which track is used by which clove?
-        let track1 = garlic_clove1::process(&sequence1, block_cursor);
+        let track1 = garlic_clove1::process(&sequence1, block_offset, &mut clove1_state1);
 
         for sample in 0 .. BLOCK_SIZE {
-            data[block_cursor + sample] = track1[sample];
+            data[block_offset + sample] = track1[sample];
         }
 
-        block_cursor += BLOCK_SIZE;
+        block_offset += BLOCK_SIZE;
     }
 
     //POST PROCESSSING (e.g. channel combining) COULD HAPPEN HERE
@@ -63,7 +68,7 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
             synth.handle_event(&next_event);
             event_counter += 1;
             if event_counter == track_event_array.len() {
-                synth.eot = true; // is redundant if there always is a TrackEventMessage::EndOfTrack at the end of each track. but people need to feel safe and secure
+                synth.eot = true; // is redundant if there always is a SeqMsg::EndOfTrack at the end of each track. but people need to feel safe and secure
             } else {
                 next_event = &track_event_array[event_counter];
             }
