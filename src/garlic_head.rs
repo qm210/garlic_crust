@@ -25,11 +25,11 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     ];
 
     // we need global initialization, one per clove and each their sequence
-    let clove1_state1 = garlic_clove1::create_state();
+    let mut clove1_state1 = garlic_clove1::create_state();
 
     let mut block_offset = 0;
     while block_offset < BLOCK_SIZE {
-        // our tooling has to know: which track is used by which clove?
+        // our tooling (knober) has to know: which track is used by which clove?
         let track1 = garlic_clove1::process(&sequence1, block_offset, &mut clove1_state1);
 
         for sample in 0 .. BLOCK_SIZE {

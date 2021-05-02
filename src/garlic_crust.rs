@@ -33,12 +33,23 @@ impl Edge {
         }
     }
 
-    pub fn Array(block: &BlockArray) -> Edge {
+    pub fn Array(block: BlockArray) -> Edge {
         Edge {
-            array: Some(*block),
+            array: Some(block),
             function: None,
             constant: 0.
         }
+    }
+
+    pub fn unwrap(&self, pos: usize) -> AmpFloat {
+        if self.array.is_some() {
+            return self.array.unwrap()[pos];
+        }
+        if self.function.is_some() {
+            // unwrap and then calculate it at pos / SAMPLERATE, but for now, just return some garbage
+            return -1.337;
+        }
+        return self.constant;
     }
 }
 
@@ -55,6 +66,7 @@ pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: AmpFloat,
 //    pub envelope_function: Option<fn(TimeFloat) -> AmpFloat>,
+    pub frequency: TimeFloat,
     pub phase: TimeFloat,
     pub seq_cursor: usize,
 }
@@ -75,6 +87,7 @@ impl Oscillator {
         Oscillator {
             shape: BaseWave::Zero,
             volume: 0.,
+            frequency: 0.,
             phase: 0.,
             seq_cursor: 0,
         }
@@ -83,8 +96,33 @@ impl Oscillator {
     pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
         let mut output = [0.; BLOCK_SIZE];
 
+        let mut next_event = &sequence[self.seq_cursor];
+
         for block_sample in 0 .. BLOCK_SIZE {
             let sample = block_sample + block_offset;
+
+            let time: TimeFloat = (block_offset + sample) as TimeFloat / SAMPLERATE;
+
+            while self.seq_cursor < sequence.len() && next_event.time <= time {
+                match &next_event.message {
+                    SeqMsg::NoteOn => {
+                        self.phase = 0.;
+                        self.frequency = note_frequency(next_event.parameter);
+                    },
+                    // could react to Volume or whatevs here.
+                    _ => ()
+                }
+                self.seq_cursor += 1;
+                if self.seq_cursor == sequence.len() {
+                    break;
+                } else {
+                    next_event = &sequence[self.seq_cursor];
+                }
+            }
+
+            output[sample] = self.evaluate_at(self.phase);
+
+            self.phase += self.frequency / SAMPLERATE;
         }
 
         output
@@ -104,11 +142,11 @@ impl Default for Oscillator {
 }
 */
 
-#[derive(Debug)]
 pub struct Envelope {
-    pub attack: TimeFloat,
-    pub decay: TimeFloat,
-    pub sustain: f32,
+    pub attack: Edge,
+    pub decay: Edge,
+    pub sustain: Edge,
+    pub playhead: TimeFloat,
     pub seq_cursor: usize,
 }
 

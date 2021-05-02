@@ -93,7 +93,6 @@ fn show_error( message : *const i8 ) {
     link(name="user32", kind="static-nobundle")
 )]
 extern "C" {
-    #[no_mangle]
     pub fn printf(format: *const u8, ...) -> i32;
 }
 
