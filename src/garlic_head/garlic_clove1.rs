@@ -13,7 +13,7 @@ pub fn create_state() -> GarlicClove1State {
     GarlicClove1State {
         oscA: Oscillator {
             shape: BaseWave::Square,
-            volume: 0.5,
+            volume: Edge::Constant(0.5),
             frequency: 0.,
             phase: 0.,
             seq_cursor: 0,
@@ -30,12 +30,12 @@ pub fn create_state() -> GarlicClove1State {
 
 #[inline]
 pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClove1State) -> BlockArray {
-    // THESE CHAINS WILL BE GIVEN BY knober
-    let empty = empty_operator(sequence, block_offset);
-    let dummy = dummy_operator(&empty, sequence, block_offset);
-
     // cloves are monophonic, there is only one time since the last noteon
+
+    // THESE CHAINS WILL BE GIVEN BY knober
+
     let envA_output = envA_build(&mut state.envA, sequence, block_offset);
+    state.oscA.volume = envA_output;
     let oscA_output = state.oscA.process(sequence, block_offset);
 
     oscA_output
@@ -87,13 +87,13 @@ pub fn envA_build(operator: &mut Envelope, sequence: &[SeqEvent], block_offset: 
             }
         }
 
-        let attack = operator.attack.unwrap(sample);
-        let decay = operator.decay.unwrap(sample);
+        let attack = operator.attack.evaluate(sample);
+        let decay = operator.decay.evaluate(sample);
 
         // the function will be placed by knober here
         let func = |t: TimeFloat| libm::exp2f(-decay*t) * crate::math::smoothstep(0., attack, &t);
 
-        output[sample] = func(sample as TimeFloat / SAMPLERATE);
+        output[sample] = func(operator.playhead);
 
         operator.playhead += 1. / SAMPLERATE;
     }

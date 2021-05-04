@@ -41,7 +41,7 @@ impl Edge {
         }
     }
 
-    pub fn unwrap(&self, pos: usize) -> AmpFloat {
+    pub fn evaluate(&self, pos: usize) -> AmpFloat {
         if self.array.is_some() {
             return self.array.unwrap()[pos];
         }
@@ -61,10 +61,9 @@ pub enum BaseWave {
     Zero,
 }
 
-#[derive(Debug)]
 pub struct Oscillator {
     pub shape: BaseWave,
-    pub volume: AmpFloat,
+    pub volume: Edge,
 //    pub envelope_function: Option<fn(TimeFloat) -> AmpFloat>,
     pub frequency: TimeFloat,
     pub phase: TimeFloat,
@@ -75,18 +74,18 @@ impl Oscillator {
     fn evaluate_at(&self, phase: TimeFloat) -> AmpFloat {
         let basewave_value: AmpFloat = match self.shape {
             BaseWave::Sine => 0.5 * (sin(TAU * phase) + sin(TAU * phase * 1.01)),
-            BaseWave::Square => (20. * sin(TAU * phase)).clamp(-1., 1.),
-            BaseWave::Saw => 2. * (fmod(phase, 1.) + fmod(1.1*phase, 1.)) - 1.,
+            BaseWave::Square => (37. * sin(TAU * phase)).clamp(-1., 1.),
+            BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
             _ => 0.,
         };
 
-        (basewave_value * self.volume).clamp(-1., 1.)
+        basewave_value.clamp(-1., 1.)
     }
 
     fn none() -> Oscillator {
         Oscillator {
             shape: BaseWave::Zero,
-            volume: 0.,
+            volume: Edge::Constant(0.),
             frequency: 0.,
             phase: 0.,
             seq_cursor: 0,
@@ -96,33 +95,41 @@ impl Oscillator {
     pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
         let mut output = [0.; BLOCK_SIZE];
 
-        let mut next_event = &sequence[self.seq_cursor];
+        let mut next_event = if self.seq_cursor == sequence.len() { None } else {
+            Some(&sequence[self.seq_cursor])
+        };
 
-        for block_sample in 0 .. BLOCK_SIZE {
-            let sample = block_sample + block_offset;
+        for sample in 0 .. BLOCK_SIZE {
+            let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
 
-            let time: TimeFloat = (block_offset + sample) as TimeFloat / SAMPLERATE;
+            if next_event.is_some() {
+                let event = next_event.unwrap();
+                while self.seq_cursor < sequence.len() && event.time <= time {
+                    match &event.message {
+                        SeqMsg::NoteOn => {
+                            self.phase = 0.;
+                            self.frequency = note_frequency(event.parameter);
+                        },
+                        // could react to Volume or whatevs here.
+                        _ => ()
+                    }
+                    self.seq_cursor += 1;
 
-            while self.seq_cursor < sequence.len() && next_event.time <= time {
-                match &next_event.message {
-                    SeqMsg::NoteOn => {
-                        self.phase = 0.;
-                        self.frequency = note_frequency(next_event.parameter);
-                    },
-                    // could react to Volume or whatevs here.
-                    _ => ()
-                }
-                self.seq_cursor += 1;
-                if self.seq_cursor == sequence.len() {
-                    break;
-                } else {
-                    next_event = &sequence[self.seq_cursor];
+                    if self.seq_cursor == sequence.len() {
+                        next_event = None;
+                        break;
+                    } else {
+                        next_event = Some(&sequence[self.seq_cursor]);
+                    }
                 }
             }
 
-            output[sample] = self.evaluate_at(self.phase);
+            output[sample] = self.evaluate_at(self.phase) * self.volume.evaluate(sample);
 
             self.phase += self.frequency / SAMPLERATE;
+            if self.phase >= 1. {
+                self.phase -= 1.;
+            }
         }
 
         output
@@ -150,7 +157,6 @@ pub struct Envelope {
     pub seq_cursor: usize,
 }
 
-#[derive(Debug)]
 pub struct GarlicCrust {
     pub oscA: Oscillator,
     pub oscB: Oscillator,

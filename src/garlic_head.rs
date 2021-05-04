@@ -28,7 +28,9 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     let mut clove1_state1 = garlic_clove1::create_state();
 
     let mut block_offset = 0;
-    while block_offset < BLOCK_SIZE {
+    while block_offset < SAMPLES {
+        crate::printf("NEW BLOCK %d / %d\n\0".as_ptr(), block_offset, SAMPLES);
+
         // our tooling (knober) has to know: which track is used by which clove?
         let track1 = garlic_clove1::process(&sequence1, block_offset, &mut clove1_state1);
 
@@ -42,13 +44,24 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     //POST PROCESSSING (e.g. channel combining) COULD HAPPEN HERE
 
     let mut clipping_count = 0;
+    let mut max_sample = 0.;
+    let mut min_sample = 0.;
+
     for sample in 0 .. SAMPLES {
         if data[sample] > 1. || data[sample] < -1. {
             clipping_count += 1;
             data[sample] = data[sample].clamp(-1., 1.);
+            if data[sample] > max_sample {
+                max_sample = data[sample];
+            }
+            if data[sample] < min_sample {
+                min_sample = data[sample];
+            }
         }
     }
 
+    super::printf("Real duration: %.3fs\n\0".as_ptr(), SAMPLES as f64 / SAMPLERATE as f64);
+    super::printf("Range: %.3f .. %.3f\n\0".as_ptr(), min_sample as f64, max_sample as f64);
     super::printf("Clipping counter: %d\n\0".as_ptr(), clipping_count);
 }
 
