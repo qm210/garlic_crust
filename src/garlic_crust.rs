@@ -1,6 +1,6 @@
 use super::math::sin;
 use libm::{fmodf as fmod};
-use crate::garlic_head::{BLOCK_SIZE, BlockArray};
+use crate::garlic_head::{BLOCK_SIZE, BlockArray, EMPTY_BLOCKARRAY};
 
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
@@ -64,10 +64,85 @@ pub enum BaseWave {
 pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: Edge,
-//    pub envelope_function: Option<fn(TimeFloat) -> AmpFloat>,
     pub frequency: TimeFloat,
     pub phase: TimeFloat,
+    // makes sense to define some BaseOperator which holds seq_cursor and output?
     pub seq_cursor: usize,
+    pub output: BlockArray,
+}
+
+
+pub trait Operator {
+    //fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge;
+    fn handle_event(&mut self, event: &SeqEvent);
+    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat;
+    fn advance(&mut self);
+    fn get_cursor(&mut self) -> usize;
+    fn inc_cursor(&mut self);
+}
+
+pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<&SeqEvent> {
+    match cursor == sequence.len() {
+        true => None,
+        false => Some(&sequence[cursor])
+    }
+}
+
+pub fn process<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
+    let mut output = EMPTY_BLOCKARRAY.clone();
+
+    let mut next_event = next_event_option(&sequence, op.get_cursor());
+
+    for sample in 0 .. BLOCK_SIZE {
+        let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
+
+        while let Some(event) = next_event {
+            if event.time > time {
+                break;
+            }
+            op.handle_event(&event);
+            op.inc_cursor();
+            next_event = next_event_option(&sequence, op.get_cursor());
+        }
+
+        output[sample] = op.evaluate(sample, time);
+
+        op.advance();
+    }
+
+    output
+}
+
+impl Operator for Oscillator {
+    fn handle_event(&mut self, event: &SeqEvent) {
+        match &event.message {
+            SeqMsg::NoteOn => {
+                self.phase = 0.;
+                self.frequency = note_frequency(event.parameter);
+            },
+            // could react to Volume or whatevs here.
+            _ => ()
+        }
+    }
+
+    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
+        self.evaluate_at(self.phase) * self.volume.evaluate(sample)
+    }
+
+    fn advance(&mut self) {
+        self.phase += self.frequency / SAMPLERATE;
+        if self.phase >= 1. {
+            self.phase -= 1.;
+        }
+    }
+
+    fn get_cursor(&mut self) -> usize {
+        self.seq_cursor
+    }
+
+    fn inc_cursor(&mut self) {
+        self.seq_cursor += 1;
+    }
 }
 
 impl Oscillator {
@@ -89,9 +164,18 @@ impl Oscillator {
             frequency: 0.,
             phase: 0.,
             seq_cursor: 0,
+            output: EMPTY_BLOCKARRAY,
         }
     }
 
+    pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge {
+        self.output = EMPTY_BLOCKARRAY.clone();
+
+        self.output = process(self, &sequence, block_offset);
+
+        Edge::Array(self.output)
+    }
+        /*
     pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
         let mut output = [0.; BLOCK_SIZE];
 
@@ -102,8 +186,7 @@ impl Oscillator {
         for sample in 0 .. BLOCK_SIZE {
             let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
 
-            if next_event.is_some() {
-                let event = next_event.unwrap();
+            if let Some(event) = next_event {
                 while self.seq_cursor < sequence.len() && event.time <= time {
                     match &event.message {
                         SeqMsg::NoteOn => {
@@ -134,20 +217,8 @@ impl Oscillator {
 
         output
     }
+    */
 }
-
-/*
-impl Default for Oscillator {
-    fn default() -> Self {
-        Oscillator {
-            shape: BaseWave::Sine,
-            volume: 1.,
-            phase: 0.,
-            seq_cursor: 0,
-        }
-    }
-}
-*/
 
 pub struct Envelope {
     pub attack: Edge,
@@ -157,6 +228,7 @@ pub struct Envelope {
     pub seq_cursor: usize,
 }
 
+/*
 pub struct GarlicCrust {
     pub oscA: Oscillator,
     pub oscB: Oscillator,
@@ -169,45 +241,6 @@ pub struct GarlicCrust {
     mute: bool,
 }
 
-/*
-impl Default for GarlicCrust {
-    fn default() -> GarlicCrust {
-        GarlicCrust {
-            oscA: Oscillator::default(),
-            oscB: Oscillator::none(),
-            volume: 1.,
-            frequency: 220.,
-            phase: 0.,
-            cursor: 0.,
-            eot: false,
-            mute: false,
-        }
-    }
-}
-
-impl GarlicCrust {
-    pub fn create_default() -> Self {
-        GarlicCrust {
-            oscA: Oscillator::default(),
-            volume: 1.,
-            ..Default::default()
-        }
-    }
-
-    pub fn create_from(param: OscillatorParam) -> Self {
-        GarlicCrust {
-            oscA: Oscillator {
-                shape: param.shape,
-                volume: 1.
-                envelop
-            },
-            volume: param.volume,
-            ..Default::default()
-        }
-    }
-
-}
-*/
 impl GarlicCrust {
     pub fn next_frame(&mut self) -> AmpFloat {
         if self.eot {
@@ -244,6 +277,7 @@ impl GarlicCrust {
         }
     }
 }
+*/
 
 #[derive(Clone, Debug)]
 pub struct SeqEvent {

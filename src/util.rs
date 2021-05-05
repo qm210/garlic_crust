@@ -1,3 +1,4 @@
+#![allow(unused_variables, unused_imports)]
 // sphere_dance, authors = ["SLIMPANDA\\janio <jani.peltonen@gmail.com>"]
 
 use winapi::um::winnt::{

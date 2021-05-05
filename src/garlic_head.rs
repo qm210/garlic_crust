@@ -8,6 +8,8 @@ pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 pub type TrackArray = [AmpFloat; SAMPLES];
 pub type BlockArray = [AmpFloat; BLOCK_SIZE];
 
+pub const EMPTY_BLOCKARRAY: BlockArray = [0.; BLOCK_SIZE];
+
 mod garlic_clove1;
 
 // TODO: track could be a byte array. if that saves us something?
@@ -29,13 +31,11 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
     let mut block_offset = 0;
     while block_offset < SAMPLES {
-        crate::printf("NEW BLOCK %d / %d\n\0".as_ptr(), block_offset, SAMPLES);
-
         // our tooling (knober) has to know: which track is used by which clove?
         let track1 = garlic_clove1::process(&sequence1, block_offset, &mut clove1_state1);
 
         for sample in 0 .. BLOCK_SIZE {
-            data[block_offset + sample] = track1[sample];
+            data[block_offset + sample] = track1.evaluate(sample);
         }
 
         block_offset += BLOCK_SIZE;
@@ -51,12 +51,12 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         if data[sample] > 1. || data[sample] < -1. {
             clipping_count += 1;
             data[sample] = data[sample].clamp(-1., 1.);
-            if data[sample] > max_sample {
-                max_sample = data[sample];
-            }
-            if data[sample] < min_sample {
-                min_sample = data[sample];
-            }
+        }
+        if data[sample] > max_sample {
+            max_sample = data[sample];
+        }
+        if data[sample] < min_sample {
+            min_sample = data[sample];
         }
     }
 
