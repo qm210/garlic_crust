@@ -9,6 +9,7 @@ pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
 pub const SAMPLERATE: f32 = 44100.;
 
 // idea: any input can be either an array (first prio, if not None), a function (second prio, if not None), or a constant (fallback, has to be given)
+#[derive(Copy, Clone)]
 pub struct Edge {
     array: Option<BlockArray>,
     function: Option<fn(playhead: TimeFloat) -> AmpFloat>, // hm. is it good to have fn(globaltime, playhead) instead of just fn(playhead) ?
@@ -25,7 +26,7 @@ impl Edge {
         }
     }
 
-    pub fn Function(function: PlayFunc) -> Edge {
+    pub fn Function(function: PlayFunc) -> Edge { // HAVE NO IDEA ABOUT THIS YET..!!
         Edge {
             array: None,
             function: Some(function),
@@ -41,17 +42,49 @@ impl Edge {
         }
     }
 
+    pub fn is_const(&self) -> bool {
+        self.array.is_none() && self.function.is_none()
+    }
+
     pub fn evaluate(&self, pos: usize) -> AmpFloat {
-        if self.array.is_some() {
-            return self.array.unwrap()[pos];
+        if let Some(array) = self.array {
+            return array[pos];
         }
-        if self.function.is_some() {
+        if let Some(func) = self.function {
             // unwrap and then calculate it at pos / SAMPLERATE, but for now, just return some garbage
             return -1.337;
         }
         return self.constant;
     }
+
+    pub fn scale(&mut self, factor: f32) -> Edge {
+        if let Some(mut array) = self.array {
+            for pos in 0 .. BLOCK_SIZE {
+                array[pos] = factor * array[pos];
+            }
+            self.array = Some(array);
+        }
+        if let Some(func) = self.function {
+            // ..??
+        }
+        self.constant *= factor;
+
+        *self
+    }
+
+    pub fn times(&mut self, other: &Edge) -> Edge {
+        if other.is_const() {
+            return self.scale(other.constant);
+        }
+        let mut array = EMPTY_BLOCKARRAY.clone();
+        for pos in 0 .. BLOCK_SIZE {
+            array[pos] = other.evaluate(pos) * self.evaluate(pos);
+        }
+
+        *self
+    }
 }
+
 
 #[derive(Debug)]
 pub enum BaseWave {
@@ -88,8 +121,8 @@ pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<&SeqEve
     }
 }
 
-pub fn process<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
-    let mut output = EMPTY_BLOCKARRAY.clone();
+pub fn process_operator<O: Operator>(op: &mut O, input: BlockArray, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
+    let mut output = input.clone();
 
     let mut next_event = next_event_option(&sequence, op.get_cursor());
 
@@ -171,53 +204,10 @@ impl Oscillator {
     pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge {
         self.output = EMPTY_BLOCKARRAY.clone();
 
-        self.output = process(self, &sequence, block_offset);
+        self.output = process_operator(self, self.output, &sequence, block_offset);
 
         Edge::Array(self.output)
     }
-        /*
-    pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
-        let mut output = [0.; BLOCK_SIZE];
-
-        let mut next_event = if self.seq_cursor == sequence.len() { None } else {
-            Some(&sequence[self.seq_cursor])
-        };
-
-        for sample in 0 .. BLOCK_SIZE {
-            let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
-
-            if let Some(event) = next_event {
-                while self.seq_cursor < sequence.len() && event.time <= time {
-                    match &event.message {
-                        SeqMsg::NoteOn => {
-                            self.phase = 0.;
-                            self.frequency = note_frequency(event.parameter);
-                        },
-                        // could react to Volume or whatevs here.
-                        _ => ()
-                    }
-                    self.seq_cursor += 1;
-
-                    if self.seq_cursor == sequence.len() {
-                        next_event = None;
-                        break;
-                    } else {
-                        next_event = Some(&sequence[self.seq_cursor]);
-                    }
-                }
-            }
-
-            output[sample] = self.evaluate_at(self.phase) * self.volume.evaluate(sample);
-
-            self.phase += self.frequency / SAMPLERATE;
-            if self.phase >= 1. {
-                self.phase -= 1.;
-            }
-        }
-
-        output
-    }
-    */
 }
 
 pub struct Envelope {
@@ -228,56 +218,38 @@ pub struct Envelope {
     pub seq_cursor: usize,
 }
 
-/*
-pub struct GarlicCrust {
-    pub oscA: Oscillator,
-    pub oscB: Oscillator,
-    pub volume: AmpFloat,
-    pub frequency: TimeFloat,
-    phase: TimeFloat,
-    cursor: TimeFloat,
-
-    pub eot: bool,
-    mute: bool,
-}
-
-impl GarlicCrust {
-    pub fn next_frame(&mut self) -> AmpFloat {
-        if self.eot {
-            return 0.;
-        }
-        let amp_value: AmpFloat = if self.mute {0.} else { self.volume * self.oscA.evaluate_at(self.phase)};
-        self.phase += self.frequency / SAMPLERATE;
-        if self.phase > 1. {
-            self.phase -= 1.;
-        }
-        self.cursor += 1. / SAMPLERATE;
-
-        amp_value
-    }
-
-    pub fn handle_event(&mut self, event: &SeqEvent) {
-        unsafe { crate::log!("Type %s", message_to_str(&event.message).as_ptr());}
-
-        match event.message {
+impl Operator for Envelope {
+    fn handle_event(&mut self, event: &SeqEvent) {
+        match &event.message {
             SeqMsg::NoteOn => {
-                self.frequency = note_frequency(event.parameter);
-                self.mute = false;
-                self.cursor = 0.;
+                self.playhead = 0.;
             },
-            SeqMsg::NoteOff => {
-                self.mute = true;
-            },
-            SeqMsg::Frequency => {
-                self.frequency = event.parameter;
-            },
-            SeqMsg::Volume => {
-                self.volume = event.parameter;
-            },
+            _ => ()
         }
     }
+
+    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
+        let attack = self.attack.evaluate(sample);
+        let decay = self.decay.evaluate(sample);
+
+        // the function is hardcoded now. how will it be placed by knober here?
+        let func = |t: TimeFloat| libm::exp2f(-decay*t) * crate::math::smoothstep(0., attack, &t);
+
+        func(self.playhead)
+    }
+
+    fn advance(&mut self) {
+        self.playhead += 1. / SAMPLERATE;
+    }
+
+    fn get_cursor(&mut self) -> usize {
+        self.seq_cursor
+    }
+
+    fn inc_cursor(&mut self) {
+        self.seq_cursor += 1;
+    }
 }
-*/
 
 #[derive(Clone, Debug)]
 pub struct SeqEvent {

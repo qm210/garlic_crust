@@ -5,7 +5,6 @@ pub const BLOCK_SIZE: usize = 4096;
 pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 
-pub type TrackArray = [AmpFloat; SAMPLES];
 pub type BlockArray = [AmpFloat; BLOCK_SIZE];
 
 pub const EMPTY_BLOCKARRAY: BlockArray = [0.; BLOCK_SIZE];
