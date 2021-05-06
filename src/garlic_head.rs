@@ -17,12 +17,25 @@ mod garlic_clove1;
 
 pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
+    let factor: f32 = 0.5;
     // TODO: think about -- could the sequences be "const"?
-    let sequence1: [SeqEvent; 4] = [
-        SeqEvent {time: 0., message: SeqMsg::NoteOn, parameter: 36.},
-        SeqEvent {time: 1., message: SeqMsg::NoteOff, parameter: 0.},
-        SeqEvent {time: 1.5, message: SeqMsg::NoteOn, parameter: 34.},
-        SeqEvent {time: 2.5, message: SeqMsg::NoteOff, parameter: 0.}
+    let sequence1: [SeqEvent; 16] = [
+        SeqEvent {time: factor * 0., message: SeqMsg::NoteOn, parameter: 36. + 24.},
+        SeqEvent {time: factor * 0.5, message: SeqMsg::NoteOn, parameter: 38. + 24.},
+        SeqEvent {time: factor * 1.0, message: SeqMsg::NoteOn, parameter: 43. + 24.},
+        SeqEvent {time: factor * 1.5, message: SeqMsg::NoteOn, parameter: 48. + 36.},
+        SeqEvent {time: factor * 2.0, message: SeqMsg::NoteOn, parameter: 36. + 24.},
+        SeqEvent {time: factor * 2.5, message: SeqMsg::NoteOn, parameter: 38. + 36.},
+        SeqEvent {time: factor * 3.0, message: SeqMsg::NoteOn, parameter: 43. + 36.},
+        SeqEvent {time: factor * 3.5, message: SeqMsg::NoteOn, parameter: 48. + 36.},
+        SeqEvent {time: factor * 4.0, message: SeqMsg::NoteOn, parameter: 36. + 24.},
+        SeqEvent {time: factor * 4.5, message: SeqMsg::NoteOn, parameter: 38. + 24.},
+        SeqEvent {time: factor * 5.0, message: SeqMsg::NoteOn, parameter: 43. + 24.},
+        SeqEvent {time: factor * 5.5, message: SeqMsg::NoteOn, parameter: 48. + 36.},
+        SeqEvent {time: factor * 6.0, message: SeqMsg::NoteOn, parameter: 36. + 24.},
+        SeqEvent {time: factor * 6.5, message: SeqMsg::NoteOn, parameter: 38. + 36.},
+        SeqEvent {time: factor * 7.0, message: SeqMsg::NoteOn, parameter: 43. + 36.},
+        SeqEvent {time: factor * 7.5, message: SeqMsg::NoteOn, parameter: 48. + 36.}
     ];
 
     // we need global initialization, one per clove and each their sequence
@@ -30,12 +43,15 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
     let mut block_offset = 0;
     while block_offset < SAMPLES {
+
         // our tooling (knober) has to know: which track is used by which clove?
         let track1 = garlic_clove1::process(&sequence1, block_offset, &mut clove1_state1);
 
         for sample in 0 .. BLOCK_SIZE {
             data[block_offset + sample] = track1.evaluate(sample);
         }
+
+        //super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
 
         block_offset += BLOCK_SIZE;
     }

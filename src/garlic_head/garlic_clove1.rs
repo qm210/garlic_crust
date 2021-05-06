@@ -5,27 +5,34 @@ use super::*;
 
 // the member fields
 pub struct GarlicClove1State {
-    osc1: Oscillator,
-    env1: Envelope,
+    osc1: oscillator::Oscillator,
+    env1: envelope::Envelope,
+    lp1: filter::Filter,
 }
 
 pub fn create_state() -> GarlicClove1State {
     GarlicClove1State {
-        osc1: Oscillator {
-            shape: BaseWave::Square,
-            volume: Edge::Constant(0.5),
+        osc1: oscillator::Oscillator {
+            shape: oscillator::BaseWave::Square,
+            volume: Edge::constant(0.5),
             frequency: 0.,
             phase: 0.,
             seq_cursor: 0,
             output: EMPTY_BLOCKARRAY,
         },
-        env1: Envelope {
-            attack: Edge::Constant(0.8),
-            decay: Edge::Constant(0.3),
-            sustain: Edge::Constant(0.),
-            shape: BaseEnv::ExpDecay,
+        env1: envelope::Envelope {
+            attack: Edge::constant(1.0e-4),
+            decay: Edge::constant(0.06),
+            sustain: Edge::constant(0.),
+            shape: envelope::BaseEnv::ExpDecay,
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
+        },
+        lp1: filter::Filter {
+            shape: filter::FilterType::LowPass,
+            cutoff: Edge::constant(200.),
+            input: EMPTY_BLOCKARRAY.clone(),
+            output: Edge::zero(),
         }
     }
 }
@@ -36,10 +43,15 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
 
     // THESE CHAINS WILL BE GIVEN BY knober
 
-    let env1_output = env1_build(&mut state.env1, sequence, block_offset);
+    let env1_output = Edge::array(process_operator(&mut state.env1, &sequence, block_offset));
     state.osc1.volume = env1_output;
 
-    state.osc1.process(sequence, block_offset)
+    state.osc1.output = process_operator(&mut state.osc1, &sequence, block_offset);
+    state.lp1.input = state.osc1.output.clone();
+
+    state.lp1.output = Edge::array(process_operator_noseq(&mut state.lp1, block_offset));
+
+    state.lp1.output
 }
 
 /*
@@ -58,29 +70,3 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
      - call process_oscA()
      - contribution to state
 */
-
-// check whether macro helps
-// next idea. operators have ONE output array, not a new one each time (e.g. for filter, to have the last one)
-pub fn env1_build(operator: &mut Envelope, sequence: &[SeqEvent], block_offset: usize) -> Edge {
-    let mut output: BlockArray = [0.; BLOCK_SIZE];
-
-    output = process_operator(operator, output, sequence, block_offset);
-
-    Edge::Array(output)
-}
-
-
-/* this is old */
-pub fn empty_operator(sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
-    [0.; BLOCK_SIZE]
-}
-
-pub fn dummy_operator(input: &BlockArray, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
-    let mut output = [0.; BLOCK_SIZE];
-
-    for i in 0 .. BLOCK_SIZE {
-        output[i] = input[i] + 0.1337;
-    }
-
-    output
-}

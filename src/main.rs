@@ -210,12 +210,15 @@ pub extern "system" fn mainCRTStartup() {
         winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
     }
 
+    // debugging
+    /*
     for i in 0 .. 100 {
         let x: f32 = i as f32 / 100.;
         unsafe {
             printf("x=%.3f sm=%3f\n\0".as_ptr(), x as f64, math::smoothstep(0.25, 0.75, x) as f64);
         }
     }
+    */
 
     let mut time: garlic_crust::TimeFloat = 0.;
 

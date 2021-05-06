@@ -1,6 +1,8 @@
-use super::math::sin;
-use libm::{fmodf as fmod};
 use crate::garlic_head::{BLOCK_SIZE, BlockArray, EMPTY_BLOCKARRAY};
+
+pub mod oscillator;
+pub mod envelope;
+pub mod filter;
 
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
@@ -15,10 +17,11 @@ pub struct Edge {
     function: Option<fn(playhead: TimeFloat) -> AmpFloat>, // hm. is it good to have fn(globaltime, playhead) instead of just fn(playhead) ?
     constant: AmpFloat,
 }
+
 pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
 
 impl Edge {
-    pub fn Constant(value: f32) -> Edge {
+    pub fn constant(value: f32) -> Edge {
         Edge {
             array: None,
             function: None,
@@ -26,7 +29,7 @@ impl Edge {
         }
     }
 
-    pub fn Function(function: PlayFunc) -> Edge { // HAVE NO IDEA ABOUT THIS YET..!!
+    pub fn function(function: PlayFunc) -> Edge { // HAVE NO IDEA ABOUT THIS YET..!!
         Edge {
             array: None,
             function: Some(function),
@@ -34,12 +37,16 @@ impl Edge {
         }
     }
 
-    pub fn Array(block: BlockArray) -> Edge {
+    pub fn array(block: BlockArray) -> Edge {
         Edge {
             array: Some(block),
             function: None,
             constant: 0.
         }
+    }
+
+    pub fn zero() -> Edge {
+        Edge::constant(0.)
     }
 
     pub fn is_const(&self) -> bool {
@@ -51,8 +58,8 @@ impl Edge {
             return array[pos];
         }
         if let Some(func) = self.function {
-            // unwrap and then calculate it at pos / SAMPLERATE, but for now, just return some garbage
-            return -1.337;
+            // no idea whether this somehow works or rather is garbage
+            return func(pos as TimeFloat / SAMPLERATE);
         }
         return self.constant;
     }
@@ -85,31 +92,6 @@ impl Edge {
     }
 }
 
-
-#[derive(Debug)]
-pub enum BaseWave {
-    Sine,
-    Saw,
-    Square,
-    Zero,
-}
-
-#[derive(Debug)]
-pub enum BaseEnv {
-    ExpDecay,
-}
-
-pub struct Oscillator {
-    pub shape: BaseWave,
-    pub volume: Edge,
-    pub frequency: TimeFloat,
-    pub phase: TimeFloat,
-    // makes sense to define some BaseOperator which holds seq_cursor and output?
-    pub seq_cursor: usize,
-    pub output: BlockArray,
-}
-
-
 pub trait Operator {
     //fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge;
     fn handle_event(&mut self, event: &SeqEvent);
@@ -126,8 +108,8 @@ pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<&SeqEve
     }
 }
 
-pub fn process_operator<O: Operator>(op: &mut O, input: BlockArray, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
-    let mut output = input.clone();
+pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
+    let mut output = EMPTY_BLOCKARRAY; // .clone();
 
     let mut next_event = next_event_option(&sequence, op.get_cursor());
 
@@ -151,113 +133,18 @@ pub fn process_operator<O: Operator>(op: &mut O, input: BlockArray, sequence: &[
     output
 }
 
-impl Operator for Oscillator {
-    fn handle_event(&mut self, event: &SeqEvent) {
-        match &event.message {
-            SeqMsg::NoteOn => {
-                self.phase = 0.;
-                self.frequency = note_frequency(event.parameter);
-            },
-            // could react to Volume or whatevs here.
-            _ => ()
-        }
+pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> BlockArray {
+    let mut output = EMPTY_BLOCKARRAY; // .clone();
+
+    for sample in 0 .. BLOCK_SIZE {
+        let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
+
+        output[sample] = op.evaluate(sample, time);
+
+        op.advance();
     }
 
-    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
-        self.evaluate_at(self.phase) * self.volume.evaluate(sample)
-    }
-
-    fn advance(&mut self) {
-        self.phase += self.frequency / SAMPLERATE;
-        if self.phase >= 1. {
-            self.phase -= 1.;
-        }
-    }
-
-    fn get_cursor(&mut self) -> usize {
-        self.seq_cursor
-    }
-
-    fn inc_cursor(&mut self) {
-        self.seq_cursor += 1;
-    }
-}
-
-impl Oscillator {
-    fn evaluate_at(&self, phase: TimeFloat) -> AmpFloat {
-        let basewave_value: AmpFloat = match self.shape {
-            BaseWave::Sine => 0.5 * (sin(TAU * phase) + sin(TAU * phase * 1.01)),
-            BaseWave::Square => (37. * sin(TAU * phase)).clamp(-1., 1.),
-            BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
-            _ => 0.,
-        };
-
-        basewave_value.clamp(-1., 1.)
-    }
-
-    fn none() -> Oscillator {
-        Oscillator {
-            shape: BaseWave::Zero,
-            volume: Edge::Constant(0.),
-            frequency: 0.,
-            phase: 0.,
-            seq_cursor: 0,
-            output: EMPTY_BLOCKARRAY,
-        }
-    }
-
-    pub fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge {
-        self.output = EMPTY_BLOCKARRAY.clone();
-
-        self.output = process_operator(self, self.output, &sequence, block_offset);
-
-        Edge::Array(self.output)
-    }
-}
-
-pub struct Envelope {
-    pub shape: BaseEnv,
-    pub attack: Edge,
-    pub decay: Edge,
-    pub sustain: Edge,
-    pub playhead: TimeFloat,
-    pub seq_cursor: usize,
-}
-
-impl Operator for Envelope {
-    fn handle_event(&mut self, event: &SeqEvent) {
-        match &event.message {
-            SeqMsg::NoteOn => {
-                self.playhead = 0.;
-            },
-            _ => ()
-        }
-    }
-
-    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
-        let attack = self.attack.evaluate(sample);
-        let decay = self.decay.evaluate(sample);
-
-        let result = match self.shape {
-            BaseEnv::ExpDecay => {
-                libm::exp2f(-(self.playhead-attack)/decay) * crate::math::smoothstep(0., attack, self.playhead)
-            }
-        };
-
-        result.clamp(0., 1.)
-    }
-
-    fn advance(&mut self) {
-        self.playhead += 1. / SAMPLERATE;
-    }
-
-    fn get_cursor(&mut self) -> usize {
-        self.seq_cursor
-    }
-
-    fn inc_cursor(&mut self) {
-        self.seq_cursor += 1;
-    }
+    output
 }
 
 #[derive(Clone, Debug)]
