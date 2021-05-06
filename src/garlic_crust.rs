@@ -238,11 +238,13 @@ impl Operator for Envelope {
         let attack = self.attack.evaluate(sample);
         let decay = self.decay.evaluate(sample);
 
-        match self.shape {
+        let result = match self.shape {
             BaseEnv::ExpDecay => {
-                libm::exp2f(-self.playhead/decay) // * crate::math::smoothstep(0., attack, &self.playhead)
+                libm::exp2f(-(self.playhead-attack)/decay) * crate::math::smoothstep(0., attack, self.playhead)
             }
-        }
+        };
+
+        result.clamp(0., 1.)
     }
 
     fn advance(&mut self) {
