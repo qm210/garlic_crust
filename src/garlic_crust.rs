@@ -94,6 +94,11 @@ pub enum BaseWave {
     Zero,
 }
 
+#[derive(Debug)]
+pub enum BaseEnv {
+    ExpDecay,
+}
+
 pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: Edge,
@@ -211,6 +216,7 @@ impl Oscillator {
 }
 
 pub struct Envelope {
+    pub shape: BaseEnv,
     pub attack: Edge,
     pub decay: Edge,
     pub sustain: Edge,
@@ -232,10 +238,11 @@ impl Operator for Envelope {
         let attack = self.attack.evaluate(sample);
         let decay = self.decay.evaluate(sample);
 
-        // the function is hardcoded now. how will it be placed by knober here?
-        let func = |t: TimeFloat| libm::exp2f(-decay*t) * crate::math::smoothstep(0., attack, &t);
-
-        func(self.playhead)
+        match self.shape {
+            BaseEnv::ExpDecay => {
+                libm::exp2f(-self.playhead/decay) // * crate::math::smoothstep(0., attack, &self.playhead)
+            }
+        }
     }
 
     fn advance(&mut self) {

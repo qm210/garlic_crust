@@ -21,8 +21,9 @@ pub fn create_state() -> GarlicClove1State {
         },
         env1: Envelope {
             attack: Edge::Constant(0.8),
-            decay: Edge::Constant(3.),
+            decay: Edge::Constant(0.3),
             sustain: Edge::Constant(0.),
+            shape: BaseEnv::ExpDecay,
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
         }
