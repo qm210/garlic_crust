@@ -17,24 +17,23 @@ mod garlic_clove1;
 
 pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
 
-    let factor: f32 = 0.6;
     // TODO: think about -- could the sequences be "const"?
     let sequence1: [SeqEvent; 15] = [
-        SeqEvent {time: factor * 0., message: SeqMsg::NoteOn, parameter: 36.},
-        SeqEvent {time: factor * 0.5, message: SeqMsg::NoteOn, parameter: 38.},
-        SeqEvent {time: factor * 1.0, message: SeqMsg::NoteOn, parameter: 43.},
-        SeqEvent {time: factor * 1.5, message: SeqMsg::NoteOn, parameter: 60.},
-        SeqEvent {time: factor * 2.0, message: SeqMsg::NoteOn, parameter: 36.},
-        SeqEvent {time: factor * 2.5, message: SeqMsg::NoteOn, parameter: 50.},
-        SeqEvent {time: factor * 3.0, message: SeqMsg::NoteOn, parameter: 55.},
-        SeqEvent {time: factor * 3.5, message: SeqMsg::NoteOn, parameter: 60.},
-        SeqEvent {time: factor * 4.0, message: SeqMsg::NoteOn, parameter: 36.},
-        SeqEvent {time: factor * 4.5, message: SeqMsg::NoteOn, parameter: 38.},
-        SeqEvent {time: factor * 5.0, message: SeqMsg::NoteOn, parameter: 43.},
-        SeqEvent {time: factor * 5.5, message: SeqMsg::NoteOn, parameter: 60.},
-        SeqEvent {time: factor * 6.0, message: SeqMsg::NoteOn, parameter: 36.},
-        SeqEvent {time: factor * 6.5, message: SeqMsg::NoteOn, parameter: 50.},
-        SeqEvent {time: factor * 7.0, message: SeqMsg::NoteOn, parameter: 32.},
+        SeqEvent {time: 0., message: SeqMsg::NoteOn(36.) },
+        SeqEvent {time: 0.5, message: SeqMsg::NoteOn(38.) },
+        SeqEvent {time: 1.0, message: SeqMsg::NoteOn(43.) },
+        SeqEvent {time: 1.5, message: SeqMsg::NoteOn(60.) },
+        SeqEvent {time: 2.0, message: SeqMsg::NoteOn(36.) },
+        SeqEvent {time: 2.5, message: SeqMsg::NoteOn(50.) },
+        SeqEvent {time: 3.0, message: SeqMsg::NoteOn(55.) },
+        SeqEvent {time: 3.5, message: SeqMsg::NoteOn(60.) },
+        SeqEvent {time: 4.0, message: SeqMsg::NoteOn(36.) },
+        SeqEvent {time: 4.5, message: SeqMsg::NoteOn(38.) },
+        SeqEvent {time: 5.0, message: SeqMsg::NoteOn(43.) },
+        SeqEvent {time: 5.5, message: SeqMsg::NoteOn(60.) },
+        SeqEvent {time: 6.0, message: SeqMsg::NoteOn(36.) },
+        SeqEvent {time: 6.5, message: SeqMsg::NoteOn(50.) },
+        SeqEvent {time: 7.0, message: SeqMsg::NoteOn(32.) },
     ];
 
     // we need global initialization, one per clove and each their sequence

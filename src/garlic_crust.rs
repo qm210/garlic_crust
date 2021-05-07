@@ -152,33 +152,28 @@ pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> E
     Edge::array(output)
 }
 
+pub type SeqParameter = f32; // check whether we have enough withi half::f16
+
+// design decision for now: garlic_extract will take BPM information and give you a sequence over _time_
 #[derive(Clone, Debug)]
 pub struct SeqEvent {
     pub time: TimeFloat,
     pub message: SeqMsg,
-    pub parameter: f32,
 }
 
+// can I do this polymorphically in no_std Rust?
 #[derive(Clone, Debug)]
 pub enum SeqMsg {
-    NoteOn,
+    NoteOn(SeqParameter),
     NoteOff,
-    Frequency,
-    Volume,
+    SetVel,
+    SetSlide,
+    SetPan,
+    // ...?
 }
 
-// would this work?
-pub fn message_to_str(msg: &SeqMsg) -> &str {
-    match msg {
-        SeqMsg::NoteOn => "noteon\0",
-        SeqMsg::NoteOff => "noteoff\0",
-        SeqMsg::Frequency => "setfreq\0",
-        SeqMsg::Volume => "setvol\0",
-    }
-}
-
-pub fn note_frequency(note_number: f32) -> f32 {
-    440. * libm::powf(2., (note_number - 69.)/12.)
+pub fn note_frequency(note_number: SeqParameter) -> f32 {
+    440. * libm::powf(2., (note_number as f32 - 69.)/12.)
 }
 
 // LIST OF INVESTIGATIONS, watch for Size / Performance:
