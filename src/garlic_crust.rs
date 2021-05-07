@@ -49,6 +49,11 @@ impl Edge {
         Edge::constant(0.)
     }
 
+    // this is, of course, pure decadence.
+    pub fn one() -> Edge {
+        Edge::constant(1.)
+    }
+
     pub fn is_const(&self) -> bool {
         self.array.is_none() && self.function.is_none()
     }
@@ -96,7 +101,7 @@ pub trait Operator {
     //fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge;
     fn handle_event(&mut self, event: &SeqEvent);
     fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat;
-    fn advance(&mut self);
+    fn advance(&mut self, sample: usize);
     fn get_cursor(&mut self) -> usize;
     fn inc_cursor(&mut self);
 }
@@ -108,7 +113,7 @@ pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<&SeqEve
     }
 }
 
-pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> BlockArray {
+pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> Edge {
     let mut output = EMPTY_BLOCKARRAY; // .clone();
 
     let mut next_event = next_event_option(&sequence, op.get_cursor());
@@ -127,13 +132,13 @@ pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_of
 
         output[sample] = op.evaluate(sample, time);
 
-        op.advance();
+        op.advance(sample);
     }
 
-    output
+    Edge::array(output)
 }
 
-pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> BlockArray {
+pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> Edge {
     let mut output = EMPTY_BLOCKARRAY; // .clone();
 
     for sample in 0 .. BLOCK_SIZE {
@@ -141,10 +146,10 @@ pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> B
 
         output[sample] = op.evaluate(sample, time);
 
-        op.advance();
+        op.advance(sample);
     }
 
-    output
+    Edge::array(output)
 }
 
 #[derive(Clone, Debug)]

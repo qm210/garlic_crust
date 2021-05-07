@@ -5,32 +5,55 @@ pub enum FilterType {
     LowPass,
 }
 
+pub struct FilterState {
+    pub a0: f32,
+    pub b1: f32,
+    pub z1: f32,
+}
+
+impl FilterState {
+    pub fn new() -> FilterState {
+        FilterState {
+            a0: 0.,
+            b1: 0.,
+            z1: 0.,
+        }
+    }
+
+    pub fn set_lowpass(&mut self, cutoff: f32) {
+        self.b1 = libm::exp2f(-TAU * cutoff / SAMPLERATE);
+        self.a0 = 1. - self.b1;
+    }
+
+    pub fn set_hipass(&mut self, cutoff: f32) {
+        self.b1 = -libm::exp2f(-TAU * (0.5 - cutoff / SAMPLERATE));
+        self.a0 = 1. + self.b1;
+    }
+
+}
+
 pub struct Filter {
     pub shape: FilterType,
     pub cutoff: Edge,
-    pub input: BlockArray, // TODO: this could be Edge too??
+    pub state: FilterState,
+    pub input: Edge,
     pub output: Edge,
 }
 
 impl Operator for Filter {
-    fn handle_event(&mut self, event: &SeqEvent) {
+    fn handle_event(&mut self, _: &SeqEvent) {
     }
 
-    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
+    fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {
         let cutoff = self.cutoff.evaluate(sample);
 
-        // only FilterType::LowPass implemented right now, and cutoff doesn't do anything
-        let mut result: AmpFloat = 0.;
-        for k in 0..24 {
-            if sample + k >= BLOCK_SIZE {
-                break;
-            }
-            result += 1./24. * self.input[sample + k];
-        }
-        result
+        self.state.set_lowpass(cutoff);
+        self.state.z1 = self.input.evaluate(sample) * self.state.a0 + self.state.z1 * self.state.b1;
+
+        self.state.z1
     }
 
-    fn advance(&mut self) {
+    fn advance(&mut self, _: usize) {
     }
 
     fn get_cursor(&mut self) -> usize {
@@ -38,11 +61,5 @@ impl Operator for Filter {
     }
 
     fn inc_cursor(&mut self) {
-    }
-}
-
-impl Filter {
-    pub fn apply(&mut self, input: &BlockArray, ) {
-        //self.input = input.clone();
     }
 }

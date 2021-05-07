@@ -1,6 +1,5 @@
 use crate::math::sin;
 use libm::{fmodf as fmod};
-use crate::garlic_head::{BlockArray, EMPTY_BLOCKARRAY};
 use super::*;
 
 #[derive(Debug)]
@@ -14,11 +13,13 @@ pub enum BaseWave {
 pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: Edge,
-    pub frequency: TimeFloat,
-    pub phase: TimeFloat,
+    pub frequency: Edge,
+    pub phasemod: Edge,
+    pub detune: Edge,
+    pub phase: TimeFloat, // what would be _phase convention?
     // makes sense to define some BaseOperator which holds seq_cursor and output?
     pub seq_cursor: usize,
-    pub output: BlockArray,
+    pub output: Edge,
 }
 
 impl Operator for Oscillator {
@@ -26,19 +27,24 @@ impl Operator for Oscillator {
         match &event.message {
             SeqMsg::NoteOn => {
                 self.phase = 0.;
-                self.frequency = note_frequency(event.parameter);
+                self.frequency = Edge::constant(note_frequency(event.parameter));
             },
             // could react to Volume or whatevs here.
             _ => ()
         }
     }
 
-    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
-        self.evaluate_at(self.phase) * self.volume.evaluate(sample)
+    fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {
+        let phase = self.phase + self.phasemod.evaluate(sample);
+
+        let result_in_tune = self.evaluate_at(phase);
+        let result_detuned = self.evaluate_at(phase * (1. + self.detune.evaluate(sample)));
+
+        0.5 * (result_in_tune + result_detuned) * self.volume.evaluate(sample)
     }
 
-    fn advance(&mut self) {
-        self.phase += self.frequency / SAMPLERATE;
+    fn advance(&mut self, sample: usize) {
+        self.phase += self.frequency.evaluate(sample) / SAMPLERATE;
         if self.phase >= 1. {
             self.phase -= 1.;
         }
@@ -56,23 +62,12 @@ impl Operator for Oscillator {
 impl Oscillator {
     fn evaluate_at(&self, phase: TimeFloat) -> AmpFloat {
         let basewave_value: AmpFloat = match self.shape {
-            BaseWave::Sine => 0.5 * (sin(TAU * phase) + sin(TAU * phase * 1.01)),
+            BaseWave::Sine => sin(TAU * phase),
             BaseWave::Square => (37. * sin(TAU * phase)).clamp(-1., 1.),
             BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
             _ => 0.,
         };
 
         basewave_value.clamp(-1., 1.)
-    }
-
-    fn none() -> Oscillator {
-        Oscillator {
-            shape: BaseWave::Zero,
-            volume: Edge::constant(0.),
-            frequency: 0.,
-            phase: 0.,
-            seq_cursor: 0,
-            output: EMPTY_BLOCKARRAY,
-        }
     }
 }

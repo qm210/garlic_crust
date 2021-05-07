@@ -12,6 +12,8 @@ pub struct Envelope {
     pub sustain: Edge,
     pub playhead: TimeFloat,
     pub seq_cursor: usize,
+    pub min: Edge,
+    pub max: Edge,
 }
 
 impl Operator for Envelope {
@@ -24,20 +26,22 @@ impl Operator for Envelope {
         }
     }
 
-    fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat {
+    fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {
         let attack = self.attack.evaluate(sample);
         let decay = self.decay.evaluate(sample);
 
-        let result = match self.shape {
+        let norm_result = match self.shape {
             BaseEnv::ExpDecay => {
-                libm::exp2f(-(self.playhead-attack)/decay) * crate::math::smoothstep(0., attack, self.playhead)
+                libm::exp2f(-(self.playhead - attack)/decay) * crate::math::smoothstep(-1.0e-5, attack, self.playhead)
             }
         };
+        let min = self.min.evaluate(sample);
+        let max = self.max.evaluate(sample);
 
-        result.clamp(0., 1.)
+        min + (max - min) * norm_result.clamp(0., 1.)
     }
 
-    fn advance(&mut self) {
+    fn advance(&mut self, _: usize) {
         self.playhead += 1. / SAMPLERATE;
     }
 
