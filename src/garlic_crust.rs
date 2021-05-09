@@ -15,20 +15,33 @@ pub const SAMPLERATE: f32 = 44100.;
 #[derive(Copy, Clone)]
 pub struct Edge {
     array: Option<BlockArray>,
+    function: Option<fn(playhead: TimeFloat) -> AmpFloat>, // hm. is it good to have fn(globaltime, playhead) instead of just fn(playhead) ?
     constant: AmpFloat,
 }
+
+pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
 
 impl Edge {
     pub fn constant(value: f32) -> Edge {
         Edge {
             array: None,
+            function: None,
             constant: value,
+        }
+    }
+
+    pub fn function(function: PlayFunc) -> Edge { // HAVE NO IDEA ABOUT THIS YET..!!
+        Edge {
+            array: None,
+            function: Some(function),
+            constant: 0.,
         }
     }
 
     pub fn array(block: BlockArray) -> Edge {
         Edge {
             array: Some(block),
+            function: None,
             constant: 0.
         }
     }
@@ -43,12 +56,16 @@ impl Edge {
     }
 
     pub fn is_const(&self) -> bool {
-        self.array.is_none()
+        self.array.is_none() && self.function.is_none()
     }
 
     pub fn evaluate(&self, pos: usize) -> AmpFloat {
         if let Some(array) = self.array {
             return array[pos];
+        }
+        if let Some(func) = self.function {
+            // no idea whether this somehow works or rather is garbage
+            return func(pos as TimeFloat / SAMPLERATE);
         }
         return self.constant;
     }
@@ -59,6 +76,9 @@ impl Edge {
                 array[pos] = factor * array[pos];
             }
             self.array = Some(array);
+        }
+        if let Some(func) = self.function {
+            // ..??
         }
         self.constant *= factor;
 
