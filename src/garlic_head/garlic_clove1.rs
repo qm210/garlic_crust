@@ -30,6 +30,7 @@ pub fn create_state() -> GarlicClove1State {
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
             max: Edge::one(),
+            note_vel: 0., // also as Edge? actually this is a note parameter
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
         },
@@ -46,11 +47,16 @@ pub fn create_state() -> GarlicClove1State {
             sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::constant(200.),
-            max: Edge::constant(800.),
+            max: Edge::function(|t| 30. * (1. + 20. * t)), // Edge::constant(8000.)
+            note_vel: 1.,
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
         },
     }
+}
+
+fn cutoff_env1_max(time: TimeFloat) -> f32 {
+    800. * (1. + time)
 }
 
 #[inline]
@@ -69,7 +75,6 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
 
     state.osc1.output = process_operator(&mut state.osc1, &sequence, block_offset);
     state.lp1.input = state.osc1.output;
-
     state.lp1.output = process_operator_noseq(&mut state.lp1, block_offset);
 
     state.lp1.output

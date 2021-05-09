@@ -11,16 +11,18 @@ pub struct Envelope {
     pub decay: Edge,
     pub sustain: Edge,
     pub playhead: TimeFloat,
+    pub note_vel: AmpFloat,
     pub seq_cursor: usize,
     pub min: Edge,
     pub max: Edge,
 }
 
 impl Operator for Envelope {
-    fn handle_event(&mut self, event: &SeqEvent) {
-        match &event.message {
-            SeqMsg::NoteOn(..) => {
+    fn handle_message(&mut self, message: &SeqMsg) {
+        match &message {
+            SeqMsg::NoteOn(_, note_vel) => {
                 self.playhead = 0.;
+                self.note_vel = *note_vel as AmpFloat / 128.;
             },
             _ => ()
         }
@@ -32,7 +34,9 @@ impl Operator for Envelope {
 
         let norm_result = match self.shape {
             BaseEnv::ExpDecay => {
-                libm::exp2f(-(self.playhead - attack)/decay) * crate::math::smoothstep(-1.0e-5, attack, self.playhead)
+                //self.note_vel * // what to do with note_vel ? rather a note_vel_dependency?
+                libm::exp2f(-(self.playhead - attack)/decay) *
+                    crate::math::smoothstep(-1.0e-5, attack, self.playhead)
             }
         };
         let min = self.min.evaluate(sample);

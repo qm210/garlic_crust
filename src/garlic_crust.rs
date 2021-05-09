@@ -7,7 +7,6 @@ pub mod filter;
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
 
-pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
 pub const SAMPLERATE: f32 = 44100.;
 
 // this might be solved with enum / variants; but not for now.
@@ -42,7 +41,7 @@ impl Edge {
         Edge {
             array: Some(block),
             function: None,
-            constant: 0.
+            constant: 0.,
         }
     }
 
@@ -61,7 +60,7 @@ impl Edge {
 
     pub fn evaluate(&self, pos: usize) -> AmpFloat {
         if let Some(array) = self.array {
-            return array[pos];
+            return array[pos % BLOCK_SIZE];
         }
         if let Some(func) = self.function {
             // no idea whether this somehow works or rather is garbage
@@ -78,7 +77,7 @@ impl Edge {
             self.array = Some(array);
         }
         if let Some(func) = self.function {
-            // ..??
+            // ..?? maybe we somehow multiply this by self.constant. think about that later.
         }
         self.constant *= factor;
 
@@ -99,18 +98,17 @@ impl Edge {
 }
 
 pub trait Operator {
-    //fn process(&mut self, sequence: &[SeqEvent], block_offset: usize) -> Edge;
-    fn handle_event(&mut self, event: &SeqEvent);
+    fn handle_message(&mut self, message: &SeqMsg);
     fn evaluate(&mut self, sample: usize, total_time: TimeFloat) -> AmpFloat;
     fn advance(&mut self, sample: usize);
     fn get_cursor(&mut self) -> usize;
     fn inc_cursor(&mut self);
 }
 
-pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<&SeqEvent> {
+pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<SeqNormalizedEvent> {
     match cursor == sequence.len() {
         true => None,
-        false => Some(&sequence[cursor])
+        false => Some(SeqNormalizedEvent::from(&sequence[cursor]))
     }
 }
 
@@ -126,12 +124,12 @@ pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_of
             if event.time > time {
                 break;
             }
-            op.handle_event(&event);
+            op.handle_message(&event.message);
             op.inc_cursor();
             next_event = next_event_option(&sequence, op.get_cursor());
         }
 
-        output[sample] = op.evaluate(sample, time);
+        output[sample] = op.evaluate(sample + block_offset, time);
 
         op.advance(sample);
     }
@@ -156,14 +154,29 @@ pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> E
 pub type SeqParameter = usize; // check whether we have enough withi half::f16
 
 // design decision for now: garlic_extract will take BPM information and give you a sequence over _time_
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct SeqEvent {
+    pub time: u32, // in milliseconds, this should be precise enough
+    pub message: SeqMsg,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct SeqNormalizedEvent {
     pub time: TimeFloat,
     pub message: SeqMsg,
 }
 
+impl SeqNormalizedEvent {
+    pub fn from(seq_event: &SeqEvent) -> SeqNormalizedEvent {
+        SeqNormalizedEvent {
+            time: 0.0001 * seq_event.time as TimeFloat,
+            message: seq_event.message,
+        }
+    }
+}
+
 // can I do this polymorphically in no_std Rust?
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum SeqMsg {
     NoteOn(SeqParameter, SeqParameter),
     NoteOff,

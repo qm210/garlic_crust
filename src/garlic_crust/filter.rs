@@ -1,4 +1,5 @@
 use super::*;
+use crate::math::TAU;
 
 #[derive(Debug)]
 pub enum FilterType {
@@ -41,7 +42,7 @@ pub struct Filter {
 }
 
 impl Operator for Filter {
-    fn handle_event(&mut self, _: &SeqEvent) {
+    fn handle_message(&mut self, _: &SeqMsg) {
     }
 
     fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {

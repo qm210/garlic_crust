@@ -1,5 +1,8 @@
 use core::mem::MaybeUninit;
 
+pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
+const TWO_OVER_PI: f32 = 0.63661977236f32;
+
 #[inline(always)]
 pub fn sin(a: f32) -> f32 {
 
@@ -60,8 +63,6 @@ pub fn smootherstep(a: f32, b: f32, x: f32) -> f32 {
     let x_clip = linstep(a, b, x);
     x_clip * x_clip * x_clip * (x_clip * (x_clip * 6. - 15.) + 10.)
 }
-
-const TWO_OVER_PI: f32 = 0.63661977236f32;
 
 pub fn satanurate(x: f32) -> f32 {
     TWO_OVER_PI * libm::atanf(x)

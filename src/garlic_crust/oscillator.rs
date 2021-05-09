@@ -1,4 +1,4 @@
-use crate::math::sin;
+use crate::math::{sin, TAU};
 use libm::{fmodf as fmod};
 use super::*;
 
@@ -23,9 +23,9 @@ pub struct Oscillator {
 }
 
 impl Operator for Oscillator {
-    fn handle_event(&mut self, event: &SeqEvent) {
-        match &event.message {
-            SeqMsg::NoteOn(note_key, note_vel) => {
+    fn handle_message(&mut self, message: &SeqMsg) {
+        match &message {
+            SeqMsg::NoteOn(note_key, _) => {
                 self.phase = 0.;
                 self.frequency = Edge::constant(note_frequency(*note_key));
             },
