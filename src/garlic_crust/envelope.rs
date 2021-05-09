@@ -19,7 +19,7 @@ pub struct Envelope {
 impl Operator for Envelope {
     fn handle_event(&mut self, event: &SeqEvent) {
         match &event.message {
-            SeqMsg::NoteOn(_) => {
+            SeqMsg::NoteOn(..) => {
                 self.playhead = 0.;
             },
             _ => ()

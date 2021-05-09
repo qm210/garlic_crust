@@ -10,7 +10,8 @@ pub type AmpFloat = f32;
 pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
 pub const SAMPLERATE: f32 = 44100.;
 
-// idea: any input can be either an array (first prio, if not None), a function (second prio, if not None), or a constant (fallback, has to be given)
+// this might be solved with enum / variants; but not for now.
+// there could be another option: a function pointer. come back to that option when I know whether gud or notgud
 #[derive(Copy, Clone)]
 pub struct Edge {
     array: Option<BlockArray>,
@@ -132,7 +133,7 @@ pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> E
     Edge::array(output)
 }
 
-pub type SeqParameter = f32; // check whether we have enough withi half::f16
+pub type SeqParameter = usize; // check whether we have enough withi half::f16
 
 // design decision for now: garlic_extract will take BPM information and give you a sequence over _time_
 #[derive(Clone, Debug)]
@@ -144,7 +145,7 @@ pub struct SeqEvent {
 // can I do this polymorphically in no_std Rust?
 #[derive(Clone, Debug)]
 pub enum SeqMsg {
-    NoteOn(SeqParameter),
+    NoteOn(SeqParameter, SeqParameter),
     NoteOff,
     SetVel,
     SetSlide,

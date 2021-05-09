@@ -60,3 +60,9 @@ pub fn smootherstep(a: f32, b: f32, x: f32) -> f32 {
     let x_clip = linstep(a, b, x);
     x_clip * x_clip * x_clip * (x_clip * (x_clip * 6. - 15.) + 10.)
 }
+
+const TWO_OVER_PI: f32 = 0.63661977236f32;
+
+pub fn satanurate(x: f32) -> f32 {
+    TWO_OVER_PI * libm::atanf(x)
+}

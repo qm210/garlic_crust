@@ -25,9 +25,9 @@ pub struct Oscillator {
 impl Operator for Oscillator {
     fn handle_event(&mut self, event: &SeqEvent) {
         match &event.message {
-            SeqMsg::NoteOn(note_number) => {
+            SeqMsg::NoteOn(note_key, note_vel) => {
                 self.phase = 0.;
-                self.frequency = Edge::constant(note_frequency(*note_number));
+                self.frequency = Edge::constant(note_frequency(*note_key));
             },
             // could react to Volume or whatevs here.
             _ => ()

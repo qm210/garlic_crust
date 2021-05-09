@@ -46,7 +46,7 @@ pub fn create_state() -> GarlicClove1State {
             sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::constant(200.),
-            max: Edge::constant(8000.),
+            max: Edge::constant(800.),
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
         },
