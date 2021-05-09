@@ -14,11 +14,11 @@ pub struct GarlicClove1State {
 pub fn create_state() -> GarlicClove1State {
     GarlicClove1State {
         osc1: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Square,
+            shape: oscillator::BaseWave::Saw,
             volume: Edge::constant(0.5),
             frequency: Edge::zero(),
-            phasemod: Edge::zero(),
-            detune: Edge::zero(),
+            phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
+            detune: Edge::function(|t| 0.1 * t),
             phase: 0.,
             seq_cursor: 0,
             output: Edge::zero(),
@@ -71,7 +71,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
     state.osc1.volume = env1_output;
     state.lp1.cutoff = process_operator(&mut state.cutoff_env1, &sequence, block_offset);
 
-    state.osc1.detune = env1_output.clone().scale(0.3);
+    //state.osc1.detune = env1_output.clone().scale(0.3);
 
     state.osc1.output = process_operator(&mut state.osc1, &sequence, block_offset);
     state.lp1.input = state.osc1.output;
