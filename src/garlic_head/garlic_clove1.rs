@@ -14,7 +14,7 @@ pub struct GarlicClove1State {
 pub fn create_state() -> GarlicClove1State {
     GarlicClove1State {
         osc1: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Saw,
+            shape: oscillator::BaseWave::Square,
             volume: Edge::constant(0.5),
             frequency: Edge::zero(),
             phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
@@ -47,7 +47,7 @@ pub fn create_state() -> GarlicClove1State {
             sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::constant(200.),
-            max: Edge::function(|t| 30. * (1. + 20. * t)), // Edge::constant(8000.)
+            max: Edge::function(|t| 30. * (1. + 10. * t * (2.5 + libm::sinf(8.*t)))), // Edge::constant(8000.)
             note_vel: 1.,
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
