@@ -24,7 +24,6 @@ pub fn create_state() -> GarlicClove1State {
             detune: Edge::function(|t| 0.1 * t),
             phase: 0.,
             seq_cursor: 0,
-            output: Edge::zero(),
         },
         env_osc1: envelope::Envelope {
             attack: Edge::constant(1.0e-4),
@@ -45,7 +44,6 @@ pub fn create_state() -> GarlicClove1State {
             detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
-            output: Edge::zero(),
         },
         env_osc2: envelope::Envelope {
             attack: Edge::constant(1.0e-4),
@@ -66,7 +64,6 @@ pub fn create_state() -> GarlicClove1State {
             detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
-            output: Edge::zero(),
         },
         math_lfofiltertransform: Edge::zero(),
         lp1: filter::Filter {
@@ -74,7 +71,6 @@ pub fn create_state() -> GarlicClove1State {
             cutoff: Edge::constant(100.),
             state: filter::FilterState::new(),
             input: Edge::zero(),
-            output: Edge::zero(),
         },
     }
 }
@@ -90,22 +86,22 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
     // first branch
     let env_osc1_output = process_operator_seq(&mut state.env_osc1, &sequence, block_offset);
     state.osc_osc1.volume = env_osc1_output;
-    state.osc_osc1.output = process_operator_seq(&mut state.osc_osc1, &sequence, block_offset);
+    let osc_osc1_output = process_operator_seq(&mut state.osc_osc1, &sequence, block_offset);
 
     // second branch
     let env_osc2_output = process_operator_seq(&mut state.env_osc2, &sequence, block_offset);
     state.osc_osc2.volume = env_osc2_output;
-    state.osc_osc2.output = process_operator_seq(&mut state.osc_osc2, &sequence, block_offset);
+    let osc_osc2_output = process_operator_seq(&mut state.osc_osc2, &sequence, block_offset);
 
     // third branch
-    state.osc_lfo1.output = process_operator(&mut state.osc_lfo1, block_offset);
-    state.math_lfofiltertransform = state.osc_lfo1.output.mad(&Edge::constant(0.1), &Edge::constant(0.5));
+    let osc_lfo1_output = process_operator(&mut state.osc_lfo1, block_offset);
+    state.math_lfofiltertransform = osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5));
 
-    state.lp1.input = math_mixer(&mut state.osc_osc1.output, &mut state.osc_osc2.output, &Edge::constant(0.5));
+    state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5));
     state.lp1.cutoff = state.math_lfofiltertransform;
-    state.lp1.output = process_operator(&mut state.lp1, block_offset);
+    let lp1_output = process_operator(&mut state.lp1, block_offset);
 
-    state.lp1.output
+    lp1_output
 }
 
 // individual math operators (more complex than Edge::mad()) might be created directly in the clove
@@ -116,3 +112,5 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge) -> Edge {
     }
     Edge::array(output)
 }
+
+// with this commit: 71.3 seconds for 16 second track (outputs not stored in Op)

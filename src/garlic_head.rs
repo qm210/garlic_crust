@@ -1,6 +1,6 @@
 use super::garlic_crust::*;
 
-pub const SECONDS: TimeFloat = 14.015 * 2.; // add something to be sure to finish (* was a +)
+pub const SECONDS: TimeFloat = 14.015 + 2.; // add something to be sure to finish
 pub const BLOCK_SIZE: usize = 1024;
 pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;

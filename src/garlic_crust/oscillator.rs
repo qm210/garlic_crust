@@ -17,9 +17,7 @@ pub struct Oscillator {
     pub phasemod: Edge,
     pub detune: Edge,
     pub phase: TimeFloat, // what would be _phase convention?
-    // makes sense to define some BaseOperator which holds seq_cursor and output?
     pub seq_cursor: usize,
-    pub output: Edge,
 }
 
 impl Operator for Oscillator {
