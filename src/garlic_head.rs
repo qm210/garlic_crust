@@ -1,6 +1,6 @@
 use super::garlic_crust::*;
 
-pub const SECONDS: TimeFloat = 14.015 + 2.; // add something to be sure to finish
+pub const SECONDS: TimeFloat = 14.015 * 2.; // add something to be sure to finish (* was a +)
 pub const BLOCK_SIZE: usize = 1024;
 pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
@@ -184,7 +184,7 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         block_offset += BLOCK_SIZE;
     }
 
-    //POST PROCESSSING (e.g. channel combining) COULD HAPPEN HERE
+    //POST PROCESSSING (e.g. channel mixing / mastering) COULD HAPPEN HERE
 
     let mut clipping_count = 0;
     let mut max_sample = 0.;

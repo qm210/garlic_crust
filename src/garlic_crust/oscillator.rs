@@ -1,5 +1,4 @@
 use crate::math::{sin, TAU};
-use libm::{fmodf as fmod};
 use super::*;
 
 #[derive(Debug)]
@@ -7,6 +6,7 @@ pub enum BaseWave {
     Sine,
     Saw,
     Square,
+    Triangle,
     Zero,
 }
 
@@ -64,7 +64,8 @@ impl Oscillator {
         let basewave_value: AmpFloat = match self.shape {
             BaseWave::Sine => sin(TAU * phase),
             BaseWave::Square => (37. * sin(TAU * phase)).clamp(-1., 1.),
-            BaseWave::Saw => 2. * fmod(phase, 1.) - 1.,
+            BaseWave::Saw => 2. * libm::fmodf(phase, 1.) - 1.,
+            BaseWave::Triangle => 4. * libm::fabsf(libm::fmodf(phase, 1.) - 0.5) - 1.0,
             _ => 0.,
         };
 

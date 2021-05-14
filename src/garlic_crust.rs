@@ -92,8 +92,15 @@ impl Edge {
         for pos in 0 .. BLOCK_SIZE {
             array[pos] = other.evaluate(pos) * self.evaluate(pos);
         }
+        Edge::array(array)
+    }
 
-        *self
+    pub fn mad(&self, multiply: &Edge, add: &Edge) -> Edge {
+        let mut array = EMPTY_BLOCKARRAY;
+        for pos in 0 .. BLOCK_SIZE {
+            array[pos] = multiply.evaluate(pos) * self.evaluate(pos) + add.evaluate(pos);
+        }
+        Edge::array(array)
     }
 }
 
@@ -112,7 +119,7 @@ pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<SeqNorm
     }
 }
 
-pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> Edge {
+pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> Edge {
     let mut output = EMPTY_BLOCKARRAY; // .clone();
 
     let mut next_event = next_event_option(&sequence, op.get_cursor());
@@ -137,7 +144,7 @@ pub fn process_operator<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_of
     Edge::array(output)
 }
 
-pub fn process_operator_noseq<O: Operator>(op: &mut O, block_offset: usize) -> Edge {
+pub fn process_operator<O: Operator>(op: &mut O, block_offset: usize) -> Edge {
     let mut output = EMPTY_BLOCKARRAY; // .clone();
 
     for sample in 0 .. BLOCK_SIZE {
