@@ -6,38 +6,12 @@ pub enum FilterType {
     LowPass,
 }
 
-pub struct FilterState {
-    pub a0: f32,
-    pub b1: f32,
-    pub z1: f32,
-}
-
-impl FilterState {
-    pub fn new() -> FilterState {
-        FilterState {
-            a0: 0.,
-            b1: 0.,
-            z1: 0.,
-        }
-    }
-
-    pub fn set_lowpass(&mut self, cutoff: f32) {
-        self.b1 = libm::exp2f(-TAU * cutoff / SAMPLERATE);
-        self.a0 = 1. - self.b1;
-    }
-
-    pub fn set_hipass(&mut self, cutoff: f32) {
-        self.b1 = -libm::exp2f(-TAU * (0.5 - cutoff / SAMPLERATE));
-        self.a0 = 1. + self.b1;
-    }
-
-}
-
 pub struct Filter {
     pub shape: FilterType,
     pub cutoff: Edge,
     pub state: FilterState,
     pub input: Edge,
+    pub output: Edge,
 }
 
 impl Operator for Filter {
@@ -63,3 +37,30 @@ impl Operator for Filter {
     fn inc_cursor(&mut self) {
     }
 }
+
+pub struct FilterState {
+    pub a0: f32,
+    pub b1: f32,
+    pub z1: f32,
+}
+
+impl FilterState {
+    pub fn new() -> FilterState {
+        FilterState {
+            a0: 0.,
+            b1: 0.,
+            z1: 0.,
+        }
+    }
+
+    pub fn set_lowpass(&mut self, cutoff: f32) {
+        self.b1 = libm::exp2f(-TAU * cutoff / SAMPLERATE);
+        self.a0 = 1. - self.b1;
+    }
+
+    pub fn set_hipass(&mut self, cutoff: f32) {
+        self.b1 = -libm::exp2f(-TAU * (0.5 - cutoff / SAMPLERATE));
+        self.a0 = 1. + self.b1;
+    }
+}
+

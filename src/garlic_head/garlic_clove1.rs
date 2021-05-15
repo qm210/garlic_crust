@@ -18,43 +18,47 @@ pub fn create_state() -> GarlicClove1State {
     GarlicClove1State {
         osc_osc1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            volume: Edge::constant(0.5),
+            volume: Edge::one(),
             frequency: Edge::zero(),
             phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
             detune: Edge::function(|t| 0.1 * t),
             phase: 0.,
             seq_cursor: 0,
+            output: Edge::empty_array()
         },
         env_osc1: envelope::Envelope {
-            attack: Edge::constant(1.0e-4),
+            attack: Edge::zero(),
             decay: Edge::constant(0.3),
-            sustain: Edge::constant(0.),
+            sustain: Edge::constant(1.),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
             max: Edge::one(),
             note_vel: 0., // also as Edge? actually this is a note parameter
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
+            output: Edge::empty_array(),
         },
         osc_osc2: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            volume: Edge::constant(0.5),
+            volume: Edge::one(),
             frequency: Edge::zero(),
             phasemod: Edge::zero(),
             detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
+            output: Edge::empty_array(),
         },
         env_osc2: envelope::Envelope {
-            attack: Edge::constant(1.0e-4),
+            attack: Edge::zero(),
             decay: Edge::constant(0.3),
-            sustain: Edge::constant(0.),
+            sustain: Edge::constant(1.),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
             max: Edge::one(),
-            note_vel: 0., // also as Edge? actually this is a note parameter
+            note_vel: 0.,
             seq_cursor: 0,
-            playhead: 0., // would not be required if this is a function operator
+            playhead: 0.,
+            output: Edge::empty_array(),
         },
         osc_lfo1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Triangle,
@@ -64,13 +68,15 @@ pub fn create_state() -> GarlicClove1State {
             detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
+            output: Edge::empty_array(),
         },
-        math_lfofiltertransform: Edge::zero(),
+        math_lfofiltertransform: Edge::empty_array(),
         lp1: filter::Filter {
             shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(100.),
+            cutoff: Edge::constant(10000.),
             state: filter::FilterState::new(),
             input: Edge::zero(),
+            output: Edge::empty_array(),
         },
     }
 }
@@ -99,14 +105,16 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
     state.math_lfofiltertransform = osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5)); // this is the simple (m*x + b) math block
 
     // filter junction
-    state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
-    state.lp1.cutoff = state.math_lfofiltertransform;
+    //state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
+    state.lp1.input = math_mixer(&osc_osc1_output, &Edge::one(), &osc_osc2_output); // more advanced blocks will have to be converted to Rust code, but I can help with that
+    //state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
     let lp1_output = process_operator(&mut state.lp1, block_offset);
 
     lp1_output
 }
 
 // individual math operators (more complex than Edge::mad()) might be created directly in the clove
+// note: this is actually also a .mad block
 fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge) -> Edge {
     let mut output = EMPTY_BLOCKARRAY;
     for sample in 0 .. BLOCK_SIZE {
@@ -120,7 +128,9 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge) -> Edge {
 // block_size 512: 55 seconds;
 
 // THINGS TO TEST:
+// put "env_osc1_output" again as a field of "env_osc1.output", if that helps the compiler?
 // Split Sequence into Chunks, one for each 512-sample-block
 // Put Sequence into Byte Array
 // use get_unchecked()
 // multithreading?? -- each Clove can be processed simultaneously
+// should every Edge always hold its array??

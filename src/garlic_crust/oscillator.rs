@@ -18,6 +18,7 @@ pub struct Oscillator {
     pub detune: Edge,
     pub phase: TimeFloat, // what would be _phase convention?
     pub seq_cursor: usize,
+    pub output: Edge,
 }
 
 impl Operator for Oscillator {

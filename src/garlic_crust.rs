@@ -3,106 +3,14 @@ use crate::garlic_head::{BLOCK_SIZE, BlockArray, EMPTY_BLOCKARRAY};
 pub mod oscillator;
 pub mod envelope;
 pub mod filter;
+pub mod edge;
+
+pub use edge::Edge;
 
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
 
 pub const SAMPLERATE: f32 = 44100.;
-
-// this might be solved with enum / variants; but not for now.
-// there could be another option: a function pointer. come back to that option when I know whether gud or notgud
-#[derive(Copy, Clone)]
-pub struct Edge {
-    array: Option<BlockArray>,
-    function: Option<fn(playhead: TimeFloat) -> AmpFloat>, // hm. is it good to have fn(globaltime, playhead) instead of just fn(playhead) ?
-    constant: AmpFloat,
-}
-
-pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
-
-impl Edge {
-    pub fn constant(value: f32) -> Edge {
-        Edge {
-            array: None,
-            function: None,
-            constant: value,
-        }
-    }
-
-    pub fn function(function: PlayFunc) -> Edge { // HAVE NO IDEA ABOUT THIS YET..!!
-        Edge {
-            array: None,
-            function: Some(function),
-            constant: 0.,
-        }
-    }
-
-    pub fn array(block: BlockArray) -> Edge {
-        Edge {
-            array: Some(block),
-            function: None,
-            constant: 0.,
-        }
-    }
-
-    pub fn zero() -> Edge {
-        Edge::constant(0.)
-    }
-
-    // this is, of course, pure decadence.
-    pub fn one() -> Edge {
-        Edge::constant(1.)
-    }
-
-    pub fn is_const(&self) -> bool {
-        self.array.is_none() && self.function.is_none()
-    }
-
-    pub fn evaluate(&self, pos: usize) -> AmpFloat {
-        if let Some(array) = self.array {
-            return array[pos % BLOCK_SIZE];
-        }
-        if let Some(func) = self.function {
-            // no idea whether this somehow works or rather is garbage
-            return func(pos as TimeFloat / SAMPLERATE);
-        }
-        return self.constant;
-    }
-
-    pub fn scale(&mut self, factor: f32) -> Edge {
-        if let Some(mut array) = self.array {
-            for pos in 0 .. BLOCK_SIZE {
-                array[pos] = factor * array[pos];
-            }
-            self.array = Some(array);
-        }
-        if let Some(func) = self.function {
-            // ..?? maybe we somehow multiply this by self.constant. think about that later.
-        }
-        self.constant *= factor;
-
-        *self
-    }
-
-    pub fn times(&mut self, other: &Edge) -> Edge {
-        if other.is_const() {
-            return self.scale(other.constant);
-        }
-        let mut array = EMPTY_BLOCKARRAY.clone();
-        for pos in 0 .. BLOCK_SIZE {
-            array[pos] = other.evaluate(pos) * self.evaluate(pos);
-        }
-        Edge::array(array)
-    }
-
-    pub fn mad(&self, multiply: &Edge, add: &Edge) -> Edge {
-        let mut array = EMPTY_BLOCKARRAY;
-        for pos in 0 .. BLOCK_SIZE {
-            array[pos] = multiply.evaluate(pos) * self.evaluate(pos) + add.evaluate(pos);
-        }
-        Edge::array(array)
-    }
-}
 
 pub trait Operator {
     fn handle_message(&mut self, message: &SeqMsg);
@@ -120,7 +28,7 @@ pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<SeqNorm
 }
 
 pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> Edge {
-    let mut output = EMPTY_BLOCKARRAY; // .clone();
+    let mut output = EMPTY_BLOCKARRAY;
 
     let mut next_event = next_event_option(&sequence, op.get_cursor());
 
@@ -145,7 +53,7 @@ pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], bloc
 }
 
 pub fn process_operator<O: Operator>(op: &mut O, block_offset: usize) -> Edge {
-    let mut output = EMPTY_BLOCKARRAY; // .clone();
+    let mut output = EMPTY_BLOCKARRAY;
 
     for sample in 0 .. BLOCK_SIZE {
         let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
