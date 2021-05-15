@@ -27,9 +27,7 @@ pub fn next_event_option(sequence: &[SeqEvent], cursor: usize) -> Option<SeqNorm
     }
 }
 
-pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize) -> Edge {
-    let mut output = EMPTY_BLOCKARRAY;
-
+pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], block_offset: usize, output: &mut Edge) {
     let mut next_event = next_event_option(&sequence, op.get_cursor());
 
     for sample in 0 .. BLOCK_SIZE {
@@ -44,26 +42,20 @@ pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], bloc
             next_event = next_event_option(&sequence, op.get_cursor());
         }
 
-        output[sample] = op.evaluate(sample + block_offset, time);
+        output.put_at(sample, op.evaluate(sample + block_offset, time));
 
         op.advance(sample);
     }
-
-    Edge::array(output)
 }
 
-pub fn process_operator<O: Operator>(op: &mut O, block_offset: usize) -> Edge {
-    let mut output = EMPTY_BLOCKARRAY;
-
+pub fn process_operator<O: Operator>(op: &mut O, block_offset: usize, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
         let time: TimeFloat = (sample + block_offset) as TimeFloat / SAMPLERATE;
 
-        output[sample] = op.evaluate(sample, time);
+        output.put_at(sample, op.evaluate(sample, time));
 
         op.advance(sample);
     }
-
-    Edge::array(output)
 }
 
 pub type SeqParameter = usize; // check whether we have enough withi half::f16

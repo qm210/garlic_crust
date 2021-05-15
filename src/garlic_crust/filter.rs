@@ -11,7 +11,6 @@ pub struct Filter {
     pub cutoff: Edge,
     pub state: FilterState,
     pub input: Edge,
-    pub output: Edge,
 }
 
 impl Operator for Filter {

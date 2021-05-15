@@ -15,7 +15,6 @@ pub struct Envelope {
     pub seq_cursor: usize,
     pub min: Edge,
     pub max: Edge,
-    pub output: Edge,
 }
 
 impl Operator for Envelope {

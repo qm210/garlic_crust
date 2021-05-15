@@ -10,21 +10,28 @@ pub struct GarlicClove1State {
     osc_osc2: oscillator::Oscillator,
     env_osc2: envelope::Envelope,
     osc_lfo1: oscillator::Oscillator,
-    math_lfofiltertransform: Edge,
     lp1: filter::Filter,
+
+    math_lfofiltertransform: Edge,
+
+    osc_osc1_output: Edge,
+    env_osc1_output: Edge,
+    osc_lfo1_output: Edge,
+    osc_osc2_output: Edge,
+    env_osc2_output: Edge,
+    lp1_output: Edge,
 }
 
 pub fn create_state() -> GarlicClove1State {
     GarlicClove1State {
         osc_osc1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            volume: Edge::one(),
+            volume: Edge::constant(1.),
             frequency: Edge::zero(),
             phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
             detune: Edge::function(|t| 0.1 * t),
             phase: 0.,
             seq_cursor: 0,
-            output: Edge::empty_array()
         },
         env_osc1: envelope::Envelope {
             attack: Edge::zero(),
@@ -32,21 +39,19 @@ pub fn create_state() -> GarlicClove1State {
             sustain: Edge::constant(1.),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
-            max: Edge::one(),
+            max: Edge::constant(1.),
             note_vel: 0., // also as Edge? actually this is a note parameter
             seq_cursor: 0,
             playhead: 0., // would not be required if this is a function operator
-            output: Edge::empty_array(),
         },
         osc_osc2: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            volume: Edge::one(),
+            volume: Edge::constant(1.),
             frequency: Edge::zero(),
             phasemod: Edge::zero(),
             detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
-            output: Edge::empty_array(),
         },
         env_osc2: envelope::Envelope {
             attack: Edge::zero(),
@@ -54,30 +59,35 @@ pub fn create_state() -> GarlicClove1State {
             sustain: Edge::constant(1.),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
-            max: Edge::one(),
+            max: Edge::constant(1.),
             note_vel: 0.,
             seq_cursor: 0,
             playhead: 0.,
-            output: Edge::empty_array(),
         },
         osc_lfo1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Triangle,
-            volume: Edge::one(),
+            volume: Edge::constant(1.),
             frequency: Edge::constant(12.),
             phasemod: Edge::zero(),
             detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
-            output: Edge::empty_array(),
         },
-        math_lfofiltertransform: Edge::empty_array(),
         lp1: filter::Filter {
             shape: filter::FilterType::LowPass,
             cutoff: Edge::constant(10000.),
             state: filter::FilterState::new(),
             input: Edge::zero(),
-            output: Edge::empty_array(),
         },
+
+        math_lfofiltertransform: Edge::zero(),
+
+        osc_osc1_output: Edge::zero(),
+        env_osc1_output: Edge::zero(),
+        osc_lfo1_output: Edge::zero(),
+        osc_osc2_output: Edge::zero(),
+        env_osc2_output: Edge::zero(),
+        lp1_output: Edge::zero(),
     }
 }
 
@@ -91,26 +101,26 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
     // THESE CHAINS WILL BE GIVEN BY knober
 
     // first branch
-    let env_osc1_output = process_operator_seq(&mut state.env_osc1, &sequence, block_offset);
-    state.osc_osc1.volume = env_osc1_output;
-    let osc_osc1_output = process_operator_seq(&mut state.osc_osc1, &sequence, block_offset);
+    process_operator_seq(&mut state.env_osc1, &sequence, block_offset, &mut state.env_osc1_output);
+    state.osc_osc1.volume = state.env_osc1_output;
+    process_operator_seq(&mut state.osc_osc1, &sequence, block_offset, &mut state.osc_osc1_output);
 
     // second branch
-    let env_osc2_output = process_operator_seq(&mut state.env_osc2, &sequence, block_offset);
-    state.osc_osc2.volume = env_osc2_output;
-    let osc_osc2_output = process_operator_seq(&mut state.osc_osc2, &sequence, block_offset);
+    process_operator_seq(&mut state.env_osc2, &sequence, block_offset, &mut state.env_osc2_output);
+    state.osc_osc2.volume = state.env_osc2_output;
+    process_operator_seq(&mut state.osc_osc2, &sequence, block_offset, &mut state.osc_osc2_output);
 
     // third branch
-    let osc_lfo1_output = process_operator(&mut state.osc_lfo1, block_offset);
-    state.math_lfofiltertransform = osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5)); // this is the simple (m*x + b) math block
+    process_operator(&mut state.osc_lfo1, block_offset, &mut state.osc_lfo1_output);
+    state.math_lfofiltertransform = state.osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5)); // this is the simple (m*x + b) math block
 
     // filter junction
     //state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
-    state.lp1.input = math_mixer(&osc_osc1_output, &Edge::one(), &osc_osc2_output); // more advanced blocks will have to be converted to Rust code, but I can help with that
+    state.lp1.input = math_mixer(&state.osc_osc1_output, &Edge::constant(1.), &state.osc_osc2_output); // more advanced blocks will have to be converted to Rust code, but I can help with that
     //state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
-    let lp1_output = process_operator(&mut state.lp1, block_offset);
+    process_operator(&mut state.lp1, block_offset, &mut state.lp1_output);
 
-    lp1_output
+    state.lp1_output
 }
 
 // individual math operators (more complex than Edge::mad()) might be created directly in the clove
