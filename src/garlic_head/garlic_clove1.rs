@@ -80,6 +80,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
     // cloves are monophonic, there is only one time since the last noteon
 
     // unclear: management of seq_cursor, output could also be in the GarlicClove1State. think about.
+    // sequence would then have to be split into the blocks itself, but this could be done by garlic_extract
 
     // THESE CHAINS WILL BE GIVEN BY knober
 
@@ -95,9 +96,10 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClo
 
     // third branch
     let osc_lfo1_output = process_operator(&mut state.osc_lfo1, block_offset);
-    state.math_lfofiltertransform = osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5));
+    state.math_lfofiltertransform = osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5)); // this is the simple (m*x + b) math block
 
-    state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5));
+    // filter junction
+    state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
     state.lp1.cutoff = state.math_lfofiltertransform;
     let lp1_output = process_operator(&mut state.lp1, block_offset);
 
@@ -113,4 +115,12 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge) -> Edge {
     Edge::array(output)
 }
 
-// with this commit: 71.3 seconds for 16 second track (outputs not stored in Op)
+// with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)
+// same with block_size 256: 10 seconds?? wtf?
+// block_size 512: 55 seconds;
+
+// THINGS TO TEST:
+// Split Sequence into Chunks, one for each 512-sample-block
+// Put Sequence into Byte Array
+// use get_unchecked()
+// multithreading?? -- each Clove can be processed simultaneously
