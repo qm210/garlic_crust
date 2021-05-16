@@ -1,8 +1,10 @@
 use super::*;
+use crate::math::EPSILON;
 
 #[derive(Debug)]
 pub enum BaseEnv {
     ExpDecay,
+    Swell,
 }
 
 pub struct Envelope {
@@ -37,7 +39,10 @@ impl Operator for Envelope {
             BaseEnv::ExpDecay => {
                 //self.note_vel * // what to do with note_vel ? rather a note_vel_dependency?
                 (sustain + (1. - sustain) * libm::exp2f(-(self.playhead - attack)/decay))
-                    * crate::math::smoothstep(-1.0e-5, attack, self.playhead)
+                    * crate::math::smoothstep(0., attack + EPSILON, self.playhead)
+            },
+            BaseEnv::Swell => {
+                crate::math::smoothstep(-attack, attack, self.playhead)
             }
         };
         let min = self.min.evaluate(sample);

@@ -6,20 +6,24 @@ use super::*;
 // the member fields
 pub struct Clove1State {
     osc_osc1: oscillator::Oscillator,
+    osc_osc1_output: Edge,
+
     env_osc1: envelope::Envelope,
+    env_osc1_output: Edge,
+
     osc_osc2: oscillator::Oscillator,
+    osc_osc2_output: Edge,
+
     env_osc2: envelope::Envelope,
+    env_osc2_output: Edge,
+
     osc_lfo1: oscillator::Oscillator,
+    osc_lfo1_output: Edge,
+
     lp1: filter::Filter,
+    lp1_output: Edge,
 
     math_lfofiltertransform: Edge,
-
-    osc_osc1_output: Edge,
-    env_osc1_output: Edge,
-    osc_lfo1_output: Edge,
-    osc_osc2_output: Edge,
-    env_osc2_output: Edge,
-    lp1_output: Edge,
 }
 
 pub struct Config1 {
@@ -67,6 +71,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             phase: 0.,
             seq_cursor: 0,
         },
+        osc_osc1_output: Edge::zero(),
+
         env_osc1: envelope::Envelope {
             attack: config1.env_attack,
             decay: config1.env_decay,
@@ -78,6 +84,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             seq_cursor: 0,
             playhead: 0.,
         },
+        env_osc1_output: Edge::zero(),
+
         osc_osc2: oscillator::Oscillator {
             shape: config2.osc2_shape,
             volume: Edge::constant(1.),
@@ -87,6 +95,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             phase: 0.,
             seq_cursor: 0,
         },
+        osc_osc2_output: Edge::zero(),
+
         env_osc2: envelope::Envelope {
             attack: config1.env_attack,
             decay: config1.env_decay,
@@ -98,6 +108,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             seq_cursor: 0,
             playhead: 0.,
         },
+        env_osc2_output: Edge::zero(),
+
         osc_lfo1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Triangle,
             volume: Edge::constant(1.),
@@ -107,21 +119,17 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             phase: 0.,
             seq_cursor: 0,
         },
+        osc_lfo1_output: Edge::zero(),
+
         lp1: filter::Filter {
             shape: filter::FilterType::LowPass,
             cutoff: Edge::constant(10000.),
             state: filter::FilterState::new(),
             input: Edge::zero(),
         },
+        lp1_output: Edge::zero(),
 
         math_lfofiltertransform: Edge::zero(),
-
-        osc_osc1_output: Edge::zero(),
-        env_osc1_output: Edge::zero(),
-        osc_lfo1_output: Edge::zero(),
-        osc_osc2_output: Edge::zero(),
-        env_osc2_output: Edge::zero(),
-        lp1_output: Edge::zero(),
     }
 }
 
