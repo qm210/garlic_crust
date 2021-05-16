@@ -14,6 +14,7 @@ pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: Edge,
     pub frequency: Edge,
+    pub freq_factor: Edge,
     pub phasemod: Edge,
     pub detune: Edge,
     pub phase: TimeFloat,
@@ -25,7 +26,7 @@ impl Operator for Oscillator {
         match &message {
             SeqMsg::NoteOn(note_key, _) => {
                 self.phase = 0.;
-                self.frequency = Edge::constant(note_frequency(*note_key));
+                self.frequency = self.freq_factor.clone_scaled(note_frequency(*note_key));
             },
             // could react to Volume or whatevs here.
             _ => ()
@@ -68,5 +69,20 @@ impl Oscillator {
         };
 
         basewave_value.clamp(-1., 1.)
+    }
+}
+
+impl Default for Oscillator {
+    fn default() -> Oscillator {
+        Oscillator {
+            shape: BaseWave::Sine,
+            volume: Edge::constant(1.),
+            frequency: Edge::zero(),
+            freq_factor: Edge::constant(1.),
+            phasemod: Edge::zero(),
+            detune: Edge::zero(),
+            phase: 0.,
+            seq_cursor: 0
+        }
     }
 }

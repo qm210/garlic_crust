@@ -61,11 +61,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc1: oscillator::Oscillator {
             shape: config1.osc1_shape,
             volume: Edge::constant(1.),
-            frequency: Edge::zero(),
-            phasemod: Edge::zero(),
-            detune: Edge::zero(),
-            phase: 0.,
-            seq_cursor: 0,
+            ..Default::default()
         },
         osc_osc1_output: Edge::zero(),
 
@@ -85,11 +81,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc2: oscillator::Oscillator {
             shape: config2.osc2_shape,
             volume: Edge::constant(1.),
-            frequency: Edge::zero(),
-            phasemod: Edge::zero(),
-            detune: Edge::zero(),
-            phase: 0.,
-            seq_cursor: 0,
+            ..Default::default()
         },
         osc_osc2_output: Edge::zero(),
 
@@ -110,10 +102,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             shape: oscillator::BaseWave::Triangle,
             volume: Edge::constant(1.),
             frequency: Edge::constant(12.),
-            phasemod: Edge::zero(),
-            detune: Edge::zero(),
-            phase: 0.,
-            seq_cursor: 0,
+            ..Default::default()
         },
         osc_lfo1_output: Edge::zero(),
 
@@ -139,9 +128,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
     // THESE CHAINS WILL BE GIVEN BY knober
 
     generate_from_func(func_osc_phasemod, block_offset, &mut state.osc_osc1.phasemod);
-    state.osc_osc2.phasemod = state.osc_osc1.phasemod; // this is a Copy, right? Edge should do that.
-
-    generate_from_func(func_osc_detune, block_offset, &mut state.osc_osc1.detune);
+    generate_from_func(func_osc_factor, block_offset, &mut state.osc_osc1.freq_factor);
 
     // first branch
     process_operator_seq(&mut state.env_osc1, &sequence, block_offset, &mut state.env_osc1_output);
@@ -155,17 +142,19 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
 
     // third branch
     process_operator(&mut state.osc_lfo1, block_offset, &mut state.osc_lfo1_output);
-    state.math_lfofiltertransform = state.osc_lfo1_output.mad(&Edge::constant(0.1), &Edge::constant(0.5)); // this is the simple (m*x + b) math block
+    generate_math_lfofiltertransform(&state.osc_lfo1_output, &mut state.math_lfofiltertransform);
 
     // filter junction
     //state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
     math_mixer(&state.osc_osc1_output, &Edge::constant(1.), &state.osc_osc2_output, &mut state.lp1.input); // more advanced blocks will have to be converted to Rust code, but I can help with that
-    //state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
+    state.lp1.cutoff = state.math_lfofiltertransform;
     process_operator(&mut state.lp1, block_offset, &mut state.lp1_output);
 
     state.lp1_output
 }
 
+// inline or not inline?
+#[inline]
 // individual math operators (more complex than Edge::mad()) might be created directly in the clove
 fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
@@ -176,13 +165,18 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
 }
 
 #[inline]
+fn generate_math_lfofiltertransform(input: &Edge, output: &mut Edge) {
+    for sample in 0 .. BLOCK_SIZE {
+        output.put_at(sample, 1000. + input.evaluate(sample) * 500.);
+    }
+}
+
 fn func_osc_phasemod(t: TimeFloat) -> AmpFloat {
     0.02 * libm::sinf(4.*t)
 }
 
-#[inline]
-fn func_osc_detune(t: TimeFloat) -> AmpFloat {
-    3.4 * t
+fn func_osc_factor(t: TimeFloat) -> AmpFloat {
+    0.5005
 }
 
 // with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)

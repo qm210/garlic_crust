@@ -7,6 +7,7 @@ pub enum BaseEnv {
     Swell,
 }
 
+#[derive(Default)]
 pub struct Envelope {
     pub shape: BaseEnv,
     pub attack: Edge,
@@ -62,4 +63,8 @@ impl Operator for Envelope {
     fn inc_cursor(&mut self) {
         self.seq_cursor += 1;
     }
+}
+
+impl Default for BaseEnv {
+    fn default() -> Self { BaseEnv::ExpDecay }
 }

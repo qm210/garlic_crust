@@ -44,15 +44,23 @@ impl Edge {
         return self.array[pos];
     }
 
-    pub fn times(&mut self, other: &Edge) -> Edge {
-        let mut array = EMPTY_BLOCKARRAY;
+    pub fn multiply(&mut self, other: &Edge) -> Edge {
+        if other.is_const {
+            let other_value = other.array[0];
+            if self.is_const {
+                self.array[0] *= other_value;
+                return *self;
+            }
+            for pos in 0 .. BLOCK_SIZE {
+                self.array[pos] = self.array[pos] * other_value;
+            }
+            self.is_const = false;
+            return *self;
+        }
         for pos in 0 .. BLOCK_SIZE {
-            array[pos] = other.evaluate(pos) * self.evaluate(pos);
+            self.array[pos] *= other.array[pos];
         }
-        Edge {
-            array,
-            is_const: self.is_const && other.is_const
-        }
+        return *self;
     }
 
     pub fn mad(&self, multiply: &Edge, add: &Edge) -> Edge {
@@ -64,5 +72,22 @@ impl Edge {
             array,
             is_const: self.is_const && multiply.is_const && add.is_const
         }
+    }
+
+    pub fn clone_scaled(&self, factor: AmpFloat) -> Edge {
+        let mut array = self.array.clone();
+        for pos in 0 .. BLOCK_SIZE {
+            array[pos] = factor * array[pos];
+        }
+        Edge {
+            array,
+            is_const: self.is_const,
+        }
+    }
+}
+
+impl Default for Edge {
+    fn default() -> Edge {
+        Edge::zero()
     }
 }
