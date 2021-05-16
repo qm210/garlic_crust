@@ -4,7 +4,7 @@ use super::*;
 // A garlic clove is basically a garlic crust "preset", i.e. its internal wiring
 
 // the member fields
-pub struct GarlicClove1State {
+pub struct Clove1State {
     osc_osc1: oscillator::Oscillator,
     env_osc1: envelope::Envelope,
     osc_osc2: oscillator::Oscillator,
@@ -22,41 +22,75 @@ pub struct GarlicClove1State {
     lp1_output: Edge,
 }
 
-pub fn create_state() -> GarlicClove1State {
-    GarlicClove1State {
+pub struct Config1 {
+    pub env_attack: Edge,
+    pub env_decay: Edge,
+    pub env_shape: envelope::BaseEnv,
+    pub osc1_shape: oscillator::BaseWave,
+    pub osc_phasemod: Edge,
+    pub osc_detune: Edge,
+}
+
+pub struct Config2 {
+    pub osc2_shape: oscillator::BaseWave,
+}
+
+pub fn create_config1(preset: &str) -> Config1 {
+    match preset {
+        _ => Config1 {
+            env_attack: Edge::zero(),
+            env_decay: Edge::constant(0.3),
+            env_shape: envelope::BaseEnv::ExpDecay,
+            osc1_shape: oscillator::BaseWave::Triangle,
+            osc_phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
+            osc_detune: Edge::function(|t| 0.1 * t),
+        }
+    }
+}
+
+pub fn create_config2(preset: &str) -> Config2 {
+    match preset {
+        _ => Config2 {
+            osc2_shape: oscillator::BaseWave::Square,
+        }
+    }
+}
+
+pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
+    Clove1State {
         osc_osc1: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Square,
+            shape: config1.osc1_shape,
             volume: Edge::constant(1.),
             frequency: Edge::zero(),
-            phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
-            detune: Edge::function(|t| 0.1 * t),
+            phasemod: config1.osc_phasemod,
+            detune: config1.osc_detune,
             phase: 0.,
             seq_cursor: 0,
         },
         env_osc1: envelope::Envelope {
-            attack: Edge::zero(),
-            decay: Edge::constant(0.3),
-            sustain: Edge::constant(1.),
+            attack: config1.env_attack,
+            decay: config1.env_decay,
+            sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
             max: Edge::constant(1.),
-            note_vel: 0., // also as Edge? actually this is a note parameter
+            note_vel: 0.,
             seq_cursor: 0,
-            playhead: 0., // would not be required if this is a function operator
+            playhead: 0.,
         },
         osc_osc2: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Square,
+            shape: config2.osc2_shape,
             volume: Edge::constant(1.),
             frequency: Edge::zero(),
-            phasemod: Edge::zero(),
-            detune: Edge::zero(),
+            phasemod: config1.osc_phasemod,
+            detune: config1.osc_detune,
             phase: 0.,
             seq_cursor: 0,
         },
         env_osc2: envelope::Envelope {
-            attack: Edge::zero(),
-            decay: Edge::constant(0.3),
-            sustain: Edge::constant(1.),
+            attack: config1.env_attack,
+            decay: config1.env_decay,
+            sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
             min: Edge::zero(),
             max: Edge::constant(1.),
@@ -92,13 +126,17 @@ pub fn create_state() -> GarlicClove1State {
 }
 
 #[inline]
-pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut GarlicClove1State) -> Edge {
+pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1State) -> Edge {
     // cloves are monophonic, there is only one time since the last noteon
 
     // unclear: management of seq_cursor, output could also be in the GarlicClove1State. think about.
     // sequence would then have to be split into the blocks itself, but this could be done by garlic_extract
 
     // THESE CHAINS WILL BE GIVEN BY knober
+
+    // inline functions can be set here
+    state.osc_osc1.phasemod = Edge::function(|t| 0.02 * libm::sinf(4.*t));
+    state.osc_osc1.detune = Edge::function(|t| 0.1 * t);
 
     // first branch
     process_operator_seq(&mut state.env_osc1, &sequence, block_offset, &mut state.env_osc1_output);

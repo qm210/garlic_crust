@@ -39,11 +39,16 @@ impl Edge {
     }
 
     pub fn zero() -> Edge {
-        Edge::array(EMPTY_BLOCKARRAY)
+        Edge {
+            array: EMPTY_BLOCKARRAY,
+            function: None,
+            is_const: true,
+        }
     }
 
     pub fn put_at(&mut self, pos: usize, value: AmpFloat) {
         self.function = None;
+        self.is_const = false;
         self.array[pos] = value;
     }
 

@@ -1,7 +1,7 @@
 use crate::math::{sin, TAU};
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum BaseWave {
     Sine,
     Saw,
