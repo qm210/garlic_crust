@@ -149,7 +149,7 @@ const SEQUENCE_2: [SeqEvent; 2] = [
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 1024;
+pub const BLOCK_SIZE: usize = 1641; // my stolen freeverb needs this for now
 pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 
@@ -191,7 +191,7 @@ pub unsafe fn render_track(data: &mut TrackArray) {
         }
         garlic_master.write(data, block_offset);
 
-        //super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
+        // super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
 
         block_offset += BLOCK_SIZE;
     }

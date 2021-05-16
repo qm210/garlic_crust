@@ -4,8 +4,8 @@
 use super::*;
 
 pub struct GarlicBreath {
-    combs: [(Comb, Comb); 8],
-    allpasses: [(AllPass, AllPass); 4],
+    combs: [(Comb, Comb); N_COMBS],
+    allpasses: [(AllPass, AllPass); N_ALLPASSES],
     wet_gains: (f32, f32),
     wet: f32,
     width: f32,
@@ -16,6 +16,8 @@ pub struct GarlicBreath {
     frozen: bool,
 }
 
+const N_COMBS: usize = 4; // was 8
+const N_ALLPASSES: usize = 4;
 
 const FIXED_GAIN: f32 = 0.015;
 
@@ -56,7 +58,7 @@ const ALLPASS_TUNING_R4: usize = 225 + STEREO_SPREAD;
 impl GarlicBreath {
 
     pub fn new() -> Self {
-        Self {
+        let mut freeverb = GarlicBreath {
             combs: [
                 (
                     Comb::new(COMB_TUNING_L1),
@@ -74,22 +76,22 @@ impl GarlicBreath {
                     Comb::new(COMB_TUNING_L4),
                     Comb::new(COMB_TUNING_R4),
                 ),
-                (
-                    Comb::new(COMB_TUNING_L5),
-                    Comb::new(COMB_TUNING_R5),
-                ),
-                (
-                    Comb::new(COMB_TUNING_L6),
-                    Comb::new(COMB_TUNING_R6),
-                ),
-                (
-                    Comb::new(COMB_TUNING_L7),
-                    Comb::new(COMB_TUNING_R7),
-                ),
-                (
-                    Comb::new(COMB_TUNING_L8),
-                    Comb::new(COMB_TUNING_R8),
-                ),
+                // (
+                //     Comb::new(COMB_TUNING_L5),
+                //     Comb::new(COMB_TUNING_R5),
+                // ),
+                // (
+                //     Comb::new(COMB_TUNING_L6),
+                //     Comb::new(COMB_TUNING_R6),
+                // ),
+                // (
+                //     Comb::new(COMB_TUNING_L7),
+                //     Comb::new(COMB_TUNING_R7),
+                // ),
+                // (
+                //     Comb::new(COMB_TUNING_L8),
+                //     Comb::new(COMB_TUNING_R8),
+                // ),
             ],
             allpasses: [
                 (
@@ -117,23 +119,31 @@ impl GarlicBreath {
             dampening: 0.0,
             room_size: 0.0,
             frozen: false,
-        }
+        };
+
+        freeverb.set_wet(1.0);
+        freeverb.set_width(0.5);
+        freeverb.set_dampening(0.5);
+        freeverb.set_room_size(0.5);
+        freeverb.set_frozen(false);
+
+        freeverb
     }
 
 
     pub fn tick(&mut self, input: (f32, f32)) -> (f32, f32) {
         let input_mixed = (input.0 + input.1) * FIXED_GAIN * self.input_gain;
 
-        let mut out = (0.0, 0.0);
+        let mut out = (0., 0.);
 
-        for combs in self.combs.iter_mut() {
-            out.0 += combs.0.tick(input_mixed);
-            out.1 += combs.1.tick(input_mixed);
+        for i in 0 .. N_COMBS {
+            out.0 += self.combs[i].0.tick(input_mixed);
+            out.1 += self.combs[i].1.tick(input_mixed);
         }
 
-        for allpasses in self.allpasses.iter_mut() {
-            out.0 = allpasses.0.tick(out.0);
-            out.1 = allpasses.1.tick(out.1);
+        for i in 0 .. N_ALLPASSES {
+            out.0 = self.allpasses[i].0.tick(out.0);
+            out.1 = self.allpasses[i].1.tick(out.1);
         }
 
         (
@@ -251,7 +261,7 @@ pub struct DelayLine {
 impl DelayLine {
     pub fn new(delay_length: usize) -> Self {
         Self {
-            buffer: EMPTY_BLOCKARRAY, // buffer is fixed in size, but we only use "length" --> has to be smaller than BLOCK_SIZE
+            buffer: EMPTY_BLOCKARRAY.clone(), // buffer is fixed in size, but we only use "length" --> has to be smaller than BLOCK_SIZE
             length: delay_length,
             index: 0,
         }

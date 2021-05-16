@@ -43,10 +43,11 @@ impl GarlicMaster {
         self.data[sample] = (self.data[sample] + self.waveshape_state.amount * waveshape1(self.data[sample])) / (1. + self.waveshape_state.amount);
         self.waveshape_state.amount += 0.7e-5;
 
-        let reverb_shizzle = self.data[sample];
-        //let reverb_shizzle = self.reverb.tick((self.data[sample], self.data[sample])).0;
+        let sat = crate::math::satanurate(self.data[sample]);
+        //let reverb_shizzle = self.data[sample];
+        let reverb_shizzle = self.reverb.tick((sat, 0.)).0;
 
-        self.data[sample] = crate::math::satanurate(reverb_shizzle);
+        self.data[sample] = reverb_shizzle;
     }
 
 }
