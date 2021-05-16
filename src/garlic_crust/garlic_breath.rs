@@ -16,7 +16,7 @@ pub struct GarlicBreath {
     frozen: bool,
 }
 
-const N_COMBS: usize = 4; // was 8
+const N_COMBS: usize = 6;
 const N_ALLPASSES: usize = 4;
 
 const FIXED_GAIN: f32 = 0.015;
@@ -41,10 +41,10 @@ const COMB_TUNING_L5: usize = 1422;
 const COMB_TUNING_R5: usize = 1422 + STEREO_SPREAD;
 const COMB_TUNING_L6: usize = 1491;
 const COMB_TUNING_R6: usize = 1491 + STEREO_SPREAD;
-const COMB_TUNING_L7: usize = 1557;
-const COMB_TUNING_R7: usize = 1557 + STEREO_SPREAD;
-const COMB_TUNING_L8: usize = 1617;
-const COMB_TUNING_R8: usize = 1617 + STEREO_SPREAD;
+// const COMB_TUNING_L7: usize = 1557;
+// const COMB_TUNING_R7: usize = 1557 + STEREO_SPREAD;
+// const COMB_TUNING_L8: usize = 1617;
+// const COMB_TUNING_R8: usize = 1617 + STEREO_SPREAD;
 
 const ALLPASS_TUNING_L1: usize = 556;
 const ALLPASS_TUNING_R1: usize = 556 + STEREO_SPREAD;
@@ -76,14 +76,14 @@ impl GarlicBreath {
                     Comb::new(COMB_TUNING_L4),
                     Comb::new(COMB_TUNING_R4),
                 ),
-                // (
-                //     Comb::new(COMB_TUNING_L5),
-                //     Comb::new(COMB_TUNING_R5),
-                // ),
-                // (
-                //     Comb::new(COMB_TUNING_L6),
-                //     Comb::new(COMB_TUNING_R6),
-                // ),
+                (
+                    Comb::new(COMB_TUNING_L5),
+                    Comb::new(COMB_TUNING_R5),
+                ),
+                (
+                    Comb::new(COMB_TUNING_L6),
+                    Comb::new(COMB_TUNING_R6),
+                ),
                 // (
                 //     Comb::new(COMB_TUNING_L7),
                 //     Comb::new(COMB_TUNING_R7),

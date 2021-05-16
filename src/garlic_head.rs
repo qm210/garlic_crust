@@ -149,7 +149,7 @@ const SEQUENCE_2: [SeqEvent; 2] = [
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 1641; // my stolen freeverb needs this for now
+pub const BLOCK_SIZE: usize = 1520; // my stolen freeverb needs this for now
 pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 
