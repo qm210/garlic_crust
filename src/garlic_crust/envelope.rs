@@ -32,7 +32,7 @@ impl Operator for Envelope {
         }
     }
 
-    fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {
+    fn evaluate(&mut self, sample: usize) -> AmpFloat {
         let attack = self.attack.evaluate(sample);
         let decay = self.decay.evaluate(sample);
         let sustain = self.decay.evaluate(sample);

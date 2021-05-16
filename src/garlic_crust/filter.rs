@@ -17,7 +17,7 @@ impl Operator for Filter {
     fn handle_message(&mut self, _: &SeqMsg) {
     }
 
-    fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {
+    fn evaluate(&mut self, sample: usize) -> AmpFloat {
         let cutoff = self.cutoff.evaluate(sample);
 
         self.state.set_lowpass(cutoff);
@@ -63,3 +63,13 @@ impl FilterState {
     }
 }
 
+impl Default for Filter {
+    fn default() -> Filter {
+        Filter {
+            shape: FilterType::LowPass,
+            cutoff: Edge::zero(),
+            state: filter::FilterState::new(),
+            input: Edge::zero(),
+        }
+    }
+}

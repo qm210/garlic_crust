@@ -33,7 +33,7 @@ impl Operator for Oscillator {
         }
     }
 
-    fn evaluate(&mut self, sample: usize, _: TimeFloat) -> AmpFloat {
+    fn evaluate(&mut self, sample: usize) -> AmpFloat {
         let phase = self.phase + self.phasemod.evaluate(sample);
 
         let result_in_tune = self.evaluate_at(phase);
