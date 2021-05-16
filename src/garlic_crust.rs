@@ -7,6 +7,8 @@ pub mod edge;
 
 pub use edge::Edge;
 
+pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
+
 pub type TimeFloat = f32;
 pub type AmpFloat = f32;
 
@@ -42,7 +44,7 @@ pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], bloc
             next_event = next_event_option(&sequence, op.get_cursor());
         }
 
-        output.put_at(sample, op.evaluate(sample + block_offset, time));
+        output.put_at(sample, op.evaluate(sample, time));
 
         op.advance(sample);
     }
@@ -55,6 +57,12 @@ pub fn process_operator<O: Operator>(op: &mut O, block_offset: usize, output: &m
         output.put_at(sample, op.evaluate(sample, time));
 
         op.advance(sample);
+    }
+}
+
+pub fn generate_from_func(func: PlayFunc, block_offset: usize, output: &mut Edge) {
+    for sample in 0 .. BLOCK_SIZE {
+        output.put_at(sample, func((sample + block_offset) as TimeFloat / SAMPLERATE));
     }
 }
 

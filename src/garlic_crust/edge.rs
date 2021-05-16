@@ -6,8 +6,6 @@ pub struct Edge {
     is_const: bool,
 }
 
-pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
-
 impl Edge {
     pub fn array(block: BlockArray) -> Edge {
         Edge {
@@ -43,7 +41,7 @@ impl Edge {
         if self.is_const {
             return self.array[0];
         }
-        return self.array[pos % BLOCK_SIZE];
+        return self.array[pos];
     }
 
     pub fn times(&mut self, other: &Edge) -> Edge {

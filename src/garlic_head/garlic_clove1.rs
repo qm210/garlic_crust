@@ -31,8 +31,6 @@ pub struct Config1 {
     pub env_decay: Edge,
     pub env_shape: envelope::BaseEnv,
     pub osc1_shape: oscillator::BaseWave,
-    pub osc_phasemod: Edge,
-    pub osc_detune: Edge,
 }
 
 pub struct Config2 {
@@ -46,8 +44,6 @@ pub fn create_config1(preset: &str) -> Config1 {
             env_decay: Edge::constant(0.3),
             env_shape: envelope::BaseEnv::ExpDecay,
             osc1_shape: oscillator::BaseWave::Triangle,
-            osc_phasemod: Edge::function(|t| 0.02 * libm::sinf(4.*t)),
-            osc_detune: Edge::function(|t| 0.1 * t),
         }
     }
 }
@@ -66,8 +62,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             shape: config1.osc1_shape,
             volume: Edge::constant(1.),
             frequency: Edge::zero(),
-            phasemod: config1.osc_phasemod,
-            detune: config1.osc_detune,
+            phasemod: Edge::zero(),
+            detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
         },
@@ -90,8 +86,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
             shape: config2.osc2_shape,
             volume: Edge::constant(1.),
             frequency: Edge::zero(),
-            phasemod: config1.osc_phasemod,
-            detune: config1.osc_detune,
+            phasemod: Edge::zero(),
+            detune: Edge::zero(),
             phase: 0.,
             seq_cursor: 0,
         },
@@ -142,6 +138,11 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
 
     // THESE CHAINS WILL BE GIVEN BY knober
 
+    generate_from_func(func_osc_phasemod, block_offset, &mut state.osc_osc1.phasemod);
+    state.osc_osc2.phasemod = state.osc_osc1.phasemod; // this is a Copy, right? Edge should do that.
+
+    generate_from_func(func_osc_detune, block_offset, &mut state.osc_osc1.detune);
+
     // first branch
     process_operator_seq(&mut state.env_osc1, &sequence, block_offset, &mut state.env_osc1_output);
     state.osc_osc1.volume = state.env_osc1_output;
@@ -158,21 +159,30 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
 
     // filter junction
     //state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
-    state.lp1.input = math_mixer(&state.osc_osc1_output, &Edge::constant(1.), &state.osc_osc2_output); // more advanced blocks will have to be converted to Rust code, but I can help with that
-    state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
+    math_mixer(&state.osc_osc1_output, &Edge::constant(1.), &state.osc_osc2_output, &mut state.lp1.input); // more advanced blocks will have to be converted to Rust code, but I can help with that
+    //state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
     process_operator(&mut state.lp1, block_offset, &mut state.lp1_output);
 
     state.lp1_output
 }
 
 // individual math operators (more complex than Edge::mad()) might be created directly in the clove
-// note: this is actually also a .mad block
-fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge) -> Edge {
-    let mut output = EMPTY_BLOCKARRAY;
+fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
-        output[sample] = cv.evaluate(sample) * (input1.evaluate(sample) + input2.evaluate(sample));
+        output.put_at(sample,
+            cv.evaluate(sample) * (input1.evaluate(sample) + input2.evaluate(sample))
+        );
     }
-    Edge::array(output)
+}
+
+#[inline]
+fn func_osc_phasemod(t: TimeFloat) -> AmpFloat {
+    0.02 * libm::sinf(4.*t)
+}
+
+#[inline]
+fn func_osc_detune(t: TimeFloat) -> AmpFloat {
+    3.4 * t
 }
 
 // with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)
