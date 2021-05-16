@@ -142,10 +142,6 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
 
     // THESE CHAINS WILL BE GIVEN BY knober
 
-    // inline functions can be set here
-    state.osc_osc1.phasemod = Edge::function(|t| 0.02 * libm::sinf(4.*t));
-    state.osc_osc1.detune = Edge::function(|t| 0.1 * t);
-
     // first branch
     process_operator_seq(&mut state.env_osc1, &sequence, block_offset, &mut state.env_osc1_output);
     state.osc_osc1.volume = state.env_osc1_output;
@@ -163,7 +159,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
     // filter junction
     //state.lp1.input = math_mixer(&osc_osc1_output, &osc_osc2_output, &Edge::constant(0.5)); // more advanced blocks will have to be converted to Rust code, but I can help with that
     state.lp1.input = math_mixer(&state.osc_osc1_output, &Edge::constant(1.), &state.osc_osc2_output); // more advanced blocks will have to be converted to Rust code, but I can help with that
-    //state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
+    state.lp1.cutoff = state.lp1.cutoff.times(&state.math_lfofiltertransform);
     process_operator(&mut state.lp1, block_offset, &mut state.lp1_output);
 
     state.lp1_output
