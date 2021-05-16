@@ -64,7 +64,7 @@ impl Edge {
     }
 
     pub fn mad(&self, multiply: &Edge, add: &Edge) -> Edge {
-        let mut array = EMPTY_BLOCKARRAY;
+        let mut array = EMPTY_BLOCKARRAY; // probably expensive
         for pos in 0 .. BLOCK_SIZE {
             array[pos] = multiply.evaluate(pos) * self.evaluate(pos) + add.evaluate(pos);
         }
@@ -75,7 +75,7 @@ impl Edge {
     }
 
     pub fn clone_scaled(&self, factor: AmpFloat) -> Edge {
-        let mut array = self.array.clone();
+        let mut array = self.array.clone(); // probably expensive
         for pos in 0 .. BLOCK_SIZE {
             array[pos] = factor * array[pos];
         }

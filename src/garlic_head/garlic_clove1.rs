@@ -68,13 +68,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         env_osc1: envelope::Envelope {
             attack: config1.env_attack,
             decay: config1.env_decay,
-            sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
-            min: Edge::zero(),
-            max: Edge::constant(1.),
-            note_vel: 0.,
-            seq_cursor: 0,
-            playhead: 0.,
+            ..Default::default()
         },
         env_osc1_output: Edge::zero(),
 
@@ -88,27 +83,23 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         env_osc2: envelope::Envelope {
             attack: config1.env_attack,
             decay: config1.env_decay,
-            sustain: Edge::zero(),
             shape: envelope::BaseEnv::ExpDecay,
-            min: Edge::zero(),
-            max: Edge::constant(1.),
-            note_vel: 0.,
-            seq_cursor: 0,
-            playhead: 0.,
+            ..Default::default()
         },
         env_osc2_output: Edge::zero(),
 
         osc_lfo1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Triangle,
             volume: Edge::constant(1.),
-            frequency: Edge::constant(12.),
+            frequency: Edge::constant(0.2),
+            phase: 0.5,
             ..Default::default()
         },
         osc_lfo1_output: Edge::zero(),
 
         lp1: filter::Filter {
             shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(10000.),
+            cutoff: Edge::zero(),
             state: filter::FilterState::new(),
             input: Edge::zero(),
         },
@@ -167,7 +158,7 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
 #[inline]
 fn generate_math_lfofiltertransform(input: &Edge, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
-        output.put_at(sample, 1000. + input.evaluate(sample) * 500.);
+        output.put_at(sample, 2000. + input.evaluate(sample) * 1800.);
     }
 }
 

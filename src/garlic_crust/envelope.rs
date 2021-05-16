@@ -1,13 +1,14 @@
 use super::*;
 use crate::math::EPSILON;
 
+// I tried to have struct enums, but THIS WAS HORRIBLY SLOW
 #[derive(Debug)]
 pub enum BaseEnv {
     ExpDecay,
     Swell,
+    Const,
 }
 
-#[derive(Default)]
 pub struct Envelope {
     pub shape: BaseEnv,
     pub attack: Edge,
@@ -45,6 +46,9 @@ impl Operator for Envelope {
             BaseEnv::Swell => {
                 crate::math::smoothstep(-attack, attack, self.playhead)
             }
+            BaseEnv::Const => {
+                1.0
+            }
         };
         let min = self.min.evaluate(sample);
         let max = self.max.evaluate(sample);
@@ -65,6 +69,18 @@ impl Operator for Envelope {
     }
 }
 
-impl Default for BaseEnv {
-    fn default() -> Self { BaseEnv::ExpDecay }
+impl Default for Envelope {
+    fn default() -> Envelope {
+        Envelope {
+            shape: BaseEnv::Const,
+            attack: Edge::zero(),
+            decay: Edge::zero(),
+            sustain: Edge::zero(),
+            min: Edge::zero(),
+            max: Edge::constant(1.),
+            playhead: 0.,
+            note_vel: 0.,
+            seq_cursor: 0,
+        }
+    }
 }
