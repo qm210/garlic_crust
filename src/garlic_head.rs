@@ -173,7 +173,6 @@ pub unsafe fn render_track(data: &mut TrackArray) {
     let mut clove1_state2 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
 
     let mut block_offset = 0;
-    let mut sum = 0.;
     while block_offset < SAMPLES {
 
         // our tooling (knober) has to know: which track is used by which clove?
@@ -182,20 +181,18 @@ pub unsafe fn render_track(data: &mut TrackArray) {
         let track2 = garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
 
         for sample in 0 .. BLOCK_SIZE {
-            sum = 0.;
-            sum += track0.evaluate(sample);
-            sum += track1.evaluate(sample);
-            sum += track2.evaluate(sample);
-            data[block_offset + sample] = sum;
+            garlic_master.put_at(sample, 0.);
+            garlic_master.add_at(sample, track0.evaluate(sample)); // could combine this and previous
+            garlic_master.add_at(sample, track1.evaluate(sample));
+            garlic_master.add_at(sample, track2.evaluate(sample));
         }
+
+        garlic_master.process(data, block_offset);
 
         //super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
 
         block_offset += BLOCK_SIZE;
     }
-
-    //POST PROCESSSING (e.g. channel mixing / mastering) COULD HAPPEN HERE
-    garlic_master.process(data);
 
     let mut clipping_count = 0;
     let mut max_sample = 0.;

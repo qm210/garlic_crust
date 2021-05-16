@@ -4,6 +4,7 @@ pub mod oscillator;
 pub mod envelope;
 pub mod filter;
 pub mod edge;
+pub mod garlic_breath;
 
 pub use edge::Edge;
 
