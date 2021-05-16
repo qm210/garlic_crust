@@ -16,7 +16,7 @@ pub struct Oscillator {
     pub frequency: Edge,
     pub phasemod: Edge,
     pub detune: Edge,
-    pub phase: TimeFloat, // what would be _phase convention?
+    pub phase: TimeFloat,
     pub seq_cursor: usize,
 }
 
