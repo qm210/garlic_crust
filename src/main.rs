@@ -195,6 +195,13 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
 
 static mut GARLIC_DATA : [garlic_crust::AmpFloat; garlic_head::SAMPLES] = [0.0; garlic_head::SAMPLES];
 
+/*
+static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
+    wType: winapi::um::mmsystem::TIME_MS,
+    u: ?? how to get something like winapi::um::mmsystem::MMTIME_u ??
+};
+*/
+
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
@@ -234,6 +241,12 @@ pub extern "system" fn mainCRTStartup() {
 
         // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
 
+        /*
+        unsafe {
+            winapi::um::mmeapi::waveOutGetPosition(h_waveout, pmmt: LPMMTIME, cbmmt: UINT)
+        }
+        */
+        // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
         time += 1.0 / 60.0;
 
         if time > garlic_head::SECONDS {

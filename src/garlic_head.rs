@@ -154,12 +154,16 @@ pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) +
 pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
 
 pub type BlockArray = [AmpFloat; BLOCK_SIZE];
+pub type TrackArray = [AmpFloat; SAMPLES];
 
 pub const EMPTY_BLOCKARRAY: BlockArray = [0.; BLOCK_SIZE];
 
 mod garlic_clove1;
+mod garlic_master;
 
-pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
+pub unsafe fn render_track(data: &mut TrackArray) {
+
+    let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 
     // we need global initialization, one per clove and each their sequence
     let clove1_config1 = garlic_clove1::create_config1("default");
@@ -169,6 +173,7 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     let mut clove1_state2 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
 
     let mut block_offset = 0;
+    let mut sum = 0.;
     while block_offset < SAMPLES {
 
         // our tooling (knober) has to know: which track is used by which clove?
@@ -177,10 +182,11 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
         let track2 = garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
 
         for sample in 0 .. BLOCK_SIZE {
-            let output0 = track0.evaluate(sample);
-            let output1 = track1.evaluate(sample);
-            let output2 = track2.evaluate(sample);
-            data[block_offset + sample] = crate::math::satanurate(output0 + output1 + output2); // will probably clip
+            sum = 0.;
+            sum += track0.evaluate(sample);
+            sum += track1.evaluate(sample);
+            sum += track2.evaluate(sample);
+            data[block_offset + sample] = sum;
         }
 
         //super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
@@ -189,6 +195,7 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     }
 
     //POST PROCESSSING (e.g. channel mixing / mastering) COULD HAPPEN HERE
+    garlic_master.process(data);
 
     let mut clipping_count = 0;
     let mut max_sample = 0.;
@@ -211,33 +218,3 @@ pub unsafe fn render_track(data: &mut [AmpFloat; SAMPLES]) {
     super::printf("Range: %.3f .. %.3f\n\0".as_ptr(), min_sample as f64, max_sample as f64);
     super::printf("Clipping counter: %d\n\0".as_ptr(), clipping_count);
 }
-
-/*
-
-    let mut synth = GarlicCrust::create_from(track_config);
-
-    let mut event_counter = 0;
-    let mut next_event = &track_event_array[event_counter];
-
-    // loop with counter at that position made 0 bytes difference
-    for sample in 0..SAMPLES {
-
-        let time: TimeFloat = sample as TimeFloat / SAMPLERATE;
-
-        while !synth.eot && next_event.time <= time {
-            synth.handle_event(&next_event);
-            event_counter += 1;
-            if event_counter == track_event_array.len() {
-                synth.eot = true; // is redundant if there always is a SeqMsg::EndOfTrack at the end of each track. but people need to feel safe and secure
-            } else {
-                next_event = &track_event_array[event_counter];
-            }
-        }
-
-        let amp: AmpFloat = synth.next_frame(); //synth.next().unwrap();
-
-        data[sample] = amp;
-    }
-
-
-*/

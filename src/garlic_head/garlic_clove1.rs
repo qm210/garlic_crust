@@ -61,6 +61,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc1: oscillator::Oscillator {
             shape: config1.osc1_shape,
             volume: Edge::constant(1.),
+            freq_factor: Edge::constant(0.5),
             ..Default::default()
         },
         osc_osc1_output: Edge::zero(),
@@ -76,6 +77,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc2: oscillator::Oscillator {
             shape: config2.osc2_shape,
             volume: Edge::constant(1.),
+            freq_factor: Edge::constant(0.505),
             ..Default::default()
         },
         osc_osc2_output: Edge::zero(),
@@ -118,7 +120,6 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
 pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1State) -> Edge {
     // these function generates replace the former Edge::functions(), i.e. "math-generated parameters".
     generate_from_func(func_osc_phasemod, block_offset, &mut state.osc_osc1.phasemod);
-    generate_from_func(func_osc_factor, block_offset, &mut state.osc_osc1.freq_factor);
 
     // below here, this is what I would expect from the basic UML template NR4 posted in the discord channel (some weeks ago)
 
@@ -165,10 +166,6 @@ fn generate_math_lfofiltertransform(input: &Edge, output: &mut Edge) {
 
 fn func_osc_phasemod(t: TimeFloat) -> AmpFloat {
     0.02 * libm::sinf(4.*t)
-}
-
-fn func_osc_factor(t: TimeFloat) -> AmpFloat {
-    0.5005
 }
 
 // with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)
