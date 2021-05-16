@@ -182,12 +182,14 @@ pub unsafe fn render_track(data: &mut TrackArray) {
 
         for sample in 0 .. BLOCK_SIZE {
             garlic_master.put_at(sample, 0.);
+
             garlic_master.add_at(sample, track0.evaluate(sample)); // could combine this and previous
             garlic_master.add_at(sample, track1.evaluate(sample));
             garlic_master.add_at(sample, track2.evaluate(sample));
-        }
 
-        garlic_master.process(data, block_offset);
+            garlic_master.process(sample);
+        }
+        garlic_master.write(data, block_offset);
 
         //super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
 

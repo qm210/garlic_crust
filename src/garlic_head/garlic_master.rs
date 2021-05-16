@@ -1,8 +1,9 @@
 use crate::garlic_crust::*;
 use super::*;
+use garlic_breath::GarlicBreath;
 
 pub struct GarlicMaster {
-    //reverb: GarlicBreath,
+    reverb: GarlicBreath,
     waveshape_state: WaveshapeState,
     data: BlockArray,
 }
@@ -14,7 +15,7 @@ pub struct WaveshapeState {
 impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
-            //reverb: GarlicBreath::new(),
+            reverb: GarlicBreath::new(),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -30,23 +31,27 @@ impl GarlicMaster {
         self.data[pos] += value;
     }
 
-    pub fn process(&mut self, outer_data: &mut TrackArray, block_offset: usize) {
-        // simple waveshaper, for se lolz
-
+    pub fn write(&self, data: &mut TrackArray, block_offset: usize) {
         for sample in 0 .. BLOCK_SIZE {
-            self.data[sample] = (self.data[sample] + self.waveshape_state.amount * waveshape1(self.data[sample])) / (1. + self.waveshape_state.amount);
-            self.waveshape_state.amount += 0.7e-5;
-
-            outer_data[block_offset + sample] = crate::math::satanurate(self.data[sample]);
+            data[block_offset + sample] = self.data[sample];
         }
     }
+
+    pub fn process(&mut self, sample: usize) {
+        // simple waveshaper, for se lolz
+
+        self.data[sample] = (self.data[sample] + self.waveshape_state.amount * waveshape1(self.data[sample])) / (1. + self.waveshape_state.amount);
+        self.waveshape_state.amount += 0.7e-5;
+
+        let reverb_shizzle = self.data[sample];
+        //let reverb_shizzle = self.reverb.tick((self.data[sample], self.data[sample])).0;
+
+        self.data[sample] = crate::math::satanurate(reverb_shizzle);
+    }
+
 }
 
 fn waveshape1(x: AmpFloat) -> AmpFloat {
     x + 0.2 * crate::math::sin(9.*x) - 0.15 * crate::math::sin(x)
 }
 
-
-pub struct GarlicBreath {
-
-}
