@@ -64,8 +64,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
 
         osc_osc1: oscillator::Oscillator {
             shape: config1.osc1_shape,
-            volume: Edge::constant(0.4),
-            freq_factor: Edge::constant(2.),
+            volume: Edge::constant(0.6),
+            freq_factor: Edge::constant(2.001),
             ..Default::default()
         },
         osc_osc1_output: Edge::zero(),
@@ -81,7 +81,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc2: oscillator::Oscillator {
             shape: config2.osc2_shape,
             volume: Edge::constant(1.),
-            freq_factor: Edge::constant(2.001),
+            freq_factor: Edge::constant(1.),
             ..Default::default()
         },
         osc_osc2_output: Edge::zero(),
