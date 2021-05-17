@@ -149,11 +149,14 @@ const SEQUENCE_2: [SeqEvent; 2] = [
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 1520; // my stolen freeverb needs this for now
-pub const BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / BLOCK_SIZE) + 1;
-pub const SAMPLES: usize = BLOCK_NUMBER * BLOCK_SIZE;
+pub const BLOCK_SIZE: usize = 512; // my stolen freeverb needs this for now
+const MASTER_BLOCK_FACTOR: usize = 3;
+pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
+const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
+pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;
 
 pub type BlockArray = [AmpFloat; BLOCK_SIZE];
+pub type MasterBlockArray = [AmpFloat; MASTER_BLOCK_SIZE];
 pub type TrackArray = [AmpFloat; SAMPLES];
 
 pub const EMPTY_BLOCKARRAY: BlockArray = [0.; BLOCK_SIZE];
@@ -172,28 +175,32 @@ pub unsafe fn render_track(data: &mut TrackArray) {
     let mut clove1_state1 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
     let mut clove1_state2 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
 
+    let mut master_block_offset = 0;
     let mut block_offset = 0;
-    while block_offset < SAMPLES {
 
-        // our tooling (knober) has to know: which track is used by which clove?
-        garlic_clove1::process(&SEQUENCE_0, block_offset, &mut clove1_state0);
-        garlic_clove1::process(&SEQUENCE_1, block_offset, &mut clove1_state1);
-        garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
+    while master_block_offset < SAMPLES {
 
-        for sample in 0 .. BLOCK_SIZE {
-            garlic_master.put_at(sample, 0.);
+        for master_piece in 0 .. MASTER_BLOCK_FACTOR {
+            garlic_clove1::process(&SEQUENCE_0, block_offset, &mut clove1_state0);
+            garlic_clove1::process(&SEQUENCE_1, block_offset, &mut clove1_state1);
+            garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
 
-            garlic_master.add_at(sample, clove1_state0.output[sample]); // could combine this and previous
-            garlic_master.add_at(sample, clove1_state1.output[sample]);
-            garlic_master.add_at(sample, clove1_state2.output[sample]);
+            for sample in 0 .. BLOCK_SIZE {
+                let master_sample = sample + master_piece * BLOCK_SIZE;
 
-            garlic_master.process(sample);
+                garlic_master.add_at(master_sample, clove1_state0.output[sample]);
+                garlic_master.add_at(master_sample, clove1_state1.output[sample]);
+                garlic_master.add_at(master_sample, clove1_state2.output[sample]);
+
+                garlic_master.process(master_sample);
+            }
+            block_offset += BLOCK_SIZE;
         }
-        garlic_master.write(data, block_offset);
 
-        // super::printf("Block finished: %d .. %d of %d\n\0".as_ptr(), block_offset, block_offset + BLOCK_SIZE, SAMPLES);
+        garlic_master.write(data, master_block_offset);
+        // super::printf("Block finished: %d %d .. %d\n\0".as_ptr(), master_block_offset, block_offset, SAMPLES);
 
-        block_offset += BLOCK_SIZE;
+        master_block_offset += MASTER_BLOCK_SIZE;
     }
 
     let mut clipping_count = 0;

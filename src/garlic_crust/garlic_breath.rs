@@ -1,7 +1,7 @@
 // we steal https://github.com/irh/freeverb-rs/blob/main/src/freeverb/src/freeverb.rs
 // because stealing smells like garlic!
 
-use super::*;
+use crate::garlic_head::{MasterBlockArray, MASTER_BLOCK_SIZE};
 
 pub struct GarlicBreath {
     combs: [(Comb, Comb); N_COMBS],
@@ -16,8 +16,8 @@ pub struct GarlicBreath {
     frozen: bool,
 }
 
-const N_COMBS: usize = 6;
-const N_ALLPASSES: usize = 4;
+const N_COMBS: usize = 3;
+const N_ALLPASSES: usize = 2;
 
 const FIXED_GAIN: f32 = 0.015;
 
@@ -72,18 +72,18 @@ impl GarlicBreath {
                     Comb::new(COMB_TUNING_L3),
                     Comb::new(COMB_TUNING_R3),
                 ),
-                (
-                    Comb::new(COMB_TUNING_L4),
-                    Comb::new(COMB_TUNING_R4),
-                ),
-                (
-                    Comb::new(COMB_TUNING_L5),
-                    Comb::new(COMB_TUNING_R5),
-                ),
-                (
-                    Comb::new(COMB_TUNING_L6),
-                    Comb::new(COMB_TUNING_R6),
-                ),
+                // (
+                //     Comb::new(COMB_TUNING_L4),
+                //     Comb::new(COMB_TUNING_R4),
+                // ),
+                // (
+                //     Comb::new(COMB_TUNING_L5),
+                //     Comb::new(COMB_TUNING_R5),
+                // ),
+                // (
+                //     Comb::new(COMB_TUNING_L6),
+                //     Comb::new(COMB_TUNING_R6),
+                // ),
                 // (
                 //     Comb::new(COMB_TUNING_L7),
                 //     Comb::new(COMB_TUNING_R7),
@@ -102,14 +102,14 @@ impl GarlicBreath {
                     AllPass::new(ALLPASS_TUNING_L2),
                     AllPass::new(ALLPASS_TUNING_R2),
                 ),
-                (
-                    AllPass::new(ALLPASS_TUNING_L3),
-                    AllPass::new(ALLPASS_TUNING_R3),
-                ),
-                (
-                    AllPass::new(ALLPASS_TUNING_L4),
-                    AllPass::new(ALLPASS_TUNING_R4),
-                ),
+                // (
+                //     AllPass::new(ALLPASS_TUNING_L3),
+                //     AllPass::new(ALLPASS_TUNING_R3),
+                // ),
+                // (
+                //     AllPass::new(ALLPASS_TUNING_L4),
+                //     AllPass::new(ALLPASS_TUNING_R4),
+                // ),
             ],
             wet_gains: (0.0, 0.0),
             wet: 0.0,
@@ -253,7 +253,7 @@ impl Comb {
 
 
 pub struct DelayLine {
-    buffer: BlockArray,
+    buffer: MasterBlockArray,
     length: usize,
     index: usize,
 }
@@ -261,7 +261,7 @@ pub struct DelayLine {
 impl DelayLine {
     pub fn new(delay_length: usize) -> Self {
         Self {
-            buffer: EMPTY_BLOCKARRAY.clone(), // buffer is fixed in size, but we only use "length" --> has to be smaller than BLOCK_SIZE
+            buffer: [0.; MASTER_BLOCK_SIZE], // MASTER_BLOCK_SIZE gives a limit to the total delay line length (e.g. the Comb Filters!)
             length: delay_length,
             index: 0,
         }
