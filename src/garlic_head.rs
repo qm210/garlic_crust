@@ -176,16 +176,16 @@ pub unsafe fn render_track(data: &mut TrackArray) {
     while block_offset < SAMPLES {
 
         // our tooling (knober) has to know: which track is used by which clove?
-        let track0 = garlic_clove1::process(&SEQUENCE_0, block_offset, &mut clove1_state0);
-        let track1 = garlic_clove1::process(&SEQUENCE_1, block_offset, &mut clove1_state1);
-        let track2 = garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
+        garlic_clove1::process(&SEQUENCE_0, block_offset, &mut clove1_state0);
+        garlic_clove1::process(&SEQUENCE_1, block_offset, &mut clove1_state1);
+        garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
 
         for sample in 0 .. BLOCK_SIZE {
             garlic_master.put_at(sample, 0.);
 
-            garlic_master.add_at(sample, track0.evaluate(sample)); // could combine this and previous
-            garlic_master.add_at(sample, track1.evaluate(sample));
-            garlic_master.add_at(sample, track2.evaluate(sample));
+            garlic_master.add_at(sample, clove1_state0.output[sample]); // could combine this and previous
+            garlic_master.add_at(sample, clove1_state1.output[sample]);
+            garlic_master.add_at(sample, clove1_state2.output[sample]);
 
             garlic_master.process(sample);
         }

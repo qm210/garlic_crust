@@ -5,6 +5,8 @@ use super::*;
 
 // the member fields
 pub struct Clove1State {
+    pub output: BlockArray,
+
     osc_osc1: oscillator::Oscillator,
     osc_osc1_output: Edge,
 
@@ -58,10 +60,12 @@ pub fn create_config2(preset: &str) -> Config2 {
 
 pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
     Clove1State {
+        output: EMPTY_BLOCKARRAY,
+
         osc_osc1: oscillator::Oscillator {
             shape: config1.osc1_shape,
             volume: Edge::constant(1.),
-            freq_factor: Edge::constant(0.5),
+            freq_factor: Edge::constant(1.),
             ..Default::default()
         },
         osc_osc1_output: Edge::zero(),
@@ -77,7 +81,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc2: oscillator::Oscillator {
             shape: config2.osc2_shape,
             volume: Edge::constant(1.),
-            freq_factor: Edge::constant(0.505),
+            freq_factor: Edge::constant(1.002),
             ..Default::default()
         },
         osc_osc2_output: Edge::zero(),
@@ -117,7 +121,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
  */
 
 #[inline]
-pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1State) -> Edge {
+pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1State) {
     // these function generates replace the former Edge::functions(), i.e. "math-generated parameters".
     generate_from_func(func_osc_phasemod, block_offset, &mut state.osc_osc1.phasemod);
 
@@ -143,7 +147,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
     state.lp1.cutoff = state.math_lfofiltertransform;
     process_operator(&mut state.lp1, &mut state.lp1_output);
 
-    state.lp1_output
+    state.lp1_output.write_to(&mut state.output);
 }
 
 // inline or not inline?

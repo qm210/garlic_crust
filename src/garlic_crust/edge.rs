@@ -84,6 +84,12 @@ impl Edge {
             is_const: self.is_const,
         }
     }
+
+    pub fn write_to(&self, destination: &mut BlockArray) {
+        for pos in 0 .. BLOCK_SIZE {
+            destination[pos] = self.array[pos];
+        }
+    }
 }
 
 impl Default for Edge {
