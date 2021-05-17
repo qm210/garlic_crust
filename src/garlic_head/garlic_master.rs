@@ -15,7 +15,7 @@ pub struct WaveshapeState {
 impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
-            reverb: GarlicBreath::new(),
+            reverb: GarlicBreath::new(0.05, 0.5, 0.8, 0.9, false),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -46,7 +46,7 @@ impl GarlicMaster {
 
         value = crate::math::satanurate(0.4 * value);
 
-        value = self.reverb.tick((value, value)).0;
+        value = self.reverb.tick((value, value)).0 + 0.3 * value;
 
         self.data[sample] = value;
     }

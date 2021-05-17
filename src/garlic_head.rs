@@ -370,7 +370,7 @@ const SEQUENCE_3: [SeqEvent; 6] = [
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
 pub const BLOCK_SIZE: usize = 512; // my stolen freeverb needs this for now
-const MASTER_BLOCK_FACTOR: usize = 3;
+const MASTER_BLOCK_FACTOR: usize = 4;
 pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
 const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;

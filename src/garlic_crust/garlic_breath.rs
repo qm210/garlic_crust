@@ -16,8 +16,8 @@ pub struct GarlicBreath {
     frozen: bool,
 }
 
-const N_COMBS: usize = 3;
-const N_ALLPASSES: usize = 2;
+const N_COMBS: usize = 8;
+const N_ALLPASSES: usize = 4;
 
 const FIXED_GAIN: f32 = 0.015;
 
@@ -41,10 +41,10 @@ const COMB_TUNING_L5: usize = 1422;
 const COMB_TUNING_R5: usize = 1422 + STEREO_SPREAD;
 const COMB_TUNING_L6: usize = 1491;
 const COMB_TUNING_R6: usize = 1491 + STEREO_SPREAD;
-// const COMB_TUNING_L7: usize = 1557;
-// const COMB_TUNING_R7: usize = 1557 + STEREO_SPREAD;
-// const COMB_TUNING_L8: usize = 1617;
-// const COMB_TUNING_R8: usize = 1617 + STEREO_SPREAD;
+const COMB_TUNING_L7: usize = 1557;
+const COMB_TUNING_R7: usize = 1557 + STEREO_SPREAD;
+const COMB_TUNING_L8: usize = 1617;
+const COMB_TUNING_R8: usize = 1617 + STEREO_SPREAD;
 
 const ALLPASS_TUNING_L1: usize = 556;
 const ALLPASS_TUNING_R1: usize = 556 + STEREO_SPREAD;
@@ -57,7 +57,7 @@ const ALLPASS_TUNING_R4: usize = 225 + STEREO_SPREAD;
 
 impl GarlicBreath {
 
-    pub fn new() -> Self {
+    pub fn new(wet: f32, width: f32, dampen: f32, size: f32, frozen: bool) -> Self {
         let mut freeverb = GarlicBreath {
             combs: [
                 (
@@ -72,26 +72,26 @@ impl GarlicBreath {
                     Comb::new(COMB_TUNING_L3),
                     Comb::new(COMB_TUNING_R3),
                 ),
-                // (
-                //     Comb::new(COMB_TUNING_L4),
-                //     Comb::new(COMB_TUNING_R4),
-                // ),
-                // (
-                //     Comb::new(COMB_TUNING_L5),
-                //     Comb::new(COMB_TUNING_R5),
-                // ),
-                // (
-                //     Comb::new(COMB_TUNING_L6),
-                //     Comb::new(COMB_TUNING_R6),
-                // ),
-                // (
-                //     Comb::new(COMB_TUNING_L7),
-                //     Comb::new(COMB_TUNING_R7),
-                // ),
-                // (
-                //     Comb::new(COMB_TUNING_L8),
-                //     Comb::new(COMB_TUNING_R8),
-                // ),
+                (
+                    Comb::new(COMB_TUNING_L4),
+                    Comb::new(COMB_TUNING_R4),
+                ),
+                (
+                    Comb::new(COMB_TUNING_L5),
+                    Comb::new(COMB_TUNING_R5),
+                ),
+                (
+                    Comb::new(COMB_TUNING_L6),
+                    Comb::new(COMB_TUNING_R6),
+                ),
+                (
+                    Comb::new(COMB_TUNING_L7),
+                    Comb::new(COMB_TUNING_R7),
+                ),
+                (
+                    Comb::new(COMB_TUNING_L8),
+                    Comb::new(COMB_TUNING_R8),
+                ),
             ],
             allpasses: [
                 (
@@ -102,14 +102,14 @@ impl GarlicBreath {
                     AllPass::new(ALLPASS_TUNING_L2),
                     AllPass::new(ALLPASS_TUNING_R2),
                 ),
-                // (
-                //     AllPass::new(ALLPASS_TUNING_L3),
-                //     AllPass::new(ALLPASS_TUNING_R3),
-                // ),
-                // (
-                //     AllPass::new(ALLPASS_TUNING_L4),
-                //     AllPass::new(ALLPASS_TUNING_R4),
-                // ),
+                (
+                    AllPass::new(ALLPASS_TUNING_L3),
+                    AllPass::new(ALLPASS_TUNING_R3),
+                ),
+                (
+                    AllPass::new(ALLPASS_TUNING_L4),
+                    AllPass::new(ALLPASS_TUNING_R4),
+                ),
             ],
             wet_gains: (0.0, 0.0),
             wet: 0.0,
@@ -121,13 +121,17 @@ impl GarlicBreath {
             frozen: false,
         };
 
-        freeverb.set_wet(1.0);
-        freeverb.set_width(0.5);
-        freeverb.set_dampening(0.5);
-        freeverb.set_room_size(0.5);
-        freeverb.set_frozen(false);
+        freeverb.set_wet(wet);
+        freeverb.set_width(width);
+        freeverb.set_dampening(dampen);
+        freeverb.set_room_size(size);
+        freeverb.set_frozen(frozen);
 
         freeverb
+    }
+
+    pub fn default() -> Self {
+        Self::new(1., 0.5, 0.5, 0.5, false)
     }
 
 
