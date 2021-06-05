@@ -8,16 +8,21 @@ pub mod garlic_breath;
 
 pub use edge::Edge;
 
-pub type PlayFunc = fn(TimeFloat) -> AmpFloat;
+pub type PlayFunc = fn(TimeFloat) -> Sample;
 
 pub type TimeFloat = f32;
-pub type AmpFloat = f32;
+pub type MonoSample = f32;
+
+pub type Sample = [MonoSample; 2];
+pub const L: usize = 0;
+pub const R: usize = 1;
+pub const ZERO_SAMPLE: Sample = [0., 0.];
 
 pub const SAMPLERATE: f32 = 44100.;
 
 pub trait Operator {
     fn handle_message(&mut self, message: &SeqMsg);
-    fn evaluate(&mut self, sample: usize) -> AmpFloat;
+    fn evaluate(&mut self, sample: usize) -> Sample;
     fn advance(&mut self, sample: usize);
     fn get_cursor(&mut self) -> usize;
     fn inc_cursor(&mut self);
@@ -92,3 +97,11 @@ pub fn note_frequency(note_number: SeqParameter) -> f32 {
 // loop vs for loop -- no difference at all (sizewise)
 // unsafe get_unchecked_mut vs. get_mut & unwrap
 // math::sin vs other sin?
+
+
+pub type SampleTuple = (f32, f32);
+pub const ZERO_TUPLE: SampleTuple = (0., 0.);
+
+pub fn sample_to_tuple (sample: &Sample) -> SampleTuple {
+    (sample[L], sample[R])
+}

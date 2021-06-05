@@ -65,7 +65,7 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc1: oscillator::Oscillator {
             shape: config1.osc1_shape,
             volume: Edge::constant(0.6),
-            freq_factor: Edge::constant(2.001),
+            freq_factor: Edge::constant(2.00),
             ..Default::default()
         },
         osc_osc1_output: Edge::zero(),
@@ -97,8 +97,8 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_lfo1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Triangle,
             volume: Edge::constant(1.),
-            frequency: Edge::constant(0.2),
-            phase: 0.5,
+            frequency: Edge::constant(4.),
+            phase: [0.5, 0.4],
             ..Default::default()
         },
         osc_lfo1_output: Edge::zero(),
@@ -155,21 +155,28 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
 // individual math operators (more complex than Edge::mad()) might be created directly in the clove
 fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
-        output.put_at(sample,
-            cv.evaluate(sample) * (input1.evaluate(sample) + input2.evaluate(sample))
-        );
+        for ch in 0 .. 2 { // the looping could be hidden by generalizing 2000 + and * 1800 to
+            output.put_at_mono(sample, ch,
+                cv.evaluate_mono(sample, ch) * (input1.evaluate_mono(sample, ch) + input2.evaluate_mono(sample, ch))
+            );
+        }
     }
 }
 
 #[inline]
 fn generate_math_lfofiltertransform(input: &Edge, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
-        output.put_at(sample, 2000. + input.evaluate(sample) * 1800.);
+        for ch in 0 .. 2 { // the looping could be hidden by generalizing 2000 + and * 1800 to
+            output.put_at_mono(sample, ch, 2000. + input.evaluate_mono(sample, ch) * 1800.);
+        }
     }
 }
 
-fn func_osc_phasemod(t: TimeFloat) -> AmpFloat {
-    0.02 * libm::sinf(4.*t)
+fn func_osc_phasemod(t: TimeFloat) -> Sample {
+    [
+        0.02 * libm::sinf(4.*t),
+        0.02 * libm::sinf(4.*t)
+    ]
 }
 
 // with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)

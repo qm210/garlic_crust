@@ -1,7 +1,8 @@
 // we steal https://github.com/irh/freeverb-rs/blob/main/src/freeverb/src/freeverb.rs
 // because stealing smells like garlic!
 
-use crate::garlic_head::{MasterBlockArray, MASTER_BLOCK_SIZE};
+use crate::garlic_head::{MasterBlockMono, MASTER_BLOCK_SIZE};
+use crate::garlic_crust::{Sample, L, R};
 
 pub struct GarlicBreath {
     combs: [(Comb, Comb); N_COMBS],
@@ -135,25 +136,25 @@ impl GarlicBreath {
     }
 
 
-    pub fn tick(&mut self, input: (f32, f32)) -> (f32, f32) {
-        let input_mixed = (input.0 + input.1) * FIXED_GAIN * self.input_gain;
+    pub fn tick(&mut self, input: Sample) -> Sample {
+        let input_mixed = (input[0] + input[1]) * FIXED_GAIN * self.input_gain;
 
-        let mut out = (0., 0.);
+        let mut out = [0., 0.];
 
         for i in 0 .. N_COMBS {
-            out.0 += self.combs[i].0.tick(input_mixed);
-            out.1 += self.combs[i].1.tick(input_mixed);
+            out[L] += self.combs[i].0.tick(input_mixed);
+            out[R] += self.combs[i].1.tick(input_mixed);
         }
 
         for i in 0 .. N_ALLPASSES {
-            out.0 = self.allpasses[i].0.tick(out.0);
-            out.1 = self.allpasses[i].1.tick(out.1);
+            out[L] = self.allpasses[i].0.tick(out[0]);
+            out[R] = self.allpasses[i].1.tick(out[0]);
         }
 
-        (
-            out.0 * self.wet_gains.0 + out.1 * self.wet_gains.1 + input.0 * self.dry,
-            out.1 * self.wet_gains.0 + out.0 * self.wet_gains.1 + input.1 * self.dry,
-        )
+        [
+            out[L] * self.wet_gains.0 + out[L] * self.wet_gains.1 + input[0] * self.dry,
+            out[R] * self.wet_gains.0 + out[R] * self.wet_gains.1 + input[1] * self.dry,
+        ]
     }
 
     pub fn set_dampening(&mut self, value: f32) {
@@ -257,7 +258,7 @@ impl Comb {
 
 
 pub struct DelayLine {
-    buffer: MasterBlockArray,
+    buffer: MasterBlockMono,
     length: usize,
     index: usize,
 }

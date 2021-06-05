@@ -17,7 +17,7 @@ pub struct Oscillator {
     pub freq_factor: Edge,
     pub phasemod: Edge,
     pub detune: Edge,
-    pub phase: TimeFloat,
+    pub phase: [TimeFloat; 2],
     pub seq_cursor: usize,
 }
 
@@ -25,7 +25,7 @@ impl Operator for Oscillator {
     fn handle_message(&mut self, message: &SeqMsg) {
         match &message {
             SeqMsg::NoteOn(note_key, _) => {
-                self.phase = 0.;
+                self.phase = [0., 0.];
                 self.frequency = self.freq_factor.clone_scaled(note_frequency(*note_key));
             },
             // could react to Volume or whatevs here.
@@ -33,19 +33,23 @@ impl Operator for Oscillator {
         }
     }
 
-    fn evaluate(&mut self, sample: usize) -> AmpFloat {
-        let phase = self.phase + self.phasemod.evaluate(sample);
+    fn evaluate(&mut self, sample: usize) -> Sample {
+        let phaseL = self.phase[L] + self.phasemod.evaluate_mono(sample, L);
+        let phaseR = self.phase[R] + self.phasemod.evaluate_mono(sample, R);
 
-        let result_in_tune = self.evaluate_at(phase);
-        let result_detuned = self.evaluate_at(phase * (1. + self.detune.evaluate(sample)));
+        let resultL = self.evaluate_at(phaseL) * self.volume.evaluate_mono(sample, L);
+        let resultR = self.evaluate_at(phaseR) * self.volume.evaluate_mono(sample, R);
 
-        0.5 * (result_in_tune + result_detuned) * self.volume.evaluate(sample)
+        [resultL, resultR]
     }
 
     fn advance(&mut self, sample: usize) {
-        self.phase += self.frequency.evaluate(sample) / SAMPLERATE;
-        if self.phase >= 1. {
-            self.phase -= 1.;
+        let freq = self.frequency.evaluate(sample);
+        for ch in 0 .. 2 {
+            self.phase[ch] += freq[ch] / SAMPLERATE;
+            if self.phase[ch] >= 1. {
+                self.phase[ch] -= 1.;
+            }
         }
     }
 
@@ -59,8 +63,8 @@ impl Operator for Oscillator {
 }
 
 impl Oscillator {
-    fn evaluate_at(&self, phase: TimeFloat) -> AmpFloat {
-        let basewave_value: AmpFloat = match self.shape {
+    fn evaluate_at(&self, phase: TimeFloat) -> MonoSample {
+        let basewave_value: MonoSample = match self.shape {
             BaseWave::Sine => sin(TAU * phase),
             BaseWave::Square => (37. * sin(TAU * phase)).clamp(-1., 1.),
             BaseWave::Saw => 2. * libm::fmodf(phase, 1.) - 1.,
@@ -81,7 +85,7 @@ impl Default for Oscillator {
             freq_factor: Edge::constant(1.),
             phasemod: Edge::zero(),
             detune: Edge::zero(),
-            phase: 0.,
+            phase: [0., 0.],
             seq_cursor: 0
         }
     }

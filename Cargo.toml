@@ -20,7 +20,7 @@ opt-level = 0
 panic = "abort"
 
 [dependencies]
-winapi = { version = "0.3.8", features = ["winuser", "libloaderapi", "processthreadsapi", "fileapi", "handleapi", "mmreg", "mmsystem", "mmeapi" ] }
+winapi = { version = "0.3.9", features = ["winuser", "libloaderapi", "processthreadsapi", "fileapi", "handleapi", "mmreg", "mmsystem", "mmeapi" ] }
 libm = "0.2.1"
 libc = "0.2.93"
 midly = { version = "0.5.1", default-features = false, features = [] }
@@ -29,3 +29,4 @@ midly = { version = "0.5.1", default-features = false, features = [] }
 # ryu = "1.0.5" # fast float-string-conversion
 # glam = { version = "0.13.0", default-features = false, features = ["libm"] } # in case we want their smoothstep or something
 half = "1.7.1"
+named_tuple = "0.1.3"

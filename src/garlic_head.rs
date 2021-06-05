@@ -1,3 +1,4 @@
+use crate::garlic_crust::ZERO_SAMPLE;
 use super::garlic_crust::*;
 
 // TODO: track could be a byte array. if that saves us something?
@@ -366,7 +367,6 @@ const SEQUENCE_3: [SeqEvent; 6] = [
     SeqEvent {pos: 1243651, message: SeqMsg::NoteOff },
 ];
 
-
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
 pub const BLOCK_SIZE: usize = 512; // my stolen freeverb needs this for now
@@ -375,17 +375,18 @@ pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
 const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;
 
-pub type BlockArray = [AmpFloat; BLOCK_SIZE];
-pub type MasterBlockArray = [AmpFloat; MASTER_BLOCK_SIZE];
-pub type TrackArray = [AmpFloat; SAMPLES];
+pub type BlockArray = [Sample; BLOCK_SIZE];
+pub type MasterBlockArray = [Sample; MASTER_BLOCK_SIZE];
+pub type MasterBlockMono = [MonoSample; MASTER_BLOCK_SIZE];
+pub type TrackArray = [Sample; SAMPLES];
 
-pub const EMPTY_BLOCKARRAY: BlockArray = [0.; BLOCK_SIZE];
+pub const EMPTY_BLOCKARRAY: BlockArray = [ZERO_SAMPLE; BLOCK_SIZE];
 
 mod garlic_clove1;
 mod garlic_master;
 
-pub unsafe fn render_track(data: &mut TrackArray) {
-
+pub unsafe fn render_track(data_tuple: &mut [SampleTuple; SAMPLES]) {
+    let mut data = [ZERO_SAMPLE; SAMPLES];
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 
     // we need global initialization, one per clove and each their sequence
@@ -420,7 +421,7 @@ pub unsafe fn render_track(data: &mut TrackArray) {
             block_offset += BLOCK_SIZE;
         }
 
-        garlic_master.write(data, master_block_offset);
+        garlic_master.write(&mut data, master_block_offset);
         // super::printf("Block finished: %d %d .. %d\n\0".as_ptr(), master_block_offset, block_offset, SAMPLES);
 
         master_block_offset += MASTER_BLOCK_SIZE;
@@ -431,16 +432,19 @@ pub unsafe fn render_track(data: &mut TrackArray) {
     let mut min_sample = 0.;
 
     for sample in 0 .. SAMPLES {
-        if data[sample] > 1. || data[sample] < -1. {
+        if data[sample][L] > 1. || data[sample][L] < -1.
+        || data[sample][R] > 1. || data[sample][R] < -1. {
             clipping_count += 1;
-            data[sample] = data[sample].clamp(-1., 1.);
         }
-        if data[sample] > max_sample {
-            max_sample = data[sample];
+        for ch in 0..2 {
+            if data[sample][ch] > max_sample {
+                max_sample = data[sample][ch];
+            }
+            if data[sample][ch] < min_sample {
+                min_sample = data[sample][ch];
+            }
         }
-        if data[sample] < min_sample {
-            min_sample = data[sample];
-        }
+        data_tuple[sample] = (data[sample][L].clamp(-1., 1.), data[sample][R].clamp(-1., 1.));
     }
 
     super::printf("Real duration: %.3fs\n\0".as_ptr(), SAMPLES as f64 / SAMPLERATE as f64);

@@ -174,7 +174,7 @@ const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
 
 static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg::WAVEFORMATEX{
     wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT,
-    nChannels : 1,
+    nChannels : 2,
     nSamplesPerSec : SAMPLERATE_INT,
     nAvgBytesPerSec : SAMPLERATE_INT * 4,
     nBlockAlign : 4,
@@ -193,7 +193,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
     reserved: 0,
 };
 
-static mut GARLIC_DATA : [garlic_crust::AmpFloat; garlic_head::SAMPLES] = [0.0; garlic_head::SAMPLES];
+static mut GARLIC_DATA : [garlic_crust::SampleTuple; garlic_head::SAMPLES] = [(0.0, 0.0); garlic_head::SAMPLES];
 
 /*
 static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
