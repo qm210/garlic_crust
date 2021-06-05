@@ -32,9 +32,10 @@ impl GarlicMaster {
         self.data[pos][R] += value[R];
     }
 
-    pub fn write(&self, data: &mut TrackArray, master_block_offset: usize) {
+    pub fn write(&self, data: &mut StereoTrack, master_block_offset: usize) {
         for sample in 0 .. MASTER_BLOCK_SIZE {
-            data[master_block_offset + sample] = self.data[sample];
+            data[master_block_offset + 2 * sample] = self.data[sample][0];
+            data[master_block_offset + 2 * sample + 1] = self.data[sample][1];
         }
     }
 

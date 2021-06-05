@@ -193,7 +193,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
     reserved: 0,
 };
 
-static mut GARLIC_DATA : [garlic_crust::SampleTuple; garlic_head::SAMPLES] = [(0.0, 0.0); garlic_head::SAMPLES];
+static mut GARLIC_DATA : [garlic_crust::MonoSample; garlic_head::SAMPLES * 2] = [0.0; garlic_head::SAMPLES * 2];
 
 /*
 static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
