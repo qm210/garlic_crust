@@ -369,8 +369,8 @@ const SEQUENCE_3: [SeqEvent; 6] = [
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 512;
-const MASTER_BLOCK_FACTOR: usize = 4; // my stolen freeverb needs this for now
+pub const BLOCK_SIZE: usize = 256;
+const MASTER_BLOCK_FACTOR: usize = 8; // my stolen freeverb needs this for now
 pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
 const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;
@@ -384,6 +384,12 @@ pub const EMPTY_BLOCKARRAY: BlockArray = [ZERO_SAMPLE; BLOCK_SIZE];
 
 mod garlic_clove1;
 mod garlic_master;
+
+pub unsafe fn render_track_debug(data: &mut StereoTrack) {
+    for i in 0 .. 2 * SAMPLES {
+        data[i] = crate::math::sin(440. * crate::math::TAU * (i as f32) / SAMPLERATE);
+    }
+}
 
 pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
@@ -423,7 +429,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
         garlic_master.write(data, master_block_offset);
         // super::printf("Block finished: %d %d .. %d\n\0".as_ptr(), master_block_offset, block_offset, SAMPLES);
 
-        master_block_offset += 2 * MASTER_BLOCK_SIZE;
+        master_block_offset += 2 * MASTER_BLOCK_SIZE; // 2 * due to Stereo
     }
 
     let mut clipping_count = 0;

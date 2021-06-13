@@ -184,7 +184,7 @@ static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg
 
 static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::WAVEHDR{
     lpData: 0 as *mut i8,
-    dwBufferLength: 4*(garlic_head::SAMPLES as u32),
+    dwBufferLength: 4 * (garlic_head::SAMPLES as u32),
     dwBytesRecorded: 0,
     dwUser: 0,
     dwFlags: 0,
@@ -193,6 +193,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
     reserved: 0,
 };
 
+// 2 because of WAVE_FORMAT.nChannels
 static mut GARLIC_DATA : [garlic_crust::MonoSample; garlic_head::SAMPLES * 2] = [0.0; garlic_head::SAMPLES * 2];
 
 /*
@@ -202,19 +203,25 @@ static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
 };
 */
 
+static mut h_waveout : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
+
+static mut mmTime: winapi::um::mmsystem::PMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
+
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
 
     unsafe {
-        garlic_head::render_track(&mut GARLIC_DATA);
+        //garlic_head::render_track(&mut GARLIC_DATA);
+        garlic_head::render_track_debug(&mut GARLIC_DATA);
         log!("Render finished\n\0");
 
         WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
-        let mut h_waveout : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
         winapi::um::mmeapi::waveOutOpen( &mut h_waveout, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
         winapi::um::mmeapi::waveOutPrepareHeader(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
         winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+
+        // (*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
     }
 
     // debugging
@@ -243,7 +250,7 @@ pub extern "system" fn mainCRTStartup() {
 
         /*
         unsafe {
-            winapi::um::mmeapi::waveOutGetPosition(h_waveout, pmmt: LPMMTIME, cbmmt: UINT)
+            winapi::um::mmeapi::waveOutGetPosition(h_waveout, mmTime, core::mem::size_of::<winapi::um::mmsystem::PMMTIME>() as u32);
         }
         */
         // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
