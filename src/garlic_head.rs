@@ -386,8 +386,9 @@ mod garlic_clove1;
 mod garlic_master;
 
 pub unsafe fn render_track_debug(data: &mut StereoTrack) {
-    for i in 0 .. 2 * SAMPLES {
-        data[i] = crate::math::sin(440. * crate::math::TAU * (i as f32) / SAMPLERATE);
+    for i in 0 .. SAMPLES {
+        data[2*i] = crate::math::sin(60. * crate::math::TAU * (i as f32) / SAMPLERATE);
+        data[2*i+1] = crate::math::sin(62. * crate::math::TAU * (i as f32) / SAMPLERATE);
     }
 }
 

@@ -173,11 +173,11 @@ pub unsafe extern fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 
 const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
 
 static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg::WAVEFORMATEX{
-    wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT,
+    wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT, // winapi::shared::mmreg::WAVE_FORMAT_PCM, //
     nChannels : 2,
     nSamplesPerSec : SAMPLERATE_INT,
-    nAvgBytesPerSec : SAMPLERATE_INT * 4,
-    nBlockAlign : 4,
+    nAvgBytesPerSec : SAMPLERATE_INT * 4 * 2,
+    nBlockAlign : 4 * 2,
     wBitsPerSample: 32,
     cbSize:0
  };
@@ -212,8 +212,7 @@ pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
 
     unsafe {
-        //garlic_head::render_track(&mut GARLIC_DATA);
-        garlic_head::render_track_debug(&mut GARLIC_DATA);
+        garlic_head::render_track(&mut GARLIC_DATA);
         log!("Render finished\n\0");
 
         WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
