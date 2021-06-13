@@ -19,7 +19,7 @@ impl GarlicMaster {
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
-            data: [ZERO_SAMPLE; MASTER_BLOCK_SIZE],
+            data: [[0., 0.]; MASTER_BLOCK_SIZE],
         }
     }
 
@@ -32,9 +32,10 @@ impl GarlicMaster {
         self.data[pos][R] += value[R];
     }
 
-    pub fn write(&self, data: &mut TrackArray, master_block_offset: usize) {
+    pub fn write(&self, data: &mut StereoTrack, master_block_offset: usize) {
         for sample in 0 .. MASTER_BLOCK_SIZE {
-            data[master_block_offset + sample] = self.data[sample];
+            data[master_block_offset + 2 * sample] = self.data[sample][0];
+            data[master_block_offset + 2 * sample + 1] = self.data[sample][1];
         }
     }
 
@@ -45,14 +46,14 @@ impl GarlicMaster {
             value = (value + self.waveshape_state.amount * waveshape1(value)) / (1. + self.waveshape_state.amount);
             self.waveshape_state.amount += 0.7e-5;
 
-            value = crate::math::satanurate(0.4 * value);
+            self.data[sample][channel] = crate::math::satanurate(0.4 * value);
         }
 
         let mut value = self.data[sample];
-        let wet = self.reverb.tick(value);
+        let wet = ZERO_SAMPLE;//self.reverb.tick(value);
 
         for channel in 0 .. 2 {
-            value[channel] = wet[channel] + 0.3 * value[channel];
+            value[channel] = wet[channel] + value[channel];
         }
 
         self.data[sample] = value;
