@@ -43,14 +43,16 @@ impl GarlicMaster {
         for channel in 0 .. 2 {
             let mut value = self.data[sample][channel];
             // simple waveshaper, for se lolz
+            /*
             value = (value + self.waveshape_state.amount * waveshape1(value)) / (1. + self.waveshape_state.amount);
             self.waveshape_state.amount += 0.7e-5;
+            */
 
             self.data[sample][channel] = crate::math::satanurate(0.4 * value);
         }
 
         let mut value = self.data[sample];
-        let wet = ZERO_SAMPLE;//self.reverb.tick(value);
+        let wet = self.reverb.tick(value);
 
         for channel in 0 .. 2 {
             value[channel] = wet[channel] + value[channel];

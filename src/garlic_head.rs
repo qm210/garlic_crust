@@ -369,8 +369,8 @@ const SEQUENCE_3: [SeqEvent; 6] = [
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 256;
-const MASTER_BLOCK_FACTOR: usize = 8; // my stolen freeverb needs this for now
+pub const BLOCK_SIZE: usize = 256; // larger blocks might result in STATUS_STACK_OVERFLOW
+const MASTER_BLOCK_FACTOR: usize = 8; // my stolen freeverb needs BLOCK_SIZE * MASTER_BLOCK_FACTOR >= 1700
 pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
 const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;
@@ -384,13 +384,6 @@ pub const EMPTY_BLOCKARRAY: BlockArray = [ZERO_SAMPLE; BLOCK_SIZE];
 
 mod garlic_clove1;
 mod garlic_master;
-
-pub unsafe fn render_track_debug(data: &mut StereoTrack) {
-    for i in 0 .. SAMPLES {
-        data[2*i] = crate::math::sin(60. * crate::math::TAU * (i as f32) / SAMPLERATE);
-        data[2*i+1] = crate::math::sin(62. * crate::math::TAU * (i as f32) / SAMPLERATE);
-    }
-}
 
 pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
