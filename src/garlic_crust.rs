@@ -39,7 +39,6 @@ pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], bloc
     let mut next_event = next_event_option(&sequence, op.get_cursor());
 
     for sample in 0 .. BLOCK_SIZE {
-
         while let Some(event) = next_event {
             if event.pos > sample + block_offset {
                 break;
@@ -56,6 +55,20 @@ pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], bloc
 
 pub fn process_operator<O: Operator>(op: &mut O, output: &mut Edge) {
     for sample in 0 .. BLOCK_SIZE {
+        output.put_at(sample, op.evaluate(sample));
+        op.advance(sample);
+    }
+}
+
+const INIT: SeqMsg = SeqMsg::Init;
+pub type TriggerFunc = dyn Fn(usize) -> bool;
+pub fn process_operator_dyn<O: Operator>(op: &mut O, trigger: &TriggerFunc, block_offset: usize, output: &mut Edge) {
+
+    for sample in 0 .. BLOCK_SIZE {
+        if trigger(block_offset + sample) {
+            op.handle_message(&INIT);
+        }
+
         output.put_at(sample, op.evaluate(sample));
         op.advance(sample);
     }
@@ -84,6 +97,7 @@ pub enum SeqMsg {
     SetVel,
     SetSlide,
     SetPan,
+    Init,
     // ...?
 }
 

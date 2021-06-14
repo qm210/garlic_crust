@@ -28,6 +28,9 @@ impl Operator for Envelope {
                 self.playhead = 0.;
                 self.note_vel = *note_vel as MonoSample / 127.;
             },
+            SeqMsg::Init => {
+                self.playhead = 0.;
+            },
             _ => ()
         }
     }

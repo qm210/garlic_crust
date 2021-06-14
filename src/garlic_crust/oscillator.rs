@@ -25,8 +25,11 @@ impl Operator for Oscillator {
     fn handle_message(&mut self, message: &SeqMsg) {
         match &message {
             SeqMsg::NoteOn(note_key, _) => {
-                self.phase = [0., 0.];
+                self.phase = ZERO_SAMPLE;
                 self.frequency = self.freq_factor.clone_scaled(note_frequency(*note_key));
+            },
+            SeqMsg::Init => {
+                self.phase = ZERO_SAMPLE;
             },
             // could react to Volume or whatevs here.
             _ => ()
