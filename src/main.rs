@@ -6,6 +6,7 @@
 #![feature(static_nobundle)]
 //#![feature(c_variadic)] // printf-compat experiment
 // #![allow(unused_variables, unused_imports)] // QM: clean up later
+#![allow(dead_code, non_snake_case)]
 
 #[cfg(windows)] extern crate winapi;
 
@@ -53,7 +54,6 @@ use winapi::um::winuser::{
     GetDC,
     PostQuitMessage,
     RegisterClassA,
-    MessageBoxA,
 
     WNDCLASSA,
     CS_OWNDC,
@@ -62,7 +62,6 @@ use winapi::um::winuser::{
     CW_USEDEFAULT,
     WS_OVERLAPPEDWINDOW,
     WS_VISIBLE,
-    MB_ICONERROR,
 };
 
 

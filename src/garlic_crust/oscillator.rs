@@ -49,7 +49,7 @@ impl Operator for Oscillator {
     fn advance(&mut self, sample: usize) {
         let freq = self.frequency.evaluate(sample);
         for ch in 0 .. 2 {
-            self.phase[ch] += freq[ch] / SAMPLERATE;
+            self.phase[ch] += freq[ch] * INV_SAMPLERATE;
             if self.phase[ch] >= 1. {
                 self.phase[ch] -= 1.;
             }

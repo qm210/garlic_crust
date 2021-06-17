@@ -27,6 +27,7 @@ pub fn create_state() -> Smash1State {
         output: EMPTY_BLOCKARRAY,
 
         osc: oscillator::Oscillator {
+            frequency: Edge::constant(46.25), // F#1
             ..Default::default()
         },
         osc_output: Edge::zero(),
@@ -42,16 +43,37 @@ pub fn create_state() -> Smash1State {
         env_vca_output: Edge::zero(),
 
         env_freq: envelope::Envelope {
-            attack: Edge::zero(),
-            decay: Edge::constant(0.1),
-            min: Edge::constant(80.),
-            max: Edge::constant(500.),
-            shape: envelope::BaseEnv::ExpDecay,
+            shape: envelope::BaseEnv::Generic {
+                func: kick_freq_env
+            },
             ..Default::default()
         },
         env_freq_output: Edge::zero(),
 
         dist: Edge::zero(),
+    }
+}
+
+#[inline]
+fn slope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSample) -> MonoSample {
+    y0 + (t - t0) / (t1 - t0) * (y1 - y0)
+}
+
+fn powerslope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSample, power: f32) -> MonoSample {
+    let result = slope(t, t0, t1, y0, y1);
+    libm::powf(result, power)
+}
+
+
+fn kick_freq_env(t: TimeFloat) -> MonoSample {
+    let a = 5e-3;
+    let ah = a + 17e-3;
+    let ahd = ah + 54e-3;
+    match t {
+        x if x < a => 1., // slope(t, 0., a, 0., 1.),
+        x if x < ah => 1.,
+        x if x < ahd => 0., // powerslope(t, ah, ahd, 1., 0., 3.),
+        _ => 0.
     }
 }
 
@@ -66,17 +88,20 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 
     process_operator_dyn(&mut state.env_vca, &trigger, block_offset, &mut state.env_vca_output);
     state.osc.volume = state.env_vca_output;
-    process_operator_dyn(&mut state.env_freq, &trigger, block_offset, &mut state.env_freq_output);
-    state.osc.frequency = state.env_freq_output;
+    //process_operator_dyn(&mut state.env_freq, &trigger, block_offset, &mut state.env_freq_output);
+    //state.osc.frequency = state.env_freq_output;
 
     process_operator_dyn(&mut state.osc, &trigger, block_offset, &mut state.osc_output);
     //process_operator(&mut state.osc, &mut state.osc_output);
 
-    math_distort(&mut state.osc_output);
+    //math_distort(&mut state.osc_output);
 
     state.osc_output.write_to(&mut state.output);
 }
 
+/* trigger() holds, as a mathematical function, the repetition pattern of the kick.
+ * it will be produced by dynamo210 soon.
+*/
 #[inline]
 fn trigger(total_sample: usize) -> bool {
     let total_beat = DYNAMO.beat(total_sample);
@@ -88,7 +113,7 @@ fn trigger(total_sample: usize) -> bool {
     // two options: something regular (-> fmodf) or one-shots
     let beat_trigger = libm::fmodf(beat_inside_pattern, 0.5);
 
-    return beat_trigger >= 0. && beat_trigger < garlic_dynamo::TICK;
+    return beat_trigger >= 0. && beat_trigger <= INV_SAMPLERATE;
 }
 
 // inline or not inline?

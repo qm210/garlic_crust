@@ -103,7 +103,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
         }
     }
 
-    super::printf("Real duration: %.3fs\n\0".as_ptr(), SAMPLES as f64 / SAMPLERATE as f64);
+    super::printf("Real duration: %.3fs\n\0".as_ptr(), SAMPLES as f64 * INV_SAMPLERATE as f64);
     super::printf("Range: %.3f .. %.3f\n\0".as_ptr(), min_sample as f64, max_sample as f64);
     super::printf("Clipping counter: %d\n\0".as_ptr(), clipping_count);
 }

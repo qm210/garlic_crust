@@ -7,6 +7,9 @@ pub enum BaseEnv {
     ExpDecay,
     Swell,
     Const,
+    Generic {
+        func: MonoFunc
+    }
 }
 
 pub struct Envelope {
@@ -52,10 +55,9 @@ impl Operator for Envelope {
                 },
                 BaseEnv::Swell => {
                     crate::math::smoothstep(-attack[ch], attack[ch], self.playhead)
-                }
-                BaseEnv::Const => {
-                    1.0
-                }
+                },
+                BaseEnv::Const => 1.0,
+                BaseEnv::Generic { func } => func(self.playhead),
             };
             result[ch] = min[ch] + (max[ch] - min[ch]) * norm_result.clamp(0., 1.)
         }
@@ -63,7 +65,7 @@ impl Operator for Envelope {
     }
 
     fn advance(&mut self, _: usize) {
-        self.playhead += 1. / SAMPLERATE;
+        self.playhead += INV_SAMPLERATE;
     }
 
     fn get_cursor(&mut self) -> usize {
