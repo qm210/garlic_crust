@@ -202,9 +202,15 @@ static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
 };
 */
 
-static mut h_waveout : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
+static mut h_waveout: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
 
-static mut mmTime: winapi::um::mmsystem::PMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
+//static mut mmTime: winapi::um::mmsystem::LPMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
+
+/*static mut MM_TIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
+    wType: winapi::um::mmsystem::TIME_MS,
+    u: winapi::um::mmsystem::MMTIME_u::from(0 as winapi::um::mmsystem::MMTIME_u)
+};
+*/
 
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
@@ -219,7 +225,7 @@ pub extern "system" fn mainCRTStartup() {
         winapi::um::mmeapi::waveOutPrepareHeader(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
         winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
 
-        // (*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
+        //(*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
     }
 
     // debugging
@@ -232,7 +238,8 @@ pub extern "system" fn mainCRTStartup() {
     }
     */
 
-    let mut time: garlic_crust::TimeFloat = 0.;
+    let mut time_ms: u32;
+    let end_ms = unsafe { winapi::um::timeapi::timeGetTime() } + (garlic_head::SECONDS * 1000.) as u32 + 100;
 
     loop {
 
@@ -246,15 +253,16 @@ pub extern "system" fn mainCRTStartup() {
 
         // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
 
-        /*
-        unsafe {
-            winapi::um::mmeapi::waveOutGetPosition(h_waveout, mmTime, core::mem::size_of::<winapi::um::mmsystem::PMMTIME>() as u32);
-        }
-        */
-        // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
-        time += 1.0 / 60.0;
+        time_ms = unsafe {
+            //let result = winapi::um::mmeapi::waveOutGetPosition(h_waveout, mmTime, core::mem::size_of::<winapi::um::mmsystem::MMTIME>() as u32);
+            // (*mmTime).u.ms() // or something??
+            winapi::um::timeapi::timeGetTime()
+        };
 
-        if time > garlic_head::SECONDS {
+        // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
+        //time += 1.0 / 60.0;
+
+        if time_ms > end_ms {
             break;
         }
     }
