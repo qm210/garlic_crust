@@ -98,7 +98,6 @@ impl Edge {
     }
 
     pub fn mad(&mut self, multiply: &Edge, add: &Edge) -> Edge {
-        let mut array = EMPTY_BLOCKARRAY; // probably expensive
         for pos in 0 .. BLOCK_SIZE {
             for ch in 0 .. 2 {
                 self.array[pos][ch] = multiply.evaluate_mono(pos, ch) * self.evaluate_mono(pos, ch) + add.evaluate_mono(pos, ch);

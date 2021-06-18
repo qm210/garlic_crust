@@ -4,9 +4,7 @@
 #![windows_subsystem = "console"]
 #![feature(core_intrinsics)]
 #![feature(static_nobundle)]
-//#![feature(c_variadic)] // printf-compat experiment
-// #![allow(unused_variables, unused_imports)] // QM: clean up later
-#![allow(dead_code, non_snake_case)]
+#![allow(dead_code, non_snake_case, unused_imports)]
 
 #[cfg(windows)] extern crate winapi;
 
@@ -175,7 +173,7 @@ pub unsafe extern fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 
     dest
 }
 
-const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
+pub const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
 
 static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg::WAVEFORMATEX{
     wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT, // winapi::shared::mmreg::WAVE_FORMAT_PCM, //
@@ -199,7 +197,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
 };
 
 // 2 because of WAVE_FORMAT.nChannels
-static mut GARLIC_DATA : [garlic_crust::MonoSample; garlic_head::SAMPLES_TWICE] = [0.0; garlic_head::SAMPLES_TWICE];
+static mut GARLIC_DATA : garlic_head::StereoTrack = [0.0; garlic_head::SAMPLES_TWICE];
 
 /*
 static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
@@ -224,8 +222,10 @@ pub extern "system" fn mainCRTStartup() {
 
     unsafe {
         garlic_head::render_track(&mut GARLIC_DATA);
-        log!("Render finished\n\0");
+    }
+    log!("Render finished\n\0");
 
+    unsafe {
         WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
         winapi::um::mmeapi::waveOutOpen( &mut H_WAVEOUT, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
         winapi::um::mmeapi::waveOutPrepareHeader(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
@@ -233,7 +233,7 @@ pub extern "system" fn mainCRTStartup() {
 
         //(*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
         #[cfg(debug_assertions)] {
-            debug::write_wave_file();
+            debug::write_wave_file(&GARLIC_DATA);
         }
     }
 

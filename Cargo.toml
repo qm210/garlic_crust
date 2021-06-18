@@ -30,4 +30,4 @@ midly = { version = "0.5.1", default-features = false, features = [] }
 # glam = { version = "0.13.0", default-features = false, features = ["libm"] } # in case we want their smoothstep or something
 
 # dependencies only for debug mode (which can use std and stuff.)
-wav = "1.0.0" # debug write to .wav file!
+hound = "3.4.0" # debug write to .wav file!
