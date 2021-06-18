@@ -15,6 +15,11 @@ pub mod math;
 mod garlic_crust;
 mod garlic_head;
 
+// debug profile uses std library (e.g. for .wav file writing).
+// this should better be a "feature" in cargo, but for now, its not.
+#[cfg(debug_assertions)]
+mod debug;
+
 use core::panic::PanicInfo;
 
 use winapi::um::wingdi::{
@@ -145,6 +150,7 @@ fn create_window( ) -> ( HWND, HDC ) {
     }
 }
 
+#[cfg(not(debug_assertions))]
 #[panic_handler]
 #[no_mangle]
 pub extern fn panic( _info: &PanicInfo ) -> ! { loop {} }
@@ -226,6 +232,9 @@ pub extern "system" fn mainCRTStartup() {
         winapi::um::mmeapi::waveOutWrite(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
 
         //(*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
+        #[cfg(debug_assertions)] {
+            debug::write_wave_file();
+        }
     }
 
     // debugging

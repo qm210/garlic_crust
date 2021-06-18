@@ -15,8 +15,8 @@ opt-level = "z"
 panic = 'abort'
 
 [profile.dev]
-lto = true
 opt-level = 0
+lto = true
 panic = "abort"
 
 [dependencies]
@@ -28,4 +28,6 @@ midly = { version = "0.5.1", default-features = false, features = [] }
 # cty = "0.2.1" # for C types as c_double (for printf), but this is the same as f64
 # ryu = "1.0.5" # fast float-string-conversion
 # glam = { version = "0.13.0", default-features = false, features = ["libm"] } # in case we want their smoothstep or something
-half = "1.7.1"
+
+# dependencies only for debug mode (which can use std and stuff.)
+wav = "1.0.0" # debug write to .wav file!

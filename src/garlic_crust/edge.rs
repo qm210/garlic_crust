@@ -97,18 +97,17 @@ impl Edge {
         return *self;
     }
 
-    pub fn mad(&self, multiply: &Edge, add: &Edge) -> Edge {
+    pub fn mad(&mut self, multiply: &Edge, add: &Edge) -> Edge {
         let mut array = EMPTY_BLOCKARRAY; // probably expensive
         for pos in 0 .. BLOCK_SIZE {
             for ch in 0 .. 2 {
-                array[pos][ch] = multiply.evaluate_mono(pos, ch) * self.evaluate_mono(pos, ch) + add.evaluate_mono(pos, ch);
+                self.array[pos][ch] = multiply.evaluate_mono(pos, ch) * self.evaluate_mono(pos, ch) + add.evaluate_mono(pos, ch);
             }
         }
-        Edge {
-            array,
-            is_const: self.is_const && multiply.is_const && add.is_const,
-            is_mono: self.is_mono && multiply.is_mono && add.is_mono // TODO: think about whether this has some sense in it
-        }
+        self.is_const = self.is_const && multiply.is_const && add.is_const;
+        self.is_mono = self.is_mono && multiply.is_mono && add.is_mono; // TODO: think about whether this has some sense in it
+
+        *self
     }
 
     pub fn clone_scaled(&self, factor: f32) -> Edge {

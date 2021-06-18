@@ -28,6 +28,9 @@ pub fn create_state() -> Smash1State {
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(46.25), // F#1
+            detune: Edge::constant_stereo([0., 0.02]),
+            phasemod: Edge::constant_stereo([0.3, 0.]),
+            shape: oscillator::BaseWave::Triangle,
             ..Default::default()
         },
         osc_output: Edge::zero(),
@@ -87,12 +90,12 @@ fn kick_freq_env(t: TimeFloat) -> MonoSample {
 pub fn process(block_offset: usize, state: &mut Smash1State) {
 
     process_operator_dyn(&mut state.env_vca, &trigger, block_offset, &mut state.env_vca_output);
-    state.osc.volume = state.env_vca_output;
+    //state.osc.volume = state.env_vca_output;
     //process_operator_dyn(&mut state.env_freq, &trigger, block_offset, &mut state.env_freq_output);
     //state.osc.frequency = state.env_freq_output;
 
-    process_operator_dyn(&mut state.osc, &trigger, block_offset, &mut state.osc_output);
-    //process_operator(&mut state.osc, &mut state.osc_output);
+    //process_operator_dyn(&mut state.osc, &trigger, block_offset, &mut state.osc_output);
+    process_operator(&mut state.osc, &mut state.osc_output);
 
     //math_distort(&mut state.osc_output);
 
