@@ -28,7 +28,7 @@ impl Edge {
         }
     }
 
-    pub fn constant_sample(sample: Sample) -> Edge {
+    pub fn constant_stereo(sample: Sample) -> Edge {
         let mut array = EMPTY_BLOCKARRAY;
         for pos in 0 .. BLOCK_SIZE {
             array[pos] = sample;

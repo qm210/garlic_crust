@@ -111,7 +111,7 @@ fn trigger(total_sample: usize) -> bool {
     let beat_length = pattern_end_beat - pattern_start_beat;
     let beat_inside_pattern = libm::fmodf(total_beat - pattern_start_beat, beat_length);
     // two options: something regular (-> fmodf) or one-shots
-    let beat_trigger = libm::fmodf(beat_inside_pattern, 0.5);
+    let beat_trigger = libm::fmodf(beat_inside_pattern, 1.);
 
     return beat_trigger >= 0. && beat_trigger <= INV_SAMPLERATE;
 }

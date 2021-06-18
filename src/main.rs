@@ -193,7 +193,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
 };
 
 // 2 because of WAVE_FORMAT.nChannels
-static mut GARLIC_DATA : [garlic_crust::MonoSample; garlic_head::SAMPLES * 2] = [0.0; garlic_head::SAMPLES * 2];
+static mut GARLIC_DATA : [garlic_crust::MonoSample; garlic_head::SAMPLES_TWICE] = [0.0; garlic_head::SAMPLES_TWICE];
 
 /*
 static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
@@ -202,7 +202,7 @@ static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
 };
 */
 
-static mut h_waveout: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
+static mut H_WAVEOUT: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
 
 //static mut mmTime: winapi::um::mmsystem::LPMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
 
@@ -221,9 +221,9 @@ pub extern "system" fn mainCRTStartup() {
         log!("Render finished\n\0");
 
         WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
-        winapi::um::mmeapi::waveOutOpen( &mut h_waveout, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
-        winapi::um::mmeapi::waveOutPrepareHeader(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
-        winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+        winapi::um::mmeapi::waveOutOpen( &mut H_WAVEOUT, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
+        winapi::um::mmeapi::waveOutPrepareHeader(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+        winapi::um::mmeapi::waveOutWrite(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
 
         //(*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
     }
@@ -238,8 +238,9 @@ pub extern "system" fn mainCRTStartup() {
     }
     */
 
-    let mut time_ms: u32;
-    let end_ms = unsafe { winapi::um::timeapi::timeGetTime() } + (garlic_head::SECONDS * 1000.) as u32 + 100;
+    let mut time_ms: u32 = 0;
+    let start_ms = unsafe { winapi::um::timeapi::timeGetTime() };
+    let end_ms = start_ms + (garlic_head::SECONDS * 1000.) as u32 + 100;
 
     loop {
 
@@ -268,6 +269,7 @@ pub extern "system" fn mainCRTStartup() {
     }
 
     unsafe {
+        printf("Playback Finished! %d ms\n\0".as_ptr(), time_ms - start_ms);
         winapi::um::processthreadsapi::ExitProcess(0);
     }
 }

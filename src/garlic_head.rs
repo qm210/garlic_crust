@@ -12,7 +12,7 @@ mod garlic_dynamo;
 
 // PUT GARLIC_EXTRACT HERE >>>>>>>>
 
-pub const SECONDS: TimeFloat = 5.; // 30.530;
+pub const SECONDS: TimeFloat = 15.; // 30.530;
 
 const DYNAMO_BREAKPOINTS: usize = 4;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
@@ -26,12 +26,12 @@ pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo {
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 256; // larger blocks might result in STATUS_STACK_OVERFLOW
-const MASTER_BLOCK_FACTOR: usize = 8; // my stolen freeverb needs BLOCK_SIZE * MASTER_BLOCK_FACTOR >= 1700
+pub const BLOCK_SIZE: usize = 330; // larger blocks might result in STATUS_STACK_OVERFLOW
+const MASTER_BLOCK_FACTOR: usize = 5; // my stolen freeverb needs BLOCK_SIZE * MASTER_BLOCK_FACTOR >= 1640
 pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
-const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
+const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS * 2.) as usize / MASTER_BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;
-const SAMPLES_TWICE: usize = SAMPLES * 2;
+pub const SAMPLES_TWICE: usize = SAMPLES * 2;
 
 pub type BlockArray = [Sample; BLOCK_SIZE];
 pub type MasterBlockArray = [Sample; MASTER_BLOCK_SIZE];
