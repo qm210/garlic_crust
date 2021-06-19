@@ -49,6 +49,7 @@ impl GarlicMaster {
             */
 
             // this works, but I need to find out where it goes awry.
+            self.data[sample][channel] = value.clamp(-1., 1.);
             // self.data[sample][channel] = crate::math::satanurate(value);
         }
 
