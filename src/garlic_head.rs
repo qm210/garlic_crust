@@ -12,16 +12,16 @@ mod garlic_dynamo;
 
 // PUT GARLIC_EXTRACT HERE >>>>>>>>
 
-pub const SECONDS: TimeFloat = 15.; // 30.530;
+pub const SECONDS: TimeFloat = 10.;
 
-const DYNAMO_BREAKPOINTS: usize = 4;
+const DYNAMO_BREAKPOINTS: usize = 2;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
 
 pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo {
-    times: [0.,6.9044,12.9044,27.5011],
-    beats: [0.,4.,8.,20.],
-    factors: [12.,0.6667,-36.,0.6667],
-    slopes: [0.0417,0.,-0.0278,0.],
+    times: [0.,20.],
+    beats: [0.,10.],
+    factors: [0.5,0.5],
+    slopes: [0.,0.],
 };
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
@@ -68,6 +68,9 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
             for sample in 0 .. BLOCK_SIZE {
                 let master_sample = sample + master_piece * BLOCK_SIZE;
+
+                // could merge the "put ZERO_SAMPLE" and first "add" to one "put", but we gönn ourselves for more symmetry.
+                garlic_master.put_at(master_sample, ZERO_SAMPLE);
 
                 garlic_master.add_at(master_sample, smash_state0.output[sample]);
                 // garlic_master.add_at(master_sample, clove1_state0.output[sample]);

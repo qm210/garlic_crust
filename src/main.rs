@@ -206,6 +206,17 @@ static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
 };
 */
 
+/*
+// if you need, for debug reasons, the check that the waveout works as intended
+pub unsafe fn render_track(data: &mut StereoTrack) {
+    for sample in 0 .. data.len() / 2 {
+        let debug_sine = crate::math::sin(crate::math::TAU * 440. * sample as f32 * INV_SAMPLERATE);
+        data[2 * sample] = debug_sine;
+        data[2 * sample + 1] = debug_sine;
+    }
+}
+*/
+
 static mut H_WAVEOUT: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
 
 //static mut mmTime: winapi::um::mmsystem::LPMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
