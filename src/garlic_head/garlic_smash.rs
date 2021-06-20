@@ -36,7 +36,7 @@ pub fn create_state() -> Smash1State {
         osc_output: Edge::zero(),
 
         env_vca: envelope::Envelope {
-            shape: envelope::BaseEnv::Generic {
+            shape: envelope::EnvShape::Generic {
                 func: kick_amp_env
             },
             ..Default::default()
@@ -44,14 +44,14 @@ pub fn create_state() -> Smash1State {
         env_vca_output: Edge::zero(),
 
         env_freq: envelope::Envelope {
-            shape: envelope::BaseEnv::Generic {
+            shape: envelope::EnvShape::Generic {
                 func: kick_freq_env
             },
             ..Default::default()
         },
         env_freq_output: Edge::zero(),
 
-        dist: Edge::constant(1.7),
+        dist: Edge::constant(3.7),
     }
 }
 
@@ -61,8 +61,7 @@ fn slope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSam
 }
 
 fn powerslope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSample, power: f32) -> MonoSample {
-    let result = slope(t, t0, t1, y0, y1);
-    libm::powf(result, power)
+    y0 + libm::powf((t - t0) / (t1 - t0), power) * (y1 - y0)
 }
 
 #[inline]
@@ -86,7 +85,7 @@ fn kick_amp_env(t: TimeFloat) -> MonoSample {
 fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
         x if x < 0.002 => 1000.,
-        x if x < 0.502 => logslope(t, 0.002, 0.502, 1000., 46.25),
+        x if x < 0.502 => logslope(x, 0.002, 0.502, 1000., 46.25),
         _ => 46.25,
     }
 }
@@ -108,7 +107,7 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 
     process_operator(&mut state.osc, &mut state.osc_output);
 
-    //math_overdrive(&mut state.osc_output, &state.dist);
+    math_overdrive(&mut state.osc_output, &state.dist);
     //math_distort(&mut state.osc_output);
 
     state.osc_output.write_to(&mut state.output);
@@ -126,7 +125,7 @@ fn trigger(total_sample: usize) -> bool {
     let beat_length = pattern_end_beat - pattern_start_beat;
     let beat_inside_pattern = libm::fmodf(total_beat - pattern_start_beat, beat_length);
     // two options: something regular (-> fmodf) or one-shots
-    let beat_trigger = libm::fmodf(beat_inside_pattern, 0.5);
+    let beat_trigger = libm::fmodf(beat_inside_pattern, 0.25);
 
     return beat_trigger >= 0. && beat_trigger < INV_SAMPLERATE;
 }

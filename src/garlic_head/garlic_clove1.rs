@@ -71,9 +71,14 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc1_output: Edge::zero(),
 
         env_osc1: envelope::Envelope {
-            attack: config1.env_attack,
-            decay: config1.env_decay,
-            shape: envelope::BaseEnv::ExpDecay,
+            shape: envelope::EnvShape::Common {
+                base: envelope::BaseEnv::ExpDecay,
+                attack: config1.env_attack,
+                decay: config1.env_decay,
+                sustain: Edge::constant(1.),
+                min: Edge::zero(),
+                max: Edge::constant(1.),
+            },
             ..Default::default()
         },
         env_osc1_output: Edge::zero(),
@@ -87,9 +92,14 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
         osc_osc2_output: Edge::zero(),
 
         env_osc2: envelope::Envelope {
-            attack: config1.env_attack,
-            decay: config1.env_decay,
-            shape: envelope::BaseEnv::ExpDecay,
+            shape: envelope::EnvShape::Common {
+                base: envelope::BaseEnv::ExpDecay,
+                attack: config1.env_attack,
+                decay: config1.env_decay,
+                sustain: Edge::constant(1.),
+                min: Edge::zero(),
+                max: Edge::constant(1.),
+            },
             ..Default::default()
         },
         env_osc2_output: Edge::zero(),
