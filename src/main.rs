@@ -11,6 +11,7 @@
 
 pub mod util;
 pub mod math;
+pub mod math_interpol;
 mod garlic_crust;
 mod garlic_head;
 

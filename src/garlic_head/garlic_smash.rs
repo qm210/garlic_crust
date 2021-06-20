@@ -1,5 +1,6 @@
 use crate::garlic_crust::*;
 use super::*;
+use crate::math_interpol as interpol;
 
 // Garlic Smashsare Drum Synth Cloves
 // they are monosynths by design
@@ -18,8 +19,12 @@ pub struct Smash1State {
     env_freq: envelope::Envelope,
     env_freq_output: Edge,
 
-    // waveshapes are just math blocks (i.e. some function)
+    // waveshapes are just math blocks (i.e. some function), but their parameters have to be set here
     dist: Edge,
+    quad_shape: interpol::QuadWaveShape,
+
+    lp: filter::Filter,
+    lp_output: Edge,
 }
 
 pub fn create_state() -> Smash1State {
@@ -51,42 +56,35 @@ pub fn create_state() -> Smash1State {
         },
         env_freq_output: Edge::zero(),
 
-        dist: Edge::constant(3.7),
+        dist: Edge::constant(2.),
+        quad_shape: interpol::QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7),
+
+        lp: filter::Filter {
+            shape: filter::FilterType::LowPass,
+            cutoff: Edge::constant(600.),
+            ..Default::default()
+        },
+        lp_output: Edge::zero(),
     }
-}
-
-#[inline]
-fn slope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSample) -> MonoSample {
-    y0 + (t - t0) / (t1 - t0) * (y1 - y0)
-}
-
-fn powerslope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSample, power: f32) -> MonoSample {
-    y0 + libm::powf((t - t0) / (t1 - t0), power) * (y1 - y0)
-}
-
-#[inline]
-fn logslope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: MonoSample) -> MonoSample {
-    let f = 1./(1. + (libm::logf(t1/t)) / (libm::logf(t/t0)));
-    libm::powf(y1, f) * libm::powf(y0, 1.-f)
 }
 
 fn kick_amp_env(t: TimeFloat) -> MonoSample {
     let a = 0.002;
-    let ah = a + 0.12;
-    let ahd = ah + 0.450;
+    let ah = a + 0.32;
+    let ahd = ah + 0.120;
     match t {
-        x if x < a => slope(t, 0., a, 0., 1.),
+        x if x < a => interpol::slope(t, 0., a, 0., 1.),
         x if x < ah => 1.,
-        x if x < ahd => powerslope(t, ah, ahd, 1., 0., 1.2),
+        x if x < ahd => interpol::powerslope(t, ah, ahd, 1., 0., 2.),
         _ => 0.
     }
 }
 
 fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
-        x if x < 0.002 => 2000.,
-        x if x < 0.02 => logslope(x, 0.002, 0.02, 2000., 900.),
-        x if x < 0.20 => logslope(x, 0.02, 0.20, 900., 46.25),
+        x if x < 0.002 => 3000.,
+        x if x < 0.01 => interpol::logslope(x, 0.002, 0.01, 3000., 300.),
+        x if x < 0.15 => interpol::logslope(x, 0.01, 0.15, 300., 46.25),
         _ => 46.25,
     }
 }
@@ -108,10 +106,15 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 
     process_operator(&mut state.osc, &mut state.osc_output);
 
-    math_overdrive(&mut state.osc_output, &state.dist);
-    math_distort(&mut state.osc_output);
+    state.lp.input = state.osc_output;
+    process_operator(&mut state.lp, &mut state.lp_output);
 
-    state.osc_output.write_to(&mut state.output);
+    math_quad_shape(&mut state.lp_output, &state.quad_shape);
+    //math_distort(&mut state.osc_output);
+
+    math_overdrive(&mut state.lp_output, &state.dist);
+
+    state.lp_output.write_to(&mut state.output);
 }
 
 /* trigger() holds, as a mathematical function, the repetition pattern of the kick.
@@ -169,9 +172,21 @@ fn math_waveshape(output: &mut Edge, waveshape: fn(MonoSample) -> MonoSample, am
 }
 
 #[inline]
+fn math_quad_shape(output: &mut Edge, quad_shape: &interpol::QuadWaveShape) {
+    for sample in 0 .. BLOCK_SIZE {
+        for ch in 0 .. 2 {
+            let _input = output.evaluate_mono(sample, ch);
+            output.put_at_mono(sample, ch, libm::copysignf(_input, quad_shape.evaluate(_input)));
+        }
+    }
+}
+
+/*
+#[inline]
 fn math_distort(output: &mut Edge) {
     math_waveshape(output, |x| if x >= 0.1 && x < 0.13 { 0.5 } else { x }, 0.3);
 }
+*/
 
 #[inline]
 fn math_overdrive(output: &mut Edge, amount: &Edge) {
