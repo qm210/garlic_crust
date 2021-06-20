@@ -25,8 +25,11 @@ impl Operator for Oscillator {
     fn handle_message(&mut self, message: &SeqMsg) {
         match &message {
             SeqMsg::NoteOn(note_key, _) => {
-                self.phase = [0., 0.];
+                //self.phase = ZERO_SAMPLE; // this would lead to knacksen, right?
                 self.frequency = self.freq_factor.clone_scaled(note_frequency(*note_key));
+            },
+            SeqMsg::Init => {
+                //self.phase = ZERO_SAMPLE;
             },
             // could react to Volume or whatevs here.
             _ => ()
@@ -45,8 +48,9 @@ impl Operator for Oscillator {
 
     fn advance(&mut self, sample: usize) {
         let freq = self.frequency.evaluate(sample);
+        let detune = self.detune.evaluate(sample);
         for ch in 0 .. 2 {
-            self.phase[ch] += freq[ch] / SAMPLERATE;
+            self.phase[ch] += (1. + detune[ch]) * freq[ch] * INV_SAMPLERATE;
             if self.phase[ch] >= 1. {
                 self.phase[ch] -= 1.;
             }

@@ -4,8 +4,7 @@
 #![windows_subsystem = "console"]
 #![feature(core_intrinsics)]
 #![feature(static_nobundle)]
-//#![feature(c_variadic)] // printf-compat experiment
-// #![allow(unused_variables, unused_imports)] // QM: clean up later
+#![allow(dead_code, non_snake_case, unused_imports)]
 
 #[cfg(windows)] extern crate winapi;
 
@@ -13,6 +12,11 @@ pub mod util;
 pub mod math;
 mod garlic_crust;
 mod garlic_head;
+
+// debug profile uses std library (e.g. for .wav file writing).
+// this should better be a "feature" in cargo, but for now, its not.
+#[cfg(debug_assertions)]
+mod debug;
 
 use core::panic::PanicInfo;
 
@@ -53,7 +57,6 @@ use winapi::um::winuser::{
     GetDC,
     PostQuitMessage,
     RegisterClassA,
-    MessageBoxA,
 
     WNDCLASSA,
     CS_OWNDC,
@@ -62,7 +65,6 @@ use winapi::um::winuser::{
     CW_USEDEFAULT,
     WS_OVERLAPPEDWINDOW,
     WS_VISIBLE,
-    MB_ICONERROR,
 };
 
 
@@ -146,6 +148,7 @@ fn create_window( ) -> ( HWND, HDC ) {
     }
 }
 
+#[cfg(not(debug_assertions))]
 #[panic_handler]
 #[no_mangle]
 pub extern fn panic( _info: &PanicInfo ) -> ! { loop {} }
@@ -170,7 +173,7 @@ pub unsafe extern fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 
     dest
 }
 
-const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
+pub const SAMPLERATE_INT: u32 = garlic_crust::SAMPLERATE as u32;
 
 static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg::WAVEFORMATEX{
     wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT, // winapi::shared::mmreg::WAVE_FORMAT_PCM, //
@@ -194,7 +197,7 @@ static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::W
 };
 
 // 2 because of WAVE_FORMAT.nChannels
-static mut GARLIC_DATA : [garlic_crust::MonoSample; garlic_head::SAMPLES * 2] = [0.0; garlic_head::SAMPLES * 2];
+static mut GARLIC_DATA : garlic_head::StereoTrack = [0.0; garlic_head::SAMPLES_TWICE];
 
 /*
 static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
@@ -203,9 +206,26 @@ static mut MMTIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
 };
 */
 
-static mut h_waveout : winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
+/*
+// if you need, for debug reasons, the check that the waveout works as intended
+pub unsafe fn render_track(data: &mut StereoTrack) {
+    for sample in 0 .. data.len() / 2 {
+        let debug_sine = crate::math::sin(crate::math::TAU * 440. * sample as f32 * INV_SAMPLERATE);
+        data[2 * sample] = debug_sine;
+        data[2 * sample + 1] = debug_sine;
+    }
+}
+*/
 
-static mut mmTime: winapi::um::mmsystem::PMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
+static mut H_WAVEOUT: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem::HWAVEOUT;
+
+//static mut mmTime: winapi::um::mmsystem::LPMMTIME = 0 as *mut winapi::um::mmsystem::MMTIME;
+
+/*static mut MM_TIME: winapi::um::mmsystem::MMTIME = winapi::um::mmsystem::MMTIME {
+    wType: winapi::um::mmsystem::TIME_MS,
+    u: winapi::um::mmsystem::MMTIME_u::from(0 as winapi::um::mmsystem::MMTIME_u)
+};
+*/
 
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
@@ -213,14 +233,19 @@ pub extern "system" fn mainCRTStartup() {
 
     unsafe {
         garlic_head::render_track(&mut GARLIC_DATA);
-        log!("Render finished\n\0");
+    }
+    log!("Render finished\n\0");
 
+    unsafe {
         WAVE_HEADER.lpData = GARLIC_DATA.as_mut_ptr() as *mut i8;
-        winapi::um::mmeapi::waveOutOpen( &mut h_waveout, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
-        winapi::um::mmeapi::waveOutPrepareHeader(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
-        winapi::um::mmeapi::waveOutWrite(h_waveout, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+        winapi::um::mmeapi::waveOutOpen( &mut H_WAVEOUT, winapi::um::mmsystem::WAVE_MAPPER, &WAVE_FORMAT, 0, 0, winapi::um::mmsystem::CALLBACK_NULL);
+        winapi::um::mmeapi::waveOutPrepareHeader(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
+        winapi::um::mmeapi::waveOutWrite(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
 
-        // (*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
+        //(*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
+        #[cfg(debug_assertions)] {
+            debug::write_wave_file(&GARLIC_DATA);
+        }
     }
 
     // debugging
@@ -233,7 +258,9 @@ pub extern "system" fn mainCRTStartup() {
     }
     */
 
-    let mut time: garlic_crust::TimeFloat = 0.;
+    let mut time_ms: u32 = 0;
+    let start_ms = unsafe { winapi::um::timeapi::timeGetTime() };
+    let end_ms = start_ms + (garlic_head::SECONDS * 1000.) as u32 + 100;
 
     loop {
 
@@ -247,20 +274,22 @@ pub extern "system" fn mainCRTStartup() {
 
         // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
 
-        /*
-        unsafe {
-            winapi::um::mmeapi::waveOutGetPosition(h_waveout, mmTime, core::mem::size_of::<winapi::um::mmsystem::PMMTIME>() as u32);
-        }
-        */
-        // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
-        time += 1.0 / 60.0;
+        time_ms = unsafe {
+            //let result = winapi::um::mmeapi::waveOutGetPosition(h_waveout, mmTime, core::mem::size_of::<winapi::um::mmsystem::MMTIME>() as u32);
+            // (*mmTime).u.ms() // or something??
+            winapi::um::timeapi::timeGetTime()
+        };
 
-        if time > garlic_head::SECONDS {
+        // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
+        //time += 1.0 / 60.0;
+
+        if time_ms > end_ms {
             break;
         }
     }
 
     unsafe {
+        printf("Playback Finished! %d ms\n\0".as_ptr(), time_ms - start_ms);
         winapi::um::processthreadsapi::ExitProcess(0);
     }
 }

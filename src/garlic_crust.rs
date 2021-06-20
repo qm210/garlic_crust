@@ -8,10 +8,14 @@ pub mod garlic_breath;
 
 pub use edge::Edge;
 
-pub type PlayFunc = fn(TimeFloat) -> Sample;
+pub type StereoFunc = fn(TimeFloat) -> Sample;
+pub type MonoFunc = fn(TimeFloat) -> MonoSample;
 
 pub type TimeFloat = f32;
 pub type MonoSample = f32;
+
+const TRIGGER: SeqMsg = SeqMsg::Init;
+pub type TriggerFunc = dyn Fn(usize) -> bool;
 
 pub type Sample = [MonoSample; 2];
 pub const L: usize = 0;
@@ -19,6 +23,12 @@ pub const R: usize = 1;
 pub const ZERO_SAMPLE: Sample = [0., 0.];
 
 pub const SAMPLERATE: f32 = 44100.;
+pub const INV_SAMPLERATE: f32 = 1./44100.;
+
+#[inline]
+pub fn as_time(sample: usize) -> TimeFloat {
+    (sample as TimeFloat) * INV_SAMPLERATE
+}
 
 pub trait Operator {
     fn handle_message(&mut self, message: &SeqMsg);
@@ -39,7 +49,6 @@ pub fn process_operator_seq<O: Operator>(op: &mut O, sequence: &[SeqEvent], bloc
     let mut next_event = next_event_option(&sequence, op.get_cursor());
 
     for sample in 0 .. BLOCK_SIZE {
-
         while let Some(event) = next_event {
             if event.pos > sample + block_offset {
                 break;
@@ -61,9 +70,29 @@ pub fn process_operator<O: Operator>(op: &mut O, output: &mut Edge) {
     }
 }
 
-pub fn generate_from_func(func: PlayFunc, block_offset: usize, output: &mut Edge) {
+pub fn process_operator_dyn<O: Operator>(op: &mut O, trigger: &TriggerFunc, block_offset: usize, output: &mut Edge) {
+
     for sample in 0 .. BLOCK_SIZE {
-        output.put_at(sample, func((sample + block_offset) as TimeFloat / SAMPLERATE));
+        if trigger(block_offset + sample) {
+            op.handle_message(&TRIGGER);
+        }
+        output.put_at(sample, op.evaluate(sample));
+        op.advance(sample);
+    }
+}
+
+pub fn generate_from_func(func: StereoFunc, block_offset: usize, output: &mut Edge) {
+    for sample in 0 .. BLOCK_SIZE {
+        output.put_at(sample, func((sample + block_offset) as TimeFloat * INV_SAMPLERATE));
+    }
+}
+
+pub fn generate_from_mono_func(func: MonoFunc, block_offset: usize, output: &mut Edge) {
+    for sample in 0 .. BLOCK_SIZE {
+        let result = func((sample + block_offset) as TimeFloat * INV_SAMPLERATE);
+        for ch in 0 .. 2 {
+            output.put_at_mono(sample, ch, result);
+        }
     }
 }
 
@@ -84,6 +113,7 @@ pub enum SeqMsg {
     SetVel,
     SetSlide,
     SetPan,
+    Init,
     // ...?
 }
 
