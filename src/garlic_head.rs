@@ -12,12 +12,12 @@ mod garlic_dynamo;
 
 // PUT GARLIC_EXTRACT HERE >>>>>>>>
 
-pub const SECONDS: TimeFloat = 20.;
+pub const SECONDS: TimeFloat = 16.;
 
 const DYNAMO_BREAKPOINTS: usize = 1;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
 
-pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(144.);
+pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(164.);
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 

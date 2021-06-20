@@ -13,6 +13,8 @@ pub fn logslope(t: f32, t0: f32, t1: f32, y0: f32, y1: f32) -> f32 {
     libm::powf(y1, f) * libm::powf(y0, 1.-f)
 }
 
+// TODO: check difference on filesize, when QuadWaveShape or WaveShape is its own Operator
+
 /*
  * QuadWaveShape is based on a waveshape ([0,1] -> [0,1]) function with three quadratic splines
  */

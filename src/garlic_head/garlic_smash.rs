@@ -71,7 +71,7 @@ pub fn create_state() -> Smash1State {
 fn kick_amp_env(t: TimeFloat) -> MonoSample {
     let a = 0.002;
     let ah = a + 0.32;
-    let ahd = ah + 0.120;
+    let ahd = ah + 0.00120;
     match t {
         x if x < a => interpol::slope(t, 0., a, 0., 1.),
         x if x < ah => 1.,
@@ -109,7 +109,7 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
     state.lp.input = state.osc_output;
     process_operator(&mut state.lp, &mut state.lp_output);
 
-    math_quad_shape(&mut state.lp_output, &state.quad_shape);
+    waveshape_quad(&mut state.lp_output, &state.quad_shape);
     //math_distort(&mut state.osc_output);
 
     math_overdrive(&mut state.lp_output, &state.dist);
@@ -118,7 +118,7 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 }
 
 /* trigger() holds, as a mathematical function, the repetition pattern of the kick.
- * it will be produced by dynamo210 soon.
+ * it will be produced by dynamo210 some day.
 */
 #[inline]
 fn trigger(total_sample: usize) -> bool {
@@ -161,22 +161,22 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
 }
 
 #[inline]
-fn math_waveshape(output: &mut Edge, waveshape: fn(MonoSample) -> MonoSample, amount: f32) {
+fn waveshape(output: &mut Edge, waveshape: fn(MonoSample) -> MonoSample, amount: f32) {
     for sample in 0 .. BLOCK_SIZE {
         for ch in 0 .. 2 {
             let _input = output.evaluate_mono(sample, ch);
-            let _output = libm::copysignf(_input, waveshape(libm::fabsf(_input)));
+            let _output = libm::copysignf(waveshape(libm::fabsf(_input)), _input);
             output.put_at_mono(sample, ch, amount * _output + (1.-amount) * _input);
         }
     }
 }
 
 #[inline]
-fn math_quad_shape(output: &mut Edge, quad_shape: &interpol::QuadWaveShape) {
+fn waveshape_quad(output: &mut Edge, quad_shape: &interpol::QuadWaveShape) {
     for sample in 0 .. BLOCK_SIZE {
         for ch in 0 .. 2 {
             let _input = output.evaluate_mono(sample, ch);
-            output.put_at_mono(sample, ch, libm::copysignf(_input, quad_shape.evaluate(_input)));
+            output.put_at_mono(sample, ch, libm::copysignf(quad_shape.evaluate(libm::fabsf(_input)), _input));
         }
     }
 }
@@ -184,7 +184,7 @@ fn math_quad_shape(output: &mut Edge, quad_shape: &interpol::QuadWaveShape) {
 /*
 #[inline]
 fn math_distort(output: &mut Edge) {
-    math_waveshape(output, |x| if x >= 0.1 && x < 0.13 { 0.5 } else { x }, 0.3);
+    waveshape(output, |x| if x >= 0.1 && x < 0.13 { 0.5 } else { x }, 0.3);
 }
 */
 
