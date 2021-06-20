@@ -84,8 +84,8 @@ fn kick_amp_env(t: TimeFloat) -> MonoSample {
 
 fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
-        x if x < 0.002 => 4000.,
-        x if x < 0.02 => logslope(x, 0.002, 0.02, 4000., 900.),
+        x if x < 0.002 => 2000.,
+        x if x < 0.02 => logslope(x, 0.002, 0.02, 2000., 900.),
         x if x < 0.20 => logslope(x, 0.02, 0.20, 900., 46.25),
         _ => 46.25,
     }
@@ -123,12 +123,25 @@ fn trigger(total_sample: usize) -> bool {
     //if total_beat >= pattern_start_beat && total_beat < pattern_end_beat //inside beat condition
     let pattern_start_beat = 0.;
     let pattern_end_beat = 4.;
-    let beat_length = pattern_end_beat - pattern_start_beat;
-    let beat_inside_pattern = libm::fmodf(total_beat - pattern_start_beat, beat_length);
+    let beat = libm::fmodf(total_beat - pattern_start_beat, pattern_end_beat - pattern_start_beat);
     // two options: something regular (-> fmodf) or one-shots
-    let beat_trigger = libm::fmodf(beat_inside_pattern, 0.25);
 
-    return beat_trigger < INV_SAMPLERATE; // && beat_trigger >= 0. , is actually wumpe
+    let beat_trigger = match beat {
+        x if x > 1.75 && x < 1.85 => {
+            INV_SAMPLERATE // anything >= INV_SAMPLERATE means no beat, is there a better constant?
+        },
+        x if x > 1.85 && x < 2. => {
+            libm::fmodf(beat, 0.25 / 3.)
+        }
+        x if x > 3. => {
+            libm::fmodf(beat, 0.25 / 3.) + libm::fmodf(beat + 0.25/3., 0.25 / 3.)
+        },
+        _ => {
+            libm::fmodf(beat, 0.25)
+        }
+    };
+
+    return beat_trigger < INV_SAMPLERATE; // && beat_trigger >= 0. , is actually wumpe cause always true
 }
 
 // inline or not inline?
