@@ -57,7 +57,7 @@ impl GarlicMaster {
         let wet = self.reverb.tick(value);
 
         for channel in 0 .. 2 {
-            value[channel] = wet[channel] + value[channel];
+            value[channel] = 0.3 * wet[channel] + 0.7 * value[channel];
         }
 
         self.data[sample] = value;

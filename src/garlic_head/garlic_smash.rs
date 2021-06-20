@@ -73,7 +73,7 @@ fn logslope(t: TimeFloat, t0: TimeFloat, t1: TimeFloat, y0: MonoSample, y1: Mono
 fn kick_amp_env(t: TimeFloat) -> MonoSample {
     let a = 0.002;
     let ah = a + 0.12;
-    let ahd = ah + 0.250;
+    let ahd = ah + 0.450;
     match t {
         x if x < a => slope(t, 0., a, 0., 1.),
         x if x < ah => 1.,
@@ -84,8 +84,9 @@ fn kick_amp_env(t: TimeFloat) -> MonoSample {
 
 fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
-        x if x < 0.002 => 6000.,
-        x if x < 0.202 => logslope(x, 0.002, 0.202, 6000., 46.25),
+        x if x < 0.002 => 4000.,
+        x if x < 0.02 => logslope(x, 0.002, 0.02, 4000., 900.),
+        x if x < 0.20 => logslope(x, 0.02, 0.20, 900., 46.25),
         _ => 46.25,
     }
 }
@@ -127,7 +128,7 @@ fn trigger(total_sample: usize) -> bool {
     // two options: something regular (-> fmodf) or one-shots
     let beat_trigger = libm::fmodf(beat_inside_pattern, 0.25);
 
-    return beat_trigger >= 0. && beat_trigger < INV_SAMPLERATE;
+    return beat_trigger < INV_SAMPLERATE; // && beat_trigger >= 0. , is actually wumpe
 }
 
 // inline or not inline?
