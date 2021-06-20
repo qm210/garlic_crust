@@ -123,9 +123,11 @@ impl Edge {
         }
     }
 
-    pub fn write_to(&self, destination: &mut BlockArray) {
+    pub fn write_to(&self, destination: &mut BlockArray, scale_factor: f32) {
         for pos in 0 .. BLOCK_SIZE {
-            destination[pos] = self.array[pos];
+            for ch in 0 .. 2 {
+                destination[pos][ch] = scale_factor * self.array[pos][ch];
+            }
         }
     }
 }

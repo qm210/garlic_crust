@@ -3,6 +3,7 @@ use super::garlic_crust::*;
 
 // need to be programmatically appended
 mod garlic_clove1;
+mod garlic_clove2;
 mod garlic_master;
 mod garlic_smash;
 
@@ -13,6 +14,10 @@ mod garlic_dynamo;
 // PUT GARLIC_EXTRACT HERE >>>>>>>>
 
 pub const SECONDS: TimeFloat = 16.;
+
+const SEQUENCE_BASS: [SeqEvent; 1] = [
+    SeqEvent {pos: 0, message: SeqMsg::NoteOn(32, 127) },
+];
 
 const DYNAMO_BREAKPOINTS: usize = 1;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
@@ -39,6 +44,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 
     let mut smash_state0 = garlic_smash::create_state(); // this gonne be my kick
+    let mut clove2_state0 = garlic_clove2::create_state();
 
     // we need global initialization, one per clove and each their sequence
     // let clove1_config1 = garlic_clove1::create_config1("default");
@@ -60,6 +66,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
             // garlic_clove1::process(&SEQUENCE_3, block_offset, &mut clove1_state3);
 
             garlic_smash::process(block_offset, &mut smash_state0);
+            garlic_clove2::process(&SEQUENCE_BASS, block_offset, &mut clove2_state0);
 
             for sample in 0 .. BLOCK_SIZE {
                 let master_sample = sample + master_piece * BLOCK_SIZE;
@@ -68,6 +75,8 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 garlic_master.put_at(master_sample, ZERO_SAMPLE);
 
                 garlic_master.add_at(master_sample, smash_state0.output[sample]);
+                garlic_master.add_at(master_sample, clove2_state0.output[sample]);
+
                 // garlic_master.add_at(master_sample, clove1_state0.output[sample]);
                 // garlic_master.add_at(master_sample, clove1_state1.output[sample]);
                 // garlic_master.add_at(master_sample, clove1_state2.output[sample]);

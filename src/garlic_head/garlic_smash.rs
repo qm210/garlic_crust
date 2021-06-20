@@ -9,6 +9,7 @@ use crate::math_interpol as interpol;
 // the member fields
 pub struct Smash1State {
     pub output: BlockArray,
+    pub volume: MonoSample,
 
     osc: oscillator::Oscillator,
     osc_output: Edge,
@@ -30,6 +31,7 @@ pub struct Smash1State {
 pub fn create_state() -> Smash1State {
     Smash1State {
         output: EMPTY_BLOCKARRAY,
+        volume: 1.0, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(46.25), // F#1
@@ -114,14 +116,14 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 
     math_overdrive(&mut state.lp_output, &state.dist);
 
-    state.lp_output.write_to(&mut state.output);
+    state.lp_output.write_to(&mut state.output, state.volume);
 }
 
 /* trigger() holds, as a mathematical function, the repetition pattern of the kick.
  * it will be produced by dynamo210 some day.
 */
 #[inline]
-fn trigger(total_sample: usize) -> bool {
+pub fn trigger(total_sample: usize) -> bool {
     let total_beat = DYNAMO.beat(total_sample);
     //if total_beat >= pattern_start_beat && total_beat < pattern_end_beat //inside beat condition
     let pattern_start_beat = 0.;

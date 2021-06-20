@@ -6,6 +6,7 @@ use super::*;
 // the member fields
 pub struct Clove1State {
     pub output: BlockArray,
+    pub volume: MonoSample,
 
     osc_osc1: oscillator::Oscillator,
     osc_osc1_output: Edge,
@@ -61,6 +62,7 @@ pub fn create_config2(preset: &str) -> Config2 {
 pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
     Clove1State {
         output: EMPTY_BLOCKARRAY,
+        volume: 1.,
 
         osc_osc1: oscillator::Oscillator {
             shape: config1.osc1_shape,
@@ -157,7 +159,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
     state.lp1.cutoff = state.math_lfofiltertransform;
     process_operator(&mut state.lp1, &mut state.lp1_output);
 
-    state.lp1_output.write_to(&mut state.output);
+    state.lp1_output.write_to(&mut state.output, state.volume);
 }
 
 // inline or not inline?
