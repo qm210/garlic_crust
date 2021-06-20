@@ -4,6 +4,7 @@
 #![windows_subsystem = "console"]
 #![feature(core_intrinsics)]
 #![feature(static_nobundle)]
+#![feature(const_fn_floating_point_arithmetic)]
 #![allow(dead_code, non_snake_case, unused_imports)]
 
 #[cfg(windows)] extern crate winapi;

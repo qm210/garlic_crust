@@ -84,8 +84,8 @@ fn kick_amp_env(t: TimeFloat) -> MonoSample {
 
 fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
-        x if x < 0.002 => 1000.,
-        x if x < 0.502 => logslope(x, 0.002, 0.502, 1000., 46.25),
+        x if x < 0.002 => 6000.,
+        x if x < 0.202 => logslope(x, 0.002, 0.202, 6000., 46.25),
         _ => 46.25,
     }
 }
@@ -108,7 +108,7 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
     process_operator(&mut state.osc, &mut state.osc_output);
 
     math_overdrive(&mut state.osc_output, &state.dist);
-    //math_distort(&mut state.osc_output);
+    math_distort(&mut state.osc_output);
 
     state.osc_output.write_to(&mut state.output);
 }
@@ -144,18 +144,19 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
 }
 
 #[inline]
-fn math_waveshape(output: &mut Edge, waveshape: fn(MonoSample) -> MonoSample) {
+fn math_waveshape(output: &mut Edge, waveshape: fn(MonoSample) -> MonoSample, amount: f32) {
     for sample in 0 .. BLOCK_SIZE {
         for ch in 0 .. 2 {
-            let input = output.evaluate_mono(sample, ch);
-            output.put_at_mono(sample, ch, libm::copysignf(input, waveshape(libm::fabsf(input))));
+            let _input = output.evaluate_mono(sample, ch);
+            let _output = libm::copysignf(_input, waveshape(libm::fabsf(_input)));
+            output.put_at_mono(sample, ch, amount * _output + (1.-amount) * _input);
         }
     }
 }
 
 #[inline]
 fn math_distort(output: &mut Edge) {
-    math_waveshape(output, |x| if x >= 0.1 && x < 0.13 { 0.5 } else { x });
+    math_waveshape(output, |x| if x >= 0.1 && x < 0.13 { 0.5 } else { x }, 0.3);
 }
 
 #[inline]

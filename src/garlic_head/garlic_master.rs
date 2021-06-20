@@ -15,7 +15,7 @@ pub struct WaveshapeState {
 impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
-            reverb: GarlicBreath::new(0.09, 0.8, 0.7, 0.9, false),
+            reverb: GarlicBreath::new(0.3, 0.92, 0.95, 0.9, false),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -48,21 +48,20 @@ impl GarlicMaster {
             self.waveshape_state.amount += 0.7e-5;
             */
 
-            // this works, but I need to find out where it goes awry.
-            self.data[sample][channel] = value.clamp(-1., 1.);
-            // self.data[sample][channel] = crate::math::satanurate(value);
+            self.data[sample][channel] = crate::math::satanurate(value);
+            // in need of clipping instead of saturation:
+            //self.data[sample][channel] = value.clamp(-1., 1.);
         }
 
         let mut value = self.data[sample];
         let wet = self.reverb.tick(value);
 
         for channel in 0 .. 2 {
-            value[channel] = 0. * wet[channel] + value[channel];
+            value[channel] = wet[channel] + value[channel];
         }
 
         self.data[sample] = value;
     }
-
 }
 
 fn waveshape1(x: MonoSample) -> MonoSample {

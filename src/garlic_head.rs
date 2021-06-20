@@ -14,15 +14,10 @@ mod garlic_dynamo;
 
 pub const SECONDS: TimeFloat = 10.;
 
-const DYNAMO_BREAKPOINTS: usize = 2;
+const DYNAMO_BREAKPOINTS: usize = 1;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
 
-pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo {
-    times: [0.,20.],
-    beats: [0.,10.],
-    factors: [0.5,0.5],
-    slopes: [0.,0.],
-};
+pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(140.);
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 

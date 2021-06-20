@@ -24,4 +24,12 @@ impl Dynamo {
         }
     }
 
+    pub const fn create(bpm: TimeFloat) -> Dynamo {
+        Dynamo {
+            times: [0.],
+            beats: [0.],
+            factors: [bpm / 240.],
+            slopes: [0.],
+        }
+    }
 }
