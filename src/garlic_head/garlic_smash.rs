@@ -31,7 +31,7 @@ pub struct Smash1State {
 pub fn create_state() -> Smash1State {
     Smash1State {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.8, // could be parameter in create_state
+        volume: 0.5, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(46.25), // F#1
@@ -63,7 +63,7 @@ pub fn create_state() -> Smash1State {
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(600.),
+            cutoff: Edge::constant(340.),
             ..Default::default()
         },
         lp_output: Edge::zero(),

@@ -13,52 +13,53 @@ mod garlic_dynamo;
 
 // PUT GARLIC_EXTRACT HERE >>>>>>>>
 
-pub const SECONDS: TimeFloat = 16.;
+pub const SECONDS: TimeFloat = 13.5;
 
 const SEQUENCE_BASS: [SeqEvent; 37] = [
-    SeqEvent {pos: 22050, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 38587, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 55125, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 63393, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 71662, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 0, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 17640, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 35280, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 44100, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 52920, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 70560, message: SeqMsg::NoteOn(51, 100) },
     SeqEvent {pos: 88200, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 104737, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 113006, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 129543, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 154350, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 170887, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 187425, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 195693, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 212231, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 220500, message: SeqMsg::NoteOn(48, 100) },
-    SeqEvent {pos: 237037, message: SeqMsg::NoteOn(48, 100) },
-    SeqEvent {pos: 261843, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 270112, message: SeqMsg::NoteOn(53, 100) },
-    SeqEvent {pos: 286650, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 303187, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 319725, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 327993, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 336262, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 97020, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 114660, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 141120, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 158760, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 176400, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 185220, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 202860, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 211680, message: SeqMsg::NoteOn(48, 100) },
+    SeqEvent {pos: 229320, message: SeqMsg::NoteOn(48, 100) },
+    SeqEvent {pos: 255780, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 264600, message: SeqMsg::NoteOn(53, 100) },
+    SeqEvent {pos: 282240, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 299880, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 317520, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 326340, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 335160, message: SeqMsg::NoteOn(57, 100) },
     SeqEvent {pos: 352800, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 369337, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 377606, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 394143, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 418950, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 435487, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 443756, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 460293, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 476831, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 485100, message: SeqMsg::NoteOn(53, 100) },
-    SeqEvent {pos: 501637, message: SeqMsg::NoteOn(53, 100) },
-    SeqEvent {pos: 518175, message: SeqMsg::NoteOn(60, 100) },
-    SeqEvent {pos: 534712, message: SeqMsg::NoteOn(60, 100) },
-    SeqEvent {pos: 551250, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 370440, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 379260, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 396900, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 423360, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 441000, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 449820, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 467460, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 485100, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 493920, message: SeqMsg::NoteOn(53, 100) },
+    SeqEvent {pos: 511560, message: SeqMsg::NoteOn(53, 100) },
+    SeqEvent {pos: 529200, message: SeqMsg::NoteOn(60, 100) },
+    SeqEvent {pos: 546840, message: SeqMsg::NoteOn(60, 100) },
+    SeqEvent {pos: 564480, message: SeqMsg::NoteOff },
 ];
+
 
 const DYNAMO_BREAKPOINTS: usize = 1;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
 
-pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(160.13);
+pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(150.); // original for this midi was 160.13
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
