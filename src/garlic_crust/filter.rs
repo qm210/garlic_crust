@@ -4,6 +4,7 @@ use crate::math::TAU;
 #[derive(Debug)]
 pub enum FilterType {
     LowPass,
+    HiPass,
 }
 
 pub struct Filter {
@@ -20,7 +21,14 @@ impl Operator for Filter {
     fn evaluate(&mut self, sample: usize) -> Sample {
         let cutoff = self.cutoff.evaluate(sample);
 
-        self.state.set_lowpass(cutoff);
+        match self.shape {
+            FilterType::LowPass => {
+                self.state.set_lowpass(cutoff);
+            },
+            FilterType::HiPass => {
+                self.state.set_hipass(cutoff);
+            }
+        }
         let input = self.input.evaluate(sample);
         for ch in 0 .. 2 {
             self.state.z1[ch] = input[ch] * self.state.a0[ch] + self.state.z1[ch] * self.state.b1[ch];
