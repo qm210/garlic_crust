@@ -114,6 +114,7 @@ pub enum SeqMsg {
     SetSlide,
     SetPan,
     Init,
+    Loop,
     // ...?
 }
 

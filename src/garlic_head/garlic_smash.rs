@@ -1,6 +1,6 @@
 use crate::garlic_crust::*;
 use super::*;
-use crate::math_interpol as interpol;
+use crate::garlic_helper::*;
 
 // Garlic Smashsare Drum Synth Cloves
 // they are monosynths by design
@@ -22,7 +22,7 @@ pub struct Smash1State {
 
     // waveshapes are just math blocks (i.e. some function), but their parameters have to be set here
     dist: Edge,
-    quad_shape: interpol::QuadWaveShape,
+    quad_shape: QuadWaveShape,
 
     lp: filter::Filter,
     lp_output: Edge,
@@ -31,7 +31,7 @@ pub struct Smash1State {
 pub fn create_state() -> Smash1State {
     Smash1State {
         output: EMPTY_BLOCKARRAY,
-        volume: 1.0, // could be parameter in create_state
+        volume: 0.8, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(46.25), // F#1
@@ -59,7 +59,7 @@ pub fn create_state() -> Smash1State {
         env_freq_output: Edge::zero(),
 
         dist: Edge::constant(2.),
-        quad_shape: interpol::QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7),
+        quad_shape: QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7),
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
@@ -72,12 +72,12 @@ pub fn create_state() -> Smash1State {
 
 fn kick_amp_env(t: TimeFloat) -> MonoSample {
     let a = 0.002;
-    let ah = a + 0.32;
+    let ah = a + 0.12;
     let ahd = ah + 0.00120;
     match t {
-        x if x < a => interpol::slope(t, 0., a, 0., 1.),
+        x if x < a => crate::math::slope(t, 0., a, 0., 1.),
         x if x < ah => 1.,
-        x if x < ahd => interpol::powerslope(t, ah, ahd, 1., 0., 2.),
+        x if x < ahd => crate::math::powerslope(t, ah, ahd, 1., 0., 2.),
         _ => 0.
     }
 }
@@ -85,8 +85,8 @@ fn kick_amp_env(t: TimeFloat) -> MonoSample {
 fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
         x if x < 0.002 => 3000.,
-        x if x < 0.01 => interpol::logslope(x, 0.002, 0.01, 3000., 300.),
-        x if x < 0.15 => interpol::logslope(x, 0.01, 0.15, 300., 46.25),
+        x if x < 0.01 => crate::math::logslope(x, 0.002, 0.01, 3000., 300.),
+        x if x < 0.15 => crate::math::logslope(x, 0.01, 0.15, 300., 46.25),
         _ => 46.25,
     }
 }
@@ -132,6 +132,7 @@ pub fn trigger(total_sample: usize) -> bool {
     // two options: something regular (-> fmodf) or one-shots
 
     let beat_trigger = match beat {
+        /*
         x if x > 1.75 && x < 1.85 => {
             INV_SAMPLERATE // anything >= INV_SAMPLERATE means no beat, is there a better constant?
         },
@@ -141,6 +142,7 @@ pub fn trigger(total_sample: usize) -> bool {
         x if x > 3. => {
             libm::fmodf(beat, 0.25 / 3.) + libm::fmodf(beat + 0.25/3., 0.25 / 3.)
         },
+        */
         _ => {
             libm::fmodf(beat, 0.25)
         }
@@ -158,43 +160,6 @@ fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
             output.put_at_mono(sample, ch,
                 cv.evaluate_mono(sample, ch) * (input1.evaluate_mono(sample, ch) + input2.evaluate_mono(sample, ch))
             );
-        }
-    }
-}
-
-#[inline]
-fn waveshape(output: &mut Edge, waveshape: fn(MonoSample) -> MonoSample, amount: f32) {
-    for sample in 0 .. BLOCK_SIZE {
-        for ch in 0 .. 2 {
-            let _input = output.evaluate_mono(sample, ch);
-            let _output = libm::copysignf(waveshape(libm::fabsf(_input)), _input);
-            output.put_at_mono(sample, ch, amount * _output + (1.-amount) * _input);
-        }
-    }
-}
-
-#[inline]
-fn waveshape_quad(output: &mut Edge, quad_shape: &interpol::QuadWaveShape) {
-    for sample in 0 .. BLOCK_SIZE {
-        for ch in 0 .. 2 {
-            let _input = output.evaluate_mono(sample, ch);
-            output.put_at_mono(sample, ch, libm::copysignf(quad_shape.evaluate(libm::fabsf(_input)), _input));
-        }
-    }
-}
-
-/*
-#[inline]
-fn math_distort(output: &mut Edge) {
-    waveshape(output, |x| if x >= 0.1 && x < 0.13 { 0.5 } else { x }, 0.3);
-}
-*/
-
-#[inline]
-fn math_overdrive(output: &mut Edge, amount: &Edge) {
-    for sample in 0 .. BLOCK_SIZE {
-        for ch in 0 .. 2 {
-            output.put_at_mono(sample, ch, crate::math::satanurate(amount.evaluate_mono(sample, ch) * output.evaluate_mono(sample, ch)));
         }
     }
 }

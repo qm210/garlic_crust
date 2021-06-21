@@ -13,6 +13,7 @@ pub enum BaseWave {
 pub struct Oscillator {
     pub shape: BaseWave,
     pub volume: Edge,
+    pub volume_factor: MonoSample,
     pub frequency: Edge,
     pub freq_factor: Edge,
     pub phasemod: Edge,
@@ -27,6 +28,9 @@ impl Operator for Oscillator {
             SeqMsg::NoteOn(note_key, _) => {
                 self.frequency = self.freq_factor.clone_scaled(note_frequency(*note_key));
             },
+            SeqMsg::Loop => { // how could Loop work??
+                //self.seq_cursor = 0;
+            }
             // could react to Volume or whatevs here.
             _ => ()
         }
@@ -36,8 +40,8 @@ impl Operator for Oscillator {
         let phaseL = self.phase[L] + self.phasemod.evaluate_mono(sample, L);
         let phaseR = self.phase[R] + self.phasemod.evaluate_mono(sample, R);
 
-        let resultL = self.evaluate_at(phaseL) * self.volume.evaluate_mono(sample, L);
-        let resultR = self.evaluate_at(phaseR) * self.volume.evaluate_mono(sample, R);
+        let resultL = self.evaluate_at(phaseL) * self.volume.evaluate_mono(sample, L) * self.volume_factor;
+        let resultR = self.evaluate_at(phaseR) * self.volume.evaluate_mono(sample, R) * self.volume_factor;
 
         [resultL, resultR]
     }
@@ -81,6 +85,7 @@ impl Default for Oscillator {
         Oscillator {
             shape: BaseWave::Sine,
             volume: Edge::constant(1.),
+            volume_factor: 1.,
             frequency: Edge::zero(),
             freq_factor: Edge::constant(1.),
             phasemod: Edge::zero(),

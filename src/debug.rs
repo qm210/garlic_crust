@@ -32,6 +32,6 @@ pub unsafe fn write_wave_file(interlaced_stereo_data: &StereoTrack) {
 
 fn plot_something(sample: usize) -> f32 {
     let t = 2. * sample as f32 / super::garlic_crust::SAMPLERATE;
-    let quad_shape = crate::math_interpol::QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7);
+    let quad_shape = crate::garlic_helper::QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7);
     quad_shape.evaluate(t)
 }

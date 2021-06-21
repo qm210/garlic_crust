@@ -1,4 +1,5 @@
 use crate::garlic_crust::*;
+use crate::garlic_helper::*;
 use super::*;
 
 // A garlic clove is basically a garlic crust "preset", i.e. its internal wiring
@@ -78,8 +79,6 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
                 attack: config1.env_attack,
                 decay: config1.env_decay,
                 sustain: Edge::constant(1.),
-                min: Edge::zero(),
-                max: Edge::constant(1.),
             },
             ..Default::default()
         },
@@ -99,8 +98,6 @@ pub fn create_state(config1: &Config1, config2: &Config2) -> Clove1State {
                 attack: config1.env_attack,
                 decay: config1.env_decay,
                 sustain: Edge::constant(1.),
-                min: Edge::zero(),
-                max: Edge::constant(1.),
             },
             ..Default::default()
         },
@@ -160,19 +157,6 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove1Sta
     process_operator(&mut state.lp1, &mut state.lp1_output);
 
     state.lp1_output.write_to(&mut state.output, state.volume);
-}
-
-// inline or not inline?
-#[inline]
-// individual math operators (more complex than Edge::mad()) might be created directly in the clove
-fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
-    for sample in 0 .. BLOCK_SIZE {
-        for ch in 0 .. 2 { // the looping could be hidden by generalizing 2000 + and * 1800 to
-            output.put_at_mono(sample, ch,
-                cv.evaluate_mono(sample, ch) * (input1.evaluate_mono(sample, ch) + input2.evaluate_mono(sample, ch))
-            );
-        }
-    }
 }
 
 #[inline]

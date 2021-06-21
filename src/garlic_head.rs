@@ -15,14 +15,50 @@ mod garlic_dynamo;
 
 pub const SECONDS: TimeFloat = 16.;
 
-const SEQUENCE_BASS: [SeqEvent; 1] = [
-    SeqEvent {pos: 0, message: SeqMsg::NoteOn(32, 127) },
+const SEQUENCE_BASS: [SeqEvent; 37] = [
+    SeqEvent {pos: 22050, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 38587, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 55125, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 63393, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 71662, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 88200, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 104737, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 113006, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 129543, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 154350, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 170887, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 187425, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 195693, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 212231, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 220500, message: SeqMsg::NoteOn(48, 100) },
+    SeqEvent {pos: 237037, message: SeqMsg::NoteOn(48, 100) },
+    SeqEvent {pos: 261843, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 270112, message: SeqMsg::NoteOn(53, 100) },
+    SeqEvent {pos: 286650, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 303187, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 319725, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 327993, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 336262, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 352800, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 369337, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 377606, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 394143, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 418950, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 435487, message: SeqMsg::NoteOn(55, 100) },
+    SeqEvent {pos: 443756, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 460293, message: SeqMsg::NoteOn(57, 100) },
+    SeqEvent {pos: 476831, message: SeqMsg::NoteOn(51, 100) },
+    SeqEvent {pos: 485100, message: SeqMsg::NoteOn(53, 100) },
+    SeqEvent {pos: 501637, message: SeqMsg::NoteOn(53, 100) },
+    SeqEvent {pos: 518175, message: SeqMsg::NoteOn(60, 100) },
+    SeqEvent {pos: 534712, message: SeqMsg::NoteOn(60, 100) },
+    SeqEvent {pos: 551250, message: SeqMsg::NoteOff },
 ];
 
 const DYNAMO_BREAKPOINTS: usize = 1;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
 
-pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(164.);
+pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(160.13);
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
@@ -97,7 +133,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut max_sample = 0.;
     let mut min_sample = 0.;
 
-    for sample in 0 .. 2 * SAMPLES {
+    for sample in 0 .. SAMPLES_TWICE {
         if data[sample] > 1. || data[sample] < -1.
         || data[sample] > 1. || data[sample] < -1. {
             clipping_count += 1;
@@ -113,4 +149,13 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
     super::printf("Real duration: %.3fs\n\0".as_ptr(), SAMPLES as f64 * INV_SAMPLERATE as f64);
     super::printf("Range: %.3f .. %.3f\n\0".as_ptr(), min_sample as f64, max_sample as f64);
     super::printf("Clipping counter: %d\n\0".as_ptr(), clipping_count);
+
+    /*
+    let reduce_by = if max_sample > -min_sample { max_sample } else { -min_sample };
+    if reduce_by > 0. {
+        for sample in 0 .. SAMPLES_TWICE {
+            data[sample] = data[sample] / reduce_by;
+        }
+    }
+    */
 }

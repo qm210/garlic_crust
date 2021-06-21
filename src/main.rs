@@ -11,9 +11,9 @@
 
 pub mod util;
 pub mod math;
-pub mod math_interpol;
 mod garlic_crust;
 mod garlic_head;
+mod garlic_helper;
 
 // debug profile uses std library (e.g. for .wav file writing).
 // this should better be a "feature" in cargo, but for now, its not.

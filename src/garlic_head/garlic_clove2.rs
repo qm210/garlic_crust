@@ -1,5 +1,6 @@
 use crate::garlic_crust::*;
 use super::*;
+use crate::garlic_helper::*;
 
 // A garlic clove is basically a garlic crust "preset", i.e. its internal wiring
 
@@ -7,6 +8,9 @@ use super::*;
 pub struct Clove2State {
     pub output: BlockArray,
     pub volume: MonoSample,
+
+    sub: oscillator::Oscillator,
+    sub_output: Edge,
 
     osc1: oscillator::Oscillator,
     osc1_output: Edge,
@@ -27,7 +31,17 @@ pub struct Clove2State {
 pub fn create_state() -> Clove2State {
     Clove2State {
         output: EMPTY_BLOCKARRAY,
-        volume: 1.,
+        volume: 0.2,
+
+        sub: oscillator::Oscillator {
+            shape: oscillator::BaseWave::Sine,
+            //freq_factor: Edge::constant(0.25),
+            detune: Edge::constant_stereo([-0.51, -0.746]),
+            phasemod: Edge::constant_stereo([0., -0.003]),
+            volume_factor: 2.,
+            ..Default::default()
+        },
+        sub_output: Edge::zero(),
 
         osc1: oscillator::Oscillator {
             shape: oscillator::BaseWave::Sine,
@@ -39,11 +53,9 @@ pub fn create_state() -> Clove2State {
         env1: envelope::Envelope {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::Swell,
-                attack: Edge::constant(0.25),
+                attack: Edge::constant(0.35),
                 decay: Edge::zero(),
                 sustain: Edge::constant(1.),
-                min: Edge::zero(),
-                max: Edge::constant(1.),
             },
             ..Default::default()
         },
@@ -52,6 +64,7 @@ pub fn create_state() -> Clove2State {
         osc2: oscillator::Oscillator {
             shape: oscillator::BaseWave::Sine,
             volume: Edge::constant(1.),
+            volume_factor: 3.,
             freq_factor: Edge::constant(0.5),
             ..Default::default()
         },
@@ -61,10 +74,8 @@ pub fn create_state() -> Clove2State {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::ExpDecay,
                 attack: Edge::constant(0.1),
-                decay: Edge::constant(0.15),
+                decay: Edge::constant(0.22),
                 sustain: Edge::constant(0.5),
-                min: Edge::zero(),
-                max: Edge::constant(2.),
             },
             ..Default::default()
         },
@@ -93,34 +104,29 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove2Sta
 
     // first branch - carrier
     process_operator_dyn(&mut state.env1, &super::garlic_smash::trigger, block_offset, &mut state.env1_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
-    state.osc1.volume = state.env1_output;
+
+    process_operator_seq(&mut state.sub, &sequence, block_offset, &mut state.sub_output);
 
     // second branch - modulator
     process_operator_dyn(&mut state.env2, &super::garlic_smash::trigger, block_offset, &mut state.env2_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
     state.osc2.volume = state.env2_output;
     process_operator_seq(&mut state.osc2, &sequence, block_offset, &mut state.osc2_output);
 
+    state.osc1.volume = state.env1_output;
     state.osc1.phasemod = state.osc2_output;
     process_operator_seq(&mut state.osc1, &sequence, block_offset, &mut state.osc1_output);
 
-    math_overdrive(&mut state.osc1_output);
+    state.sub_output.mad(&state.env1_output, &state.osc1_output);
+    math_overdrive_const(&mut state.sub_output, 3.);
 
     // state.lp.input = state.osc1_output;
     // process_operator(&mut state.lp, &mut state.lp_output);
 
-    state.osc1_output.write_to(&mut state.output, state.volume);
+    state.sub_output.write_to(&mut state.output, state.volume);
+    //state.osc1_output.write_to(&mut state.output, state.volume);
 }
 
 // custom functions as required...
-
-fn math_overdrive(output: &mut Edge) {
-    for sample in 0 .. BLOCK_SIZE {
-        for ch in 0 .. 2 {
-            let input = output.evaluate_mono(sample, ch);
-            output.put_at_mono(sample, ch, crate::math::satanurate(4. * input));
-        }
-    }
-}
 
 fn func_osc_phasemod(t: TimeFloat) -> Sample {
     [

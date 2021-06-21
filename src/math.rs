@@ -69,3 +69,18 @@ pub fn smootherstep(a: f32, b: f32, x: f32) -> f32 {
 pub fn satanurate(s: f32) -> f32 {
     TWO_OVER_PI * libm::atanf(s)
 }
+
+#[inline]
+pub fn slope(t: f32, t0: f32, t1: f32, y0: f32, y1: f32) -> f32 {
+    y0 + (t - t0) / (t1 - t0) * (y1 - y0)
+}
+
+pub fn powerslope(t: f32, t0: f32, t1: f32, y0: f32, y1: f32, power: f32) -> f32 {
+    y0 + libm::powf((t - t0) / (t1 - t0), power) * (y1 - y0)
+}
+
+#[inline]
+pub fn logslope(t: f32, t0: f32, t1: f32, y0: f32, y1: f32) -> f32 {
+    let f = 1./(1. + (libm::logf(t1/t)) / (libm::logf(t/t0)));
+    libm::powf(y1, f) * libm::powf(y0, 1.-f)
+}

@@ -14,8 +14,6 @@ pub enum EnvShape{
         base: BaseEnv,
         decay: Edge,
         sustain: Edge,
-        min: Edge,
-        max: Edge,
         attack: Edge,
     },
     Const (MonoSample),
@@ -50,12 +48,10 @@ impl Operator for Envelope {
         let mut result = ZERO_SAMPLE;
         for ch in 0 .. 2 {
             result[ch] = match &self.shape {
-                EnvShape::Common { base, attack, decay, sustain, min, max } => {
+                EnvShape::Common { base, attack, decay, sustain } => {
                     let _attack = attack.evaluate_mono(sample, ch);
                     let _decay = decay.evaluate_mono(sample, ch);
                     let _sustain = sustain.evaluate_mono(sample, ch);
-                    let _min = min.evaluate_mono(sample, ch);
-                    let _max = max.evaluate_mono(sample, ch);
                     let norm_result = match base {
                         BaseEnv::ExpDecay => {
                             //self.note_vel * // what to do with note_vel ? rather a note_vel_dependency?
@@ -66,7 +62,7 @@ impl Operator for Envelope {
                             crate::math::smoothstep(-_attack, _attack, self.playhead)
                         },
                     };
-                    _min + (_max - _min) * norm_result.clamp(0., 1.)
+                    norm_result.clamp(0., 1.)
                 },
                 EnvShape::Const(value) => {
                     *value
