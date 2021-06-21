@@ -151,19 +151,6 @@ pub fn trigger(total_sample: usize) -> bool {
     return beat_trigger < INV_SAMPLERATE; // && beat_trigger >= 0. , is actually wumpe cause always true
 }
 
-// inline or not inline?
-#[inline]
-// individual math operators (more complex than Edge::mad()) might be created directly in the smash
-fn math_mixer(input1: &Edge, input2: &Edge, cv: &Edge, output: &mut Edge) {
-    for sample in 0 .. BLOCK_SIZE {
-        for ch in 0 .. 2 { // the looping could be hidden by generalizing 2000 + and * 1800 to
-            output.put_at_mono(sample, ch,
-                cv.evaluate_mono(sample, ch) * (input1.evaluate_mono(sample, ch) + input2.evaluate_mono(sample, ch))
-            );
-        }
-    }
-}
-
 // with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)
 // same with block_size 256: 10 seconds?? wtf?
 // block_size 512: 55 seconds;

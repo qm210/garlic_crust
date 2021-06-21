@@ -59,7 +59,7 @@ impl Operator for Envelope {
                                 * crate::math::smoothstep(0., _attack + EPSILON, self.playhead)
                         },
                         BaseEnv::Swell => {
-                            libm::powf(crate::math::smoothstep(-_attack, _attack, self.playhead), _sustain)
+                            libm::powf(crate::math::smoothstep(-_attack, _attack, self.playhead), _sustain) // _sustain is rather a power
                         },
                     };
                     norm_result.clamp(0., 1.)

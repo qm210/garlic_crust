@@ -23,13 +23,12 @@ pub struct Clove3State {
 pub fn create_state() -> Clove3State {
     Clove3State {
         output: EMPTY_BLOCKARRAY,
-        volume: 1.,
+        volume: 0.6,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            volume: Edge::constant(0.6),
             freq_factor: Edge::constant(1.00),
-            detune: Edge::constant_stereo([0.,0.01]),
+            detune: Edge::constant_stereo([0.,0.02]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
         },
@@ -38,9 +37,9 @@ pub fn create_state() -> Clove3State {
         env: envelope::Envelope {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::ExpDecay,
-                attack: Edge::constant(0.03),
-                decay: Edge::constant(1.),
-                sustain: Edge::constant(0.5),
+                attack: Edge::constant(0.1),
+                decay: Edge::constant(0.4),
+                sustain: Edge::constant(0.2),
             },
             ..Default::default()
         },
@@ -48,7 +47,7 @@ pub fn create_state() -> Clove3State {
 
         hp: filter::Filter {
             shape: filter::FilterType::HiPass,
-            cutoff: Edge::constant(1000.),
+            cutoff: Edge::constant(4000.),
             ..Default::default()
         },
         hp_output: Edge::zero(),
@@ -73,12 +72,26 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove3Sta
     state.hp.input = state.osc_output;
     process_operator(&mut state.hp, &mut state.hp_output);
 
+    //waveshape(&mut state.hp_output, some_shape, 1.);
+    //math_overdrive_const(&mut state.hp_output, 1.);
+
     state.hp_output.write_to(&mut state.output, state.volume);
 }
 
-// with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)
-// same with block_size 256: 10 seconds?? wtf?
-// block_size 512: 55 seconds;
+fn some_shape(t: f32) -> f32 {
+    match t {
+        x if x < 0.1 => {
+            crate::math::powerslope(t, 0.0, 0.1, 0., 0.5, 0.3)
+        },
+        x if x < 0.3 => {
+            crate::math::powerslope(t, 0.1, 0.3, 0.5, 0.2, 4.)
+        }
+        x if x < 1. => {
+            crate::math::powerslope(t, 0.3, 1., 0., 1., 0.6)
+        }
+        _ => 0.
+    }
+}
 
 // THINGS TO TEST:
 // put "env_osc1_output" again as a field of "env_osc1.output", if that helps the compiler?
