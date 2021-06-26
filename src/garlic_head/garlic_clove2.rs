@@ -31,7 +31,7 @@ pub struct Clove2State {
 pub fn create_state() -> Clove2State {
     Clove2State {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.6,
+        volume: 0.4,
 
         sub: oscillator::Oscillator {
             shape: oscillator::BaseWave::Sine,
@@ -53,7 +53,7 @@ pub fn create_state() -> Clove2State {
         env1: envelope::Envelope {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::Swell,
-                attack: Edge::constant(0.41),
+                attack: Edge::constant(0.6),
                 decay: Edge::zero(),
                 sustain: Edge::constant(3.),
             },
@@ -73,7 +73,7 @@ pub fn create_state() -> Clove2State {
         env2: envelope::Envelope {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::ExpDecay,
-                attack: Edge::constant(0.1),
+                attack: Edge::constant(0.26),
                 decay: Edge::constant(0.22),
                 sustain: Edge::constant(0.5),
             },

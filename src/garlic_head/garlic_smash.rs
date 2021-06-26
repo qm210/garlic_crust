@@ -31,7 +31,7 @@ pub struct Smash1State {
 pub fn create_state() -> Smash1State {
     Smash1State {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.5, // could be parameter in create_state
+        volume: 1., // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(46.25), // F#1
@@ -72,7 +72,7 @@ pub fn create_state() -> Smash1State {
 
 fn kick_amp_env(t: TimeFloat) -> MonoSample {
     let a = 0.002;
-    let ah = a + 0.12;
+    let ah = a + 0.08;
     let ahd = ah + 0.00120;
     match t {
         x if x < a => crate::math::slope(t, 0., a, 0., 1.),
@@ -86,7 +86,7 @@ fn kick_freq_env(t: TimeFloat) -> MonoSample {
     match t {
         x if x < 0.002 => 3000.,
         x if x < 0.01 => crate::math::logslope(x, 0.002, 0.01, 3000., 300.),
-        x if x < 0.15 => crate::math::logslope(x, 0.01, 0.15, 300., 46.25),
+        x if x < 0.05 => crate::math::logslope(x, 0.01, 0.15, 300., 46.25),
         _ => 46.25,
     }
 }
