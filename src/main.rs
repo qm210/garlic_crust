@@ -39,7 +39,7 @@ use winapi::um::wingdi::{
     PFD_MAIN_PLANE,
 
     DEVMODEA,
-    wglGetProcAddress,
+    //wglGetProcAddress,
 };
 
 use winapi::shared::minwindef::{
@@ -236,17 +236,23 @@ type glRecti_type = unsafe extern "system" fn(i32, i32, i32, i32) -> ();
 pub const FRAGMENT_SHADER: u32 = 0x8B30;
 
 pub unsafe fn UseProgram(program: u32) -> () {
-    core::mem::transmute::<_, extern "system" fn(u32) -> ()>("glUseProgram\0".as_ptr())(program)
+    core::mem::transmute::<_, extern "system" fn(u32) -> ()>(
+        wglGetProcAddress("glUseProgram\0".as_ptr().cast())
+    )(program)
 }
 
 pub unsafe fn Recti(x1: i32, y1: i32, x2: i32, y2: i32 ) -> () {
-    core::mem::transmute::<_, extern "system" fn(i32, i32, i32, i32) -> ()>("glRecti\0".as_ptr())(x1,y1,x2,y2)
+    // wglGetProcAddress("glUseProgram\0".as_ptr().cast())
+    core::mem::transmute::<_, extern "system" fn(i32, i32, i32, i32) -> ()>(
+        wglGetProcAddress("glRecti\0".as_ptr().cast())
+    )(x1,y1,x2,y2)
 }
 
-
+/*
 pub unsafe fn glFlush() -> () {
     core::mem::transmute::<_, extern "system" fn() -> ()>("glFlush\0".as_ptr())()
 }
+*/
 
 static gfx_frag: &'static str = "
 #version 130
@@ -283,10 +289,6 @@ pub extern "system" fn mainCRTStartup() {
 
         let glUseProgram: glUseProgram_type = core::mem::transmute(
             wglGetProcAddress("glUseProgram\0".as_ptr().cast())
-        );
-
-        let glRecti: glRecti_type = core::mem::transmute(
-            wglGetProcAddress("glRecti\0".as_ptr().cast())
         );
 
         let program = glCreateShaderProgramv(FRAGMENT_SHADER, 1, gfx_frag);
@@ -345,7 +347,7 @@ pub extern "system" fn mainCRTStartup() {
 
             Recti(-1, -1, 1, 1);
             //gl::Recti(-1, -1, 1, 1);
-            glFlush();
+            //glFlush();
 
             SwapBuffers(hdc);
 
