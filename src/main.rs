@@ -159,15 +159,15 @@ static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg
     wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT, // winapi::shared::mmreg::WAVE_FORMAT_PCM, //
     nChannels : 2,
     nSamplesPerSec : SAMPLERATE_INT,
-    nAvgBytesPerSec : SAMPLERATE_INT * 4 * 2,
-    nBlockAlign : 4 * 2,
-    wBitsPerSample: 32,
+    nAvgBytesPerSec : SAMPLERATE_INT * 4 * 2, // should be sizeof(sample type) * samplerate * 2
+    nBlockAlign : 4 * 2, // should be sizeof(sample type) * 2
+    wBitsPerSample: 32, // should be sizeof(sample type) * 8
     cbSize:0
  };
 
 static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::WAVEHDR{
     lpData: 0 as *mut i8,
-    dwBufferLength: 4 * (garlic_head::SAMPLES as u32),
+    dwBufferLength: 8 * (garlic_head::SAMPLES as u32), // SHOULD BE (check that!) max_samples * sizeof(float) * 2
     dwBytesRecorded: 0,
     dwUser: 0,
     dwFlags: 0,
@@ -207,9 +207,86 @@ static mut H_WAVEOUT: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem
 };
 */
 
+
+/// Pointer to an ANSI string.
+pub type LPCSTR = *const winapi::ctypes::c_char;
+/// Pointer to a procedure of unknown type.
+pub type PROC = *mut winapi::ctypes::c_void;
+
+#[link(name = "Opengl32")]
+extern "system" {
+  /// [`wglGetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglgetprocaddress)
+  pub fn wglGetProcAddress(Arg1: LPCSTR) -> PROC;
+}
+
+//static mut program : u32 = 0;
+type glCreateShaderProgramv_type = unsafe extern "system" fn(u32, usize, &str) -> usize;
+type glUseProgram_type = unsafe extern "system" fn(usize) -> bool;
+type glRecti_type = unsafe extern "system" fn(i32, i32, i32, i32) -> ();
+pub const FRAGMENT_SHADER: u32 = 0x8B30;
+
+pub unsafe fn UseProgram(program: u32) -> () {
+    core::mem::transmute::<_, extern "system" fn(u32) -> ()>("glUseProgram\0".as_ptr())(program)
+}
+
+pub unsafe fn Recti(x1: i32, y1: i32, x2: i32, y2: i32 ) -> () {
+    core::mem::transmute::<_, extern "system" fn(i32, i32, i32, i32) -> ()>("glRecti\0".as_ptr())(x1,y1,x2,y2)
+}
+
+
+pub unsafe fn glFlush() -> () {
+    core::mem::transmute::<_, extern "system" fn() -> ()>("glFlush\0".as_ptr())()
+}
+
+static gfx_frag: &'static str = "
+#version 130
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragCoord/iResolution.xy;
+
+    // Time varying pixel color
+    vec3 col = 0.5 + 0.5*cos(/*iTime*/+uv.xyx+vec3(0,2,4));
+
+    // Output to screen
+    fragColor = vec4(col,1.0);
+}
+
+void main(){mainImage(gl_FragColor, gl_FragCoord.xy);}
+\0";
+
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
+
+    unsafe {
+/*
+        GLint program = ((PFNGLCREATESHADERPROGRAMVPROC)wglGetProcAddress("glCreateShaderProgramv"))(GL_FRAGMENT_SHADER, 1, &gfx_frag);
+        ((PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram"))(program);
+        GLint iTime_location = ((PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation"))(program, VAR_ITIME);
+*/
+        let glCreateShaderProgramv: glCreateShaderProgramv_type = core::mem::transmute(
+            wglGetProcAddress("glCreateShaderProgramv\0".as_ptr().cast())
+        );
+        //program = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, gfx_frag.as_ptr()); // program is return of gl::GetShaderiv?
+
+        let glUseProgram: glUseProgram_type = core::mem::transmute(
+            wglGetProcAddress("glUseProgram\0".as_ptr().cast())
+        );
+
+        let glRecti: glRecti_type = core::mem::transmute(
+            wglGetProcAddress("glRecti\0".as_ptr().cast())
+        );
+
+        let program = glCreateShaderProgramv(FRAGMENT_SHADER, 1, gfx_frag);
+
+        let whatevers = glUseProgram(program);
+        // gl::UseProgram(program);
+
+        // let iTime_location = gl::GetUniformLocation(program, "iTime".as_ptr());
+
+    }
 
     unsafe {
         garlic_head::render_track(&mut GARLIC_DATA);
@@ -250,7 +327,19 @@ pub extern "system" fn mainCRTStartup() {
             }
         }
 
-        unsafe { SwapBuffers(hdc); }
+        unsafe {
+
+            // ((PFNGLUNIFORM1FPROC)
+
+            //let mut prc = wglGetProcAddress("glUniform1f".as_ptr() as *const i8)(iTime_location, time_ms as f32) as usize;
+
+            Recti(-1, -1, 1, 1);
+            //gl::Recti(-1, -1, 1, 1);
+            glFlush();
+
+            SwapBuffers(hdc);
+
+        }
 
         // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
 
