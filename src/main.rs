@@ -20,6 +20,7 @@ mod garlic_helper;
 #[cfg(debug_assertions)]
 mod debug;
 
+// TODO (NR4): Remove the unused uses.
 use core::panic::PanicInfo;
 
 use winapi::um::wingdi::{
@@ -35,7 +36,10 @@ use winapi::um::wingdi::{
     PFD_DRAW_TO_WINDOW,
     PIXELFORMATDESCRIPTOR,
 
-    PFD_MAIN_PLANE
+    PFD_MAIN_PLANE,
+
+    DEVMODEA,
+    wglGetProcAddress,
 };
 
 use winapi::shared::minwindef::{
@@ -64,17 +68,15 @@ use winapi::um::winuser::{
     RegisterClassA,
 
     WNDCLASSA,
-    // CS_OWNDC,
-    // CS_HREDRAW,
-    // CS_VREDRAW,
+
     WS_POPUP,
     WS_VISIBLE,
     WS_MAXIMIZE,
     CW_USEDEFAULT,
-    // WS_OVERLAPPEDWINDOW,
-    // WS_VISIBLE,
-};
+    CDS_FULLSCREEN,
 
+    ShowCursor,
+};
 
 pub unsafe extern "system" fn window_proc(hwnd: HWND,
     msg: UINT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
@@ -108,7 +110,15 @@ extern "C" {
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
+        let mut devmode : DEVMODEA = core::mem::zeroed();
+        devmode.dmSize = core::mem::size_of::<DEVMODEA>() as u16;
+        devmode.dmFields = winapi::um::wingdi::DM_PELSWIDTH | winapi::um::wingdi::DM_PELSHEIGHT;
+        devmode.dmPelsWidth  = 1920;
+        devmode.dmPelsHeight = 1080;
+        winapi::um::winuser::ChangeDisplaySettingsA(&mut devmode, CDS_FULLSCREEN);
+
         let hwnd : HWND = CreateWindowExA(0, 0xc019 as *const i8, 0 as *const i8, WS_POPUP | WS_VISIBLE | WS_MAXIMIZE, 0, 0, 0, 0, 0 as HWND, 0 as HMENU, 0 as HINSTANCE, 0 as LPVOID);
+        ShowCursor(0);
         let hdc : HDC = GetDC(hwnd);
 
         let mut pfd : PIXELFORMATDESCRIPTOR = core::mem::zeroed();
