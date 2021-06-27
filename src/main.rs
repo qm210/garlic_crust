@@ -241,21 +241,14 @@ pub unsafe fn UseProgram(program: u32) -> () {
     )(program)
 }
 
-pub unsafe fn Recti(x1: i32, y1: i32, x2: i32, y2: i32 ) -> () {
-    // wglGetProcAddress("glUseProgram\0".as_ptr().cast())
-    core::mem::transmute::<_, extern "system" fn(i32, i32, i32, i32) -> ()>(
-        wglGetProcAddress("glRecti\0".as_ptr().cast())
-    )(x1,y1,x2,y2)
+#[link(name = "Opengl32")]
+extern "system" {
+    fn glRecti(x1: i32, y1: i32, x2: i32, y2: i32) -> ();
+    fn glFlush() -> ();
 }
-
-/*
-pub unsafe fn glFlush() -> () {
-    core::mem::transmute::<_, extern "system" fn() -> ()>("glFlush\0".as_ptr())()
-}
-*/
 
 static gfx_frag: &'static str = "
-#version 130
+#version 430
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
@@ -263,7 +256,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 uv = fragCoord/iResolution.xy;
 
     // Time varying pixel color
-    vec3 col = 0.5 + 0.5*cos(/*iTime*/+uv.xyx+vec3(0,2,4));
+    vec3 col = 0.5 + 0.5*cos(/*iTime*/0.0+uv.xyx+vec3(0,2,4));
 
     // Output to screen
     fragColor = vec4(col,1.0);
@@ -345,9 +338,9 @@ pub extern "system" fn mainCRTStartup() {
 
             //let mut prc = wglGetProcAddress("glUniform1f".as_ptr() as *const i8)(iTime_location, time_ms as f32) as usize;
 
-            Recti(-1, -1, 1, 1);
+            glRecti(-1, -1, 1, 1);
             //gl::Recti(-1, -1, 1, 1);
-            //glFlush();
+            glFlush();
 
             SwapBuffers(hdc);
 
