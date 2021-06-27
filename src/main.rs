@@ -33,7 +33,9 @@ use winapi::um::wingdi::{
     PFD_DOUBLEBUFFER,
     PFD_SUPPORT_OPENGL,
     PFD_DRAW_TO_WINDOW,
-    PIXELFORMATDESCRIPTOR
+    PIXELFORMATDESCRIPTOR,
+
+    PFD_MAIN_PLANE
 };
 
 use winapi::shared::minwindef::{
@@ -42,6 +44,7 @@ use winapi::shared::minwindef::{
     LPVOID,
     WPARAM,
     UINT,
+    HINSTANCE,
 };
 
 use winapi::shared::windef::{
@@ -61,12 +64,15 @@ use winapi::um::winuser::{
     RegisterClassA,
 
     WNDCLASSA,
-    CS_OWNDC,
-    CS_HREDRAW,
-    CS_VREDRAW,
-    CW_USEDEFAULT,
-    WS_OVERLAPPEDWINDOW,
+    // CS_OWNDC,
+    // CS_HREDRAW,
+    // CS_VREDRAW,
+    WS_POPUP,
     WS_VISIBLE,
+    WS_MAXIMIZE,
+    CW_USEDEFAULT,
+    // WS_OVERLAPPEDWINDOW,
+    // WS_VISIBLE,
 };
 
 
@@ -102,29 +108,8 @@ extern "C" {
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
-        let h_wnd : HWND;
-
-        let hinstance = GetModuleHandleA( 0 as *const i8 );
-        let mut wnd_class : WNDCLASSA = core::mem::zeroed();
-        wnd_class.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-        wnd_class.lpfnWndProc = Some( window_proc );
-        wnd_class.hInstance = hinstance;							// The instance handle for our application which we can retrieve by calling GetModuleHandleW.
-        wnd_class.lpszClassName = "MyClass\0".as_ptr() as *const i8;
-        RegisterClassA( &wnd_class );
-
-        h_wnd = CreateWindowExA(
-            0,
-            //WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,                     // dwExStyle
-            "MyClass\0".as_ptr() as *const i8,		                // class we registered.
-            "GARLIC_CRUST\0".as_ptr() as *const i8,						// title
-            WS_OVERLAPPEDWINDOW | WS_VISIBLE,	// dwStyle
-            CW_USEDEFAULT, CW_USEDEFAULT, 1920/2, 1080/2,	// size and position
-            0 as HWND,               	// hWndParent
-            0 as HMENU,					// hMenu
-            hinstance,                  // hInstance
-            0 as LPVOID );				// lpParam
-
-        let h_dc : HDC = GetDC(h_wnd);        // Device Context
+        let hwnd : HWND = CreateWindowExA(0, 0xc019 as *const i8, 0 as *const i8, WS_POPUP | WS_VISIBLE | WS_MAXIMIZE, 0, 0, 0, 0, 0 as HWND, 0 as HMENU, 0 as HINSTANCE, 0 as LPVOID);
+        let hdc : HDC = GetDC(hwnd);
 
         let mut pfd : PIXELFORMATDESCRIPTOR = core::mem::zeroed();
         pfd.nSize = core::mem::size_of::<PIXELFORMATDESCRIPTOR>() as u16;
@@ -134,19 +119,12 @@ fn create_window( ) -> ( HWND, HDC ) {
         pfd.cColorBits = 32;
         pfd.cAlphaBits = 8;
         pfd.cDepthBits = 32;
+        pfd.iLayerType = PFD_MAIN_PLANE;
 
-        let pf_id : i32 = ChoosePixelFormat(h_dc, &pfd );
-        SetPixelFormat(h_dc, pf_id, &pfd);
-        let gl_context : HGLRC = wglCreateContext(h_dc);    // Rendering Context
-        wglMakeCurrent(h_dc, gl_context);
+        SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
+        wglMakeCurrent(hdc, wglCreateContext(hdc));
 
-        // make the system font the device context's selected font
-        winapi::um::wingdi::SelectObject (h_dc, winapi::um::wingdi::GetStockObject (winapi::um::wingdi::SYSTEM_FONT as i32));
-
-        // create the bitmap display lists
-        winapi::um::wingdi::wglUseFontBitmapsA (h_dc, 0, 255, 1000);
-
-        ( h_wnd, h_dc )
+        ( hwnd, hdc )
     }
 }
 
