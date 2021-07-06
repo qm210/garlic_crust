@@ -102,13 +102,16 @@ extern "C" {
     pub fn printf(format: *const u8, ...) -> i32;
 }
 
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
+
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
         let mut devmode : DEVMODEA = core::mem::zeroed();
         devmode.dmSize = core::mem::size_of::<DEVMODEA>() as u16;
         devmode.dmFields = winapi::um::wingdi::DM_PELSWIDTH | winapi::um::wingdi::DM_PELSHEIGHT;
-        devmode.dmPelsWidth  = 1920;
-        devmode.dmPelsHeight = 1080;
+        devmode.dmPelsWidth  = WIDTH;
+        devmode.dmPelsHeight = HEIGHT;
         winapi::um::winuser::ChangeDisplaySettingsA(&mut devmode, CDS_FULLSCREEN);
 
         let hwnd : HWND = CreateWindowExA(0, 0xc019 as *const i8, 0 as *const i8, WS_POPUP | WS_VISIBLE | WS_MAXIMIZE, 0, 0, 0, 0, 0 as HWND, 0 as HMENU, 0 as HINSTANCE, 0 as LPVOID);
@@ -127,8 +130,6 @@ fn create_window( ) -> ( HWND, HDC ) {
 
         SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
         wglMakeCurrent(hdc, wglCreateContext(hdc));
-
-        gl::init();
 
         ( hwnd, hdc )
     }
@@ -231,19 +232,25 @@ extern "system" {
 static gfx_frag: &'static str = "
 #version 130
 
+uniform vec2 iResolution;
+uniform float iTime;
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragCoord/iResolution.xy;
 
     // Time varying pixel color
-    vec3 col = 0.5 + 0.5*cos(/*iTime*/+uv.xyx+vec3(0,2,4));
+    vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
 
     // Output to screen
     fragColor = vec4(col,1.0);
 }
 
-void main(){mainImage(gl_FragColor, gl_FragCoord.xy);}
+void main()
+{
+    mainImage(gl_FragColor, gl_FragCoord.xy);
+}
 \0";
 
 
@@ -251,13 +258,16 @@ void main(){mainImage(gl_FragColor, gl_FragCoord.xy);}
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
     let iTime_location: gl::GLint;
+    let iResolution_location: gl::GLint;
 
     unsafe {
+        gl::init();
         let program = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, gfx_frag);
-
         gl::UseProgram(program);
-
         iTime_location = gl::GetUniformLocation(program, "iTime\0".as_ptr());
+        iResolution_location = gl::GetUniformLocation(program, "iResolution\0".as_ptr());
+
+        gl::Uniform2f(iResolution_location, WIDTH as gl::GLfloat, HEIGHT as gl::GLfloat)
     }
 
     unsafe {
@@ -300,7 +310,6 @@ pub extern "system" fn mainCRTStartup() {
         }
 
         unsafe {
-
             gl::Uniform1f(iTime_location, time_ms as f32 * 0.001);
 
             // THESE PRODUCE STATUS_ACCESS_VIOLATION !!

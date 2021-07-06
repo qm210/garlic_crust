@@ -22,6 +22,7 @@ static mut addr_glUseProgram: usize = 0;
 static mut addr_glRecti: usize = 0;
 static mut addr_glGetUniformLocation: usize = 0;
 static mut addr_glUniform1f: usize = 0;
+static mut addr_glUniform2f: usize = 0;
 static mut addr_glFlush: usize = 0;
 
 fn getTheFuckingAddress(name: &str) -> usize {
@@ -41,6 +42,7 @@ pub unsafe fn init() {
     addr_glRecti = getTheFuckingAddress("glRecti\0");
     addr_glGetUniformLocation = getTheFuckingAddress("glGetUniformLocation\0");
     addr_glUniform1f = getTheFuckingAddress("glUniform1f\0");
+    addr_glUniform2f = getTheFuckingAddress("glUniform2f\0");
     addr_glFlush = getTheFuckingAddress("glFlush\0");
 }
 
@@ -62,6 +64,10 @@ pub unsafe fn GetUniformLocation(program: GLuint, name: *const GLchar) -> GLint 
 
 pub unsafe fn Uniform1f(location: GLint, v0: GLfloat) -> () {
     mem::transmute::<_, extern "system" fn(GLint, GLfloat) -> ()>(addr_glUniform1f)(location, v0)
+}
+
+pub unsafe fn Uniform2f(location: GLint, x: GLfloat, y: GLfloat) -> () {
+    mem::transmute::<_, extern "system" fn(GLint, GLfloat, GLfloat) -> ()>(addr_glUniform2f)(location, x, y)
 }
 
 pub unsafe fn Flush() -> () {
