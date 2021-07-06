@@ -128,6 +128,8 @@ fn create_window( ) -> ( HWND, HDC ) {
         SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
         wglMakeCurrent(hdc, wglCreateContext(hdc));
 
+        gl::init();
+
         ( hwnd, hdc )
     }
 }
@@ -251,8 +253,6 @@ pub extern "system" fn mainCRTStartup() {
     let iTime_location: gl::GLint;
 
     unsafe {
-        gl::init();
-
         let program = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, gfx_frag);
 
         gl::UseProgram(program);

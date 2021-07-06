@@ -2,6 +2,8 @@
 #![allow(non_upper_case_globals)]
 
 use winapi::um::wingdi::wglGetProcAddress;
+use winapi::um::libloaderapi::LoadLibraryA;
+use winapi::um::libloaderapi::GetProcAddress;
 use core::mem;
 
 pub type GLboolean = u8;
@@ -22,13 +24,24 @@ static mut addr_glGetUniformLocation: usize = 0;
 static mut addr_glUniform1f: usize = 0;
 static mut addr_glFlush: usize = 0;
 
+fn getTheFuckingAddress(name: &str) -> usize {
+    let addr = unsafe { wglGetProcAddress(name.as_ptr() as *const i8) as usize };
+    if addr != 0 {
+        return addr;
+    }
+    unsafe {
+        let handle = LoadLibraryA("Opengl32.dll\0".as_ptr() as *const i8);
+        return GetProcAddress( handle, name.as_ptr() as *const i8 ) as usize;
+    }
+}
+
 pub unsafe fn init() {
-    addr_glCreateShaderProgramv = wglGetProcAddress("glCreateShaderProgramv\0".as_ptr() as *const i8) as usize;
-    addr_glUseProgram = wglGetProcAddress("glUseProgram\0".as_ptr() as *const i8) as usize;
-    addr_glRecti = wglGetProcAddress("glRecti\0".as_ptr() as *const i8) as usize;
-    addr_glGetUniformLocation = wglGetProcAddress("glGetUniformLocation\0".as_ptr() as *const i8) as usize;
-    addr_glUniform1f = wglGetProcAddress("glUniform1f\0".as_ptr() as *const i8) as usize;
-    addr_glFlush = wglGetProcAddress("glFlush\0".as_ptr() as *const i8) as usize;
+    addr_glCreateShaderProgramv = getTheFuckingAddress("glCreateShaderProgramv\0");
+    addr_glUseProgram = getTheFuckingAddress("glUseProgram\0");
+    addr_glRecti = getTheFuckingAddress("glRecti\0");
+    addr_glGetUniformLocation = getTheFuckingAddress("glGetUniformLocation\0");
+    addr_glUniform1f = getTheFuckingAddress("glUniform1f\0");
+    addr_glFlush = getTheFuckingAddress("glFlush\0");
 }
 
 pub unsafe fn CreateShaderProgramv(shader_type: u32, count: u32, strings: &str) -> u32 {
