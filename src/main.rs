@@ -9,6 +9,7 @@
 
 #[cfg(windows)] extern crate winapi;
 
+mod gl;
 pub mod util;
 pub mod math;
 mod garlic_crust;
@@ -29,17 +30,13 @@ use winapi::um::wingdi::{
     wglMakeCurrent,
     wglCreateContext,
     SetPixelFormat,
-
     PFD_TYPE_RGBA,
     PFD_DOUBLEBUFFER,
     PFD_SUPPORT_OPENGL,
     PFD_DRAW_TO_WINDOW,
     PIXELFORMATDESCRIPTOR,
-
     PFD_MAIN_PLANE,
-
     DEVMODEA,
-    //wglGetProcAddress,
 };
 
 use winapi::shared::minwindef::{
@@ -66,15 +63,12 @@ use winapi::um::winuser::{
     GetDC,
     PostQuitMessage,
     RegisterClassA,
-
     WNDCLASSA,
-
     WS_POPUP,
     WS_VISIBLE,
     WS_MAXIMIZE,
     CW_USEDEFAULT,
     CDS_FULLSCREEN,
-
     ShowCursor,
 };
 
@@ -223,34 +217,12 @@ pub type LPCSTR = *const winapi::ctypes::c_char;
 /// Pointer to a procedure of unknown type.
 pub type PROC = *mut winapi::ctypes::c_void;
 
+/*
+// no need to define, as it looks identical to the one given by wingdi::wglGetProcAddress
 #[link(name = "Opengl32")]
 extern "system" {
   /// [`wglGetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglgetprocaddress)
   pub fn wglGetProcAddress(Arg1: LPCSTR) -> PROC;
-}
-
-//static mut program : u32 = 0;
-type glCreateShaderProgramv_type = unsafe extern "system" fn(u32, usize, &str) -> usize;
-type glUseProgram_type = unsafe extern "system" fn(usize) -> bool;
-type glRecti_type = unsafe extern "system" fn(i32, i32, i32, i32) -> ();
-pub const FRAGMENT_SHADER: u32 = 0x8B30;
-
-pub unsafe fn UseProgram(program: u32) -> () {
-    core::mem::transmute::<_, extern "system" fn(u32) -> ()>(
-        wglGetProcAddress("glUseProgram\0".as_ptr().cast())
-    )(program)
-}
-
-pub unsafe fn Recti(x1: i32, y1: i32, x2: i32, y2: i32 ) -> () {
-    // wglGetProcAddress("glUseProgram\0".as_ptr().cast())
-    core::mem::transmute::<_, extern "system" fn(i32, i32, i32, i32) -> ()>(
-        wglGetProcAddress("glRecti\0".as_ptr().cast())
-    )(x1,y1,x2,y2)
-}
-
-/*
-pub unsafe fn glFlush() -> () {
-    core::mem::transmute::<_, extern "system" fn() -> ()>("glFlush\0".as_ptr())()
 }
 */
 
@@ -272,32 +244,20 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 void main(){mainImage(gl_FragColor, gl_FragCoord.xy);}
 \0";
 
+
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
+    let iTime_location: gl::GLint;
 
     unsafe {
-/*
-        GLint program = ((PFNGLCREATESHADERPROGRAMVPROC)wglGetProcAddress("glCreateShaderProgramv"))(GL_FRAGMENT_SHADER, 1, &gfx_frag);
-        ((PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram"))(program);
-        GLint iTime_location = ((PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation"))(program, VAR_ITIME);
-*/
-        let glCreateShaderProgramv: glCreateShaderProgramv_type = core::mem::transmute(
-            wglGetProcAddress("glCreateShaderProgramv\0".as_ptr().cast())
-        );
-        //program = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, gfx_frag.as_ptr()); // program is return of gl::GetShaderiv?
+        gl::init();
 
-        let glUseProgram: glUseProgram_type = core::mem::transmute(
-            wglGetProcAddress("glUseProgram\0".as_ptr().cast())
-        );
+        let program = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, gfx_frag);
 
-        let program = glCreateShaderProgramv(FRAGMENT_SHADER, 1, gfx_frag);
+        gl::UseProgram(program);
 
-        let whatevers = glUseProgram(program);
-        // gl::UseProgram(program);
-
-        // let iTime_location = gl::GetUniformLocation(program, "iTime".as_ptr());
-
+        iTime_location = gl::GetUniformLocation(program, "iTime\0".as_ptr());
     }
 
     unsafe {
@@ -341,13 +301,11 @@ pub extern "system" fn mainCRTStartup() {
 
         unsafe {
 
-            // ((PFNGLUNIFORM1FPROC)
+            gl::Uniform1f(iTime_location, time_ms as f32 * 0.001);
 
-            //let mut prc = wglGetProcAddress("glUniform1f".as_ptr() as *const i8)(iTime_location, time_ms as f32) as usize;
-
-            Recti(-1, -1, 1, 1);
-            //gl::Recti(-1, -1, 1, 1);
-            //glFlush();
+            // THESE PRODUCE STATUS_ACCESS_VIOLATION !!
+            gl::Recti(-1, -1, 1, 1);
+            gl::Flush(); // need? don't know whether ported correctly
 
             SwapBuffers(hdc);
 

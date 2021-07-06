@@ -1,9 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 
-use winapi::shared::minwindef::HMODULE;
-use winapi::um::libloaderapi::LoadLibraryA;
-use winapi::um::libloaderapi::GetProcAddress;
 use winapi::um::wingdi::wglGetProcAddress;
 use core::mem;
 
@@ -17,83 +14,43 @@ pub type GLsizei = i32;
 pub type GLsizeiptr = isize;
 
 pub const FRAGMENT_SHADER: GLenum = 0x8B30;
-static mut GL_API: [usize; 696] = [0; 696];
 
-const RectiIdx: u16 = 136;
-const GetUniformLocationIdx: u16 = 313;
-const Uniform1fIdx: u16 = 539;
+static mut addr_glCreateShaderProgramv: usize = 0;
+static mut addr_glUseProgram: usize = 0;
+static mut addr_glRecti: usize = 0;
+static mut addr_glGetUniformLocation: usize = 0;
+static mut addr_glUniform1f: usize = 0;
+static mut addr_glFlush: usize = 0;
 
-static LOAD_DESC: &'static [(u16, &'static str)] = &[
-
-    ( wglSwapIntervalIdx, "wglSwapIntervalEXT\0" ),
-//    (DrawArraysIdx, "glDrawArrays\0"),
-    (RectiIdx, "glRecti\0"),
-
-
-    // Program functions
-    (CreateProgramIdx, "glCreateProgram\0"),
-    #[cfg(feature = "logger")]
-    (GetProgramivIdx, "glGetProgramiv\0"),
-    (AttachShaderIdx, "glAttachShader\0"),
-    #[cfg(feature = "logger")]
-    (DetachShaderIdx, "glDetachShader\0"),
-
-    (UseProgramIdx, "glUseProgram\0"),
-
-    (LinkProgramIdx, "glLinkProgram\0"),
-    (CreateShaderIdx, "glCreateShader\0"),
-    (ShaderSourceIdx, "glShaderSource\0"),
-    (CompileShaderIdx, "glCompileShader\0"),
-
-    #[cfg(feature = "logger")]
-    (GetShaderivIdx, "glGetShaderiv\0"),
-    #[cfg(feature = "logger")]
-    (GetShaderInfoLogIdx, "glGetShaderInfoLog\0"),
-    #[cfg(feature = "logger")]
-    (GetProgramInfoLogIdx, "glGetProgramInfoLog\0"),
-
-    (GetUniformLocationIdx, "glGetUniformLocation\0"),
-    (Uniform4fvIdx, "glUniform4fv\0"),
-
-    // Texture
-    (GenTexturesIdx, "glGenTextures\0"),
-    (BindTextureIdx, "glBindTexture\0"),
-    (ActiveTextureIdx, "glActiveTexture\0"),
-    (TexImage2DIdx, "glTexImage2D\0"),
-    (TexParameteriIdx, "glTexParameteri\0"),
-
-
-    (ListBaseIdx, "glListBase\0"),
-    (CallListsIdx, "glCallLists\0"),
-    (RasterPos2fIdx, "glRasterPos2f\0"),
-
-];
-
-pub unsafe fn UseProgram(program: GLuint) -> () {
-    mem::transmute::<_, extern "system" fn(GLuint) -> ()>(*GL_API.get_unchecked(UseProgramIdx as usize))(program)
+pub unsafe fn init() {
+    addr_glCreateShaderProgramv = wglGetProcAddress("glCreateShaderProgramv\0".as_ptr() as *const i8) as usize;
+    addr_glUseProgram = wglGetProcAddress("glUseProgram\0".as_ptr() as *const i8) as usize;
+    addr_glRecti = wglGetProcAddress("glRecti\0".as_ptr() as *const i8) as usize;
+    addr_glGetUniformLocation = wglGetProcAddress("glGetUniformLocation\0".as_ptr() as *const i8) as usize;
+    addr_glUniform1f = wglGetProcAddress("glUniform1f\0".as_ptr() as *const i8) as usize;
+    addr_glFlush = wglGetProcAddress("glFlush\0".as_ptr() as *const i8) as usize;
 }
 
-pub unsafe fn Uniform4fv(location: GLint, count: GLsizei, value: *const GLfloat) -> () {
-    mem::transmute::<_, extern "system" fn(GLint, GLsizei, *const GLfloat) -> ()>(*GL_API.get_unchecked(Uniform4fvIdx as usize))(location, count, value)
+pub unsafe fn CreateShaderProgramv(shader_type: u32, count: u32, strings: &str) -> u32 {
+    core::mem::transmute::<_, extern "system" fn(u32, u32, &str) -> u32>(addr_glCreateShaderProgramv)(shader_type, count, strings)
 }
 
-pub unsafe fn Recti(x1: GLint, y1: GLint, x2: GLint, y2: GLint ) -> () {
-    mem::transmute::<_, extern "system" fn(GLint, GLint, GLint, GLint) -> ()>(*GL_API.get_unchecked(RectiIdx as usize))(x1,y1,x2,y2)
+pub unsafe fn UseProgram(program: u32) -> bool {
+    core::mem::transmute::<_, extern "system" fn(u32) -> bool>(addr_glUseProgram)(program)
+}
+
+pub unsafe fn Recti(x1: i32, y1: i32, x2: i32, y2: i32 ) -> () {
+    core::mem::transmute::<_, extern "system" fn(i32, i32, i32, i32) -> ()>(addr_glRecti)(x1,y1,x2,y2)
 }
 
 pub unsafe fn GetUniformLocation(program: GLuint, name: *const GLchar) -> GLint {
-    mem::transmute::<_, extern "system" fn(GLuint, *const GLchar) -> GLint>(*GL_API.get_unchecked(GetUniformLocationIdx as usize))(program, name)
+    mem::transmute::<_, extern "system" fn(GLuint, *const GLchar) -> GLint>(addr_glGetUniformLocation)(program, name)
 }
 
 pub unsafe fn Uniform1f(location: GLint, v0: GLfloat) -> () {
-    mem::transmute::<_, extern "system" fn(GLint, GLfloat) -> ()>(*GL_API.get_unchecked(Uniform1fIdx as usize))(location, v0)
+    mem::transmute::<_, extern "system" fn(GLint, GLfloat) -> ()>(addr_glUniform1f)(location, v0)
 }
 
-pub fn init() {
-    let handle : HMODULE;
-    unsafe { handle = LoadLibraryA( "Opengl32.dll\0".as_ptr() as *const i8);  }
-    for &(index, name) in LOAD_DESC {
-        let mut prc = wglGetProcAddress(name.as_ptr() as *const i8) as usize;
-        *GL_API.get_unchecked_mut( index as usize ) =  prc;
-    }
+pub unsafe fn Flush() -> () {
+    mem::transmute::<_, extern "system" fn() -> ()>(addr_glFlush)()
 }
