@@ -9,6 +9,7 @@
 
 #[cfg(windows)] extern crate winapi;
 
+mod gl;
 pub mod util;
 pub mod math;
 mod garlic_crust;
@@ -20,6 +21,7 @@ mod garlic_helper;
 #[cfg(debug_assertions)]
 mod debug;
 
+// TODO (NR4): Remove the unused uses.
 use core::panic::PanicInfo;
 
 use winapi::um::wingdi::{
@@ -28,12 +30,13 @@ use winapi::um::wingdi::{
     wglMakeCurrent,
     wglCreateContext,
     SetPixelFormat,
-
     PFD_TYPE_RGBA,
     PFD_DOUBLEBUFFER,
     PFD_SUPPORT_OPENGL,
     PFD_DRAW_TO_WINDOW,
-    PIXELFORMATDESCRIPTOR
+    PIXELFORMATDESCRIPTOR,
+    PFD_MAIN_PLANE,
+    DEVMODEA,
 };
 
 use winapi::shared::minwindef::{
@@ -42,6 +45,7 @@ use winapi::shared::minwindef::{
     LPVOID,
     WPARAM,
     UINT,
+    HINSTANCE,
 };
 
 use winapi::shared::windef::{
@@ -59,16 +63,14 @@ use winapi::um::winuser::{
     GetDC,
     PostQuitMessage,
     RegisterClassA,
-
     WNDCLASSA,
-    CS_OWNDC,
-    CS_HREDRAW,
-    CS_VREDRAW,
-    CW_USEDEFAULT,
-    WS_OVERLAPPEDWINDOW,
+    WS_POPUP,
     WS_VISIBLE,
+    WS_MAXIMIZE,
+    CW_USEDEFAULT,
+    CDS_FULLSCREEN,
+    ShowCursor,
 };
-
 
 pub unsafe extern "system" fn window_proc(hwnd: HWND,
     msg: UINT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
@@ -102,29 +104,16 @@ extern "C" {
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
-        let h_wnd : HWND;
+        let mut devmode : DEVMODEA = core::mem::zeroed();
+        devmode.dmSize = core::mem::size_of::<DEVMODEA>() as u16;
+        devmode.dmFields = winapi::um::wingdi::DM_PELSWIDTH | winapi::um::wingdi::DM_PELSHEIGHT;
+        devmode.dmPelsWidth  = 1920;
+        devmode.dmPelsHeight = 1080;
+        winapi::um::winuser::ChangeDisplaySettingsA(&mut devmode, CDS_FULLSCREEN);
 
-        let hinstance = GetModuleHandleA( 0 as *const i8 );
-        let mut wnd_class : WNDCLASSA = core::mem::zeroed();
-        wnd_class.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-        wnd_class.lpfnWndProc = Some( window_proc );
-        wnd_class.hInstance = hinstance;							// The instance handle for our application which we can retrieve by calling GetModuleHandleW.
-        wnd_class.lpszClassName = "MyClass\0".as_ptr() as *const i8;
-        RegisterClassA( &wnd_class );
-
-        h_wnd = CreateWindowExA(
-            0,
-            //WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,                     // dwExStyle
-            "MyClass\0".as_ptr() as *const i8,		                // class we registered.
-            "GARLIC_CRUST\0".as_ptr() as *const i8,						// title
-            WS_OVERLAPPEDWINDOW | WS_VISIBLE,	// dwStyle
-            CW_USEDEFAULT, CW_USEDEFAULT, 1920/2, 1080/2,	// size and position
-            0 as HWND,               	// hWndParent
-            0 as HMENU,					// hMenu
-            hinstance,                  // hInstance
-            0 as LPVOID );				// lpParam
-
-        let h_dc : HDC = GetDC(h_wnd);        // Device Context
+        let hwnd : HWND = CreateWindowExA(0, 0xc019 as *const i8, 0 as *const i8, WS_POPUP | WS_VISIBLE | WS_MAXIMIZE, 0, 0, 0, 0, 0 as HWND, 0 as HMENU, 0 as HINSTANCE, 0 as LPVOID);
+        ShowCursor(0);
+        let hdc : HDC = GetDC(hwnd);
 
         let mut pfd : PIXELFORMATDESCRIPTOR = core::mem::zeroed();
         pfd.nSize = core::mem::size_of::<PIXELFORMATDESCRIPTOR>() as u16;
@@ -134,19 +123,14 @@ fn create_window( ) -> ( HWND, HDC ) {
         pfd.cColorBits = 32;
         pfd.cAlphaBits = 8;
         pfd.cDepthBits = 32;
+        pfd.iLayerType = PFD_MAIN_PLANE;
 
-        let pf_id : i32 = ChoosePixelFormat(h_dc, &pfd );
-        SetPixelFormat(h_dc, pf_id, &pfd);
-        let gl_context : HGLRC = wglCreateContext(h_dc);    // Rendering Context
-        wglMakeCurrent(h_dc, gl_context);
+        SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
+        wglMakeCurrent(hdc, wglCreateContext(hdc));
 
-        // make the system font the device context's selected font
-        winapi::um::wingdi::SelectObject (h_dc, winapi::um::wingdi::GetStockObject (winapi::um::wingdi::SYSTEM_FONT as i32));
+        gl::init();
 
-        // create the bitmap display lists
-        winapi::um::wingdi::wglUseFontBitmapsA (h_dc, 0, 255, 1000);
-
-        ( h_wnd, h_dc )
+        ( hwnd, hdc )
     }
 }
 
@@ -181,15 +165,15 @@ static WAVE_FORMAT : winapi::shared::mmreg::WAVEFORMATEX = winapi::shared::mmreg
     wFormatTag : winapi::shared::mmreg::WAVE_FORMAT_IEEE_FLOAT, // winapi::shared::mmreg::WAVE_FORMAT_PCM, //
     nChannels : 2,
     nSamplesPerSec : SAMPLERATE_INT,
-    nAvgBytesPerSec : SAMPLERATE_INT * 4 * 2,
-    nBlockAlign : 4 * 2,
-    wBitsPerSample: 32,
+    nAvgBytesPerSec : SAMPLERATE_INT * 4 * 2, // should be sizeof(sample type) * samplerate * 2
+    nBlockAlign : 4 * 2, // should be sizeof(sample type) * 2
+    wBitsPerSample: 32, // should be sizeof(sample type) * 8
     cbSize:0
  };
 
 static mut WAVE_HEADER : winapi::um::mmsystem::WAVEHDR = winapi::um::mmsystem::WAVEHDR{
     lpData: 0 as *mut i8,
-    dwBufferLength: 4 * (garlic_head::SAMPLES as u32),
+    dwBufferLength: 8 * (garlic_head::SAMPLES as u32), // SHOULD BE (check that!) max_samples * sizeof(float) * 2
     dwBytesRecorded: 0,
     dwUser: 0,
     dwFlags: 0,
@@ -229,9 +213,52 @@ static mut H_WAVEOUT: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem
 };
 */
 
+
+/// Pointer to an ANSI string.
+pub type LPCSTR = *const winapi::ctypes::c_char;
+/// Pointer to a procedure of unknown type.
+pub type PROC = *mut winapi::ctypes::c_void;
+
+/*
+// no need to define, as it looks identical to the one given by wingdi::wglGetProcAddress
+#[link(name = "Opengl32")]
+extern "system" {
+  /// [`wglGetProcAddress`](https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-wglgetprocaddress)
+  pub fn wglGetProcAddress(Arg1: LPCSTR) -> PROC;
+}
+*/
+
+static gfx_frag: &'static str = "
+#version 130
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragCoord/iResolution.xy;
+
+    // Time varying pixel color
+    vec3 col = 0.5 + 0.5*cos(/*iTime*/+uv.xyx+vec3(0,2,4));
+
+    // Output to screen
+    fragColor = vec4(col,1.0);
+}
+
+void main(){mainImage(gl_FragColor, gl_FragCoord.xy);}
+\0";
+
+
 #[no_mangle]
 pub extern "system" fn mainCRTStartup() {
     let ( _, hdc ) = create_window(  );
+    let iTime_location: gl::GLint;
+
+    unsafe {
+        let program = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, gfx_frag);
+
+        gl::UseProgram(program);
+
+        iTime_location = gl::GetUniformLocation(program, "iTime\0".as_ptr());
+    }
 
     unsafe {
         garlic_head::render_track(&mut GARLIC_DATA);
@@ -272,7 +299,17 @@ pub extern "system" fn mainCRTStartup() {
             }
         }
 
-        unsafe { SwapBuffers(hdc); }
+        unsafe {
+
+            gl::Uniform1f(iTime_location, time_ms as f32 * 0.001);
+
+            // THESE PRODUCE STATUS_ACCESS_VIOLATION !!
+            gl::Recti(-1, -1, 1, 1);
+            gl::Flush(); // need? don't know whether ported correctly
+
+            SwapBuffers(hdc);
+
+        }
 
         // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
 
