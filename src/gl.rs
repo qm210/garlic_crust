@@ -46,6 +46,11 @@ static mut addr_glTexParameteri: usize = 0;
 static mut addr_glTexImage2D: usize = 0;
 static mut addr_glDrawBuffer: usize = 0;
 static mut addr_glActiveTexture: usize = 0;
+static mut addr_glRasterPos2f: usize = 0;
+static mut addr_glCallLists: usize = 0;
+static mut addr_glListBase: usize = 0;
+static mut addr_glScalef: usize = 0;
+static mut addr_glViewport: usize = 0;
 
 // FUCKING real code here.
 fn getTheFuckingAddress(name: &str) -> usize {
@@ -77,6 +82,11 @@ pub unsafe fn init() {
     addr_glTexImage2D = getTheFuckingAddress("glTexImage2D\0");
     addr_glDrawBuffer = getTheFuckingAddress("glDrawBuffer\0");
     addr_glActiveTexture = getTheFuckingAddress("glActiveTexture\0");
+    addr_glRasterPos2f = getTheFuckingAddress("glRasterPos2f\0");
+    addr_glCallLists = getTheFuckingAddress("glCallLists\0");
+    addr_glListBase = getTheFuckingAddress("glListBase\0");
+    addr_glScalef = getTheFuckingAddress("glScalef\0");
+    addr_glViewport = getTheFuckingAddress("glViewport\0");
 }
 
 pub unsafe fn CreateShaderProgramv(shader_type: u32, count: u32, strings: &str) -> u32 {
@@ -142,6 +152,27 @@ pub unsafe fn TexImage2D(target: GLenum, level: GLint, internalformat: GLint, wi
 pub unsafe fn DrawBuffer(buf: GLenum) -> () {
     mem::transmute::<_, extern "system" fn (GLenum) -> ()>(addr_glDrawBuffer)(buf);
 }
+
 pub unsafe fn ActiveTexture(texture: GLenum) -> () {
     mem::transmute::<_, extern "system" fn (GLenum) -> ()>(addr_glActiveTexture)(texture);
+}
+
+pub unsafe fn RasterPos2f(x: GLfloat, y: GLfloat) -> () {
+    mem::transmute::<_, extern "system" fn (GLfloat, GLfloat) -> ()>(addr_glRasterPos2f)(x, y);
+}
+
+pub unsafe fn CallLists(n: GLsizei, list_type: GLenum, lists: *const winapi::ctypes::c_void) -> () {
+    mem::transmute::<_, extern "system" fn (GLsizei, GLenum, *const winapi::ctypes::c_void) -> ()>(addr_glCallLists)(n, list_type, lists);
+}
+
+pub unsafe fn ListBase(base: GLuint) -> () {
+    mem::transmute::<_, extern "system" fn (GLuint) -> ()>(addr_glListBase)(base);
+}
+
+pub unsafe fn Scalef(x: GLfloat, y: GLfloat, z: GLfloat) -> () {
+    mem::transmute::<_, extern "system" fn (GLfloat, GLfloat, GLfloat) -> ()>(addr_glScalef)(x, y, z);
+}
+
+pub unsafe fn Viewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> () {
+    mem::transmute::<_, extern "system" fn (GLint, GLint, GLsizei, GLsizei) -> ()>(addr_glViewport)(x, y, width, height);
 }

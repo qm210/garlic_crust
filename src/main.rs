@@ -126,8 +126,8 @@ extern "C" {
     ) -> MMRESULT;
 }
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 1280;
+const HEIGHT: u32 = 720;
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
@@ -154,6 +154,9 @@ fn create_window( ) -> ( HWND, HDC ) {
 
         SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
         wglMakeCurrent(hdc, wglCreateContext(hdc));
+
+        winapi::um::wingdi::SelectObject (hdc, winapi::um::wingdi::GetStockObject (winapi::um::wingdi::SYSTEM_FONT as i32)); 
+        winapi::um::wingdi::wglUseFontBitmapsA (hdc, 0, 255, 1000); 
 
         ( hwnd, hdc )
     }
@@ -1011,7 +1014,7 @@ pub fn main() {
 
             unsafe {
                 if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= garlic_head::SECONDS {
-                    break;
+                    libc::exit(0);
                 }
             }
 
@@ -1038,12 +1041,36 @@ pub fn main() {
                 gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
                 gl::Uniform1i(iChannel0_location_image, 0);
                 gl::ActiveTexture(gl::TEXTURE0);
-
                 gl::Recti(-1,-1,1,1);
                 gl::Flush();
+                
+                // Text
+                if time > 2.
+                {
+                    const xv: f32 = -0.5;
+                    gl::UseProgram(0);
+                    gl::ListBase (1000); 
+                    gl::RasterPos2f(xv, 0.2);
+                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, 0.1);
+                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, 0.0);
+                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.05);
+                    gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.1);
+                    gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.2);
+                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.4);
+                    gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.45);
+                    gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.5);
+                    gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
+                }
 
                 SwapBuffers(hdc);
-
             }
 
             // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
