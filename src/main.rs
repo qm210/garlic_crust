@@ -913,6 +913,7 @@ pub fn main() {
             unsafe {
                 if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= garlic_head::SECONDS {
                     libc::exit(0);
+                    break;
                 }
             }
 
