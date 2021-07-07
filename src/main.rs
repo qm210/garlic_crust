@@ -72,6 +72,14 @@ use winapi::um::winuser::{
     ShowCursor,
 };
 
+use winapi::um::mmsystem::{
+    MMRESULT,
+    MMTIME,
+    LPMMTIME,
+    HWAVEOUT,
+    TIME_SAMPLES,
+};
+
 use gl::*;
 
 pub unsafe extern "system" fn window_proc(hwnd: HWND,
@@ -109,8 +117,19 @@ extern "C" {
     pub fn  _chkstk() -> winapi::ctypes::c_ulong;
 }
 
+#[link(name="winmm", kind="static-nobundle")]
+extern "C" {
+    pub fn waveOutGetPosition(
+        hwo: HWAVEOUT, 
+        pmmt: LPMMTIME, 
+        cbmmt: UINT
+    ) -> MMRESULT;
+}
+
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
+const SAMPLE_RATE: u32 = 44100;
+const DURATION: f32 = 90.0;
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
@@ -986,67 +1005,63 @@ pub fn main() {
         }
     }
     */
-
-    let mut time_ms: u32 = 0;
-    let start_ms = unsafe { winapi::um::timeapi::timeGetTime() };
-    let end_ms = start_ms + (garlic_head::SECONDS * 1000.) as u32 + 100;
-
-    loop {
-
-        unsafe {
-            if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 {
-                break;
-            }
-        }
-
-        unsafe {
-            time_ms = unsafe {
-                //let result = winapi::um::mmeapi::waveOutGetPosition(h_waveout, mmTime, core::mem::size_of::<winapi::um::mmsystem::MMTIME>() as u32);
-                // (*mmTime).u.ms() // or something??
-                winapi::um::timeapi::timeGetTime()
-            };
-
-            // Buffer A
-            gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
-            gl::UseProgram(program_buffer_a);
-            gl::Uniform1f(iTime_location_buffer_a, time_ms as f32 * 1.0e-3);
-            gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
-            gl::Uniform1i(iChannel0_location_buffer_a, 0);
-            gl::ActiveTexture(gl::TEXTURE0);
-
-            gl::Recti(-1,-1,1,1);
-            gl::Flush();
-
-            // Image
-            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-            gl::UseProgram(program_image);
-            gl::Uniform1f(iTime_location_image, time_ms as f32 * 1.0e-3);
-            gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
-            gl::Uniform1i(iChannel0_location_image, 0);
-            gl::ActiveTexture(gl::TEXTURE0);
-
-            gl::Recti(-1,-1,1,1);
-            gl::Flush();
-
-            SwapBuffers(hdc);
-
-        }
-
-        // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
-
-        
-
-        // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
-        //time += 1.0 / 60.0;
-
-        if time_ms > end_ms {
-            break;
-        }
-    }
-
     unsafe {
-        printf("Playback Finished! %d ms\n\0".as_ptr(), time_ms - start_ms);
-        winapi::um::processthreadsapi::ExitProcess(0);
+        let mut mmtime: MMTIME = core::mem::zeroed();
+        mmtime.wType = TIME_SAMPLES;
+        let mut time: f32 = 0.0;
+
+        // let mut time_ms: u32 = 0;
+        // let start_ms = unsafe { winapi::um::timeapi::timeGetTime() };
+        // let end_ms = start_ms + (garlic_head::SECONDS * 1000.) as u32 + 100;
+
+        loop {
+
+            unsafe {
+                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= DURATION {
+                    break;
+                }
+            }
+
+            unsafe {
+
+                waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
+                time = *mmtime.u.sample() as f32 / SAMPLE_RATE as f32;
+
+                printf("t=%.3f, sample=%d\n\0".as_ptr(), time as f64, *mmtime.u.sample() as i32);
+                
+                // Buffer A
+                gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
+                gl::UseProgram(program_buffer_a);
+                gl::Uniform1f(iTime_location_buffer_a, time);
+                gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
+                gl::Uniform1i(iChannel0_location_buffer_a, 0);
+                gl::ActiveTexture(gl::TEXTURE0);
+
+                gl::Recti(-1,-1,1,1);
+                gl::Flush();
+
+                // Image
+                gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+                gl::UseProgram(program_image);
+                gl::Uniform1f(iTime_location_image, time);
+                gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
+                gl::Uniform1i(iChannel0_location_image, 0);
+                gl::ActiveTexture(gl::TEXTURE0);
+
+                gl::Recti(-1,-1,1,1);
+                gl::Flush();
+
+                SwapBuffers(hdc);
+
+            }
+
+            // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
+
+            
+
+            // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
+            //time += 1.0 / 60.0;
+        }
     }
 }
 
