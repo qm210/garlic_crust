@@ -1,0 +1,39 @@
+#![enable(implicit_some)]
+(
+	meta: (
+		id: "funnyStairs",
+		name: "FunnyStairs",
+		description: "Funny stairs shader (only scene in the garlic_crust announcement intro). It is available under GPLv3; see LICENSE for details.",
+		tags: [
+			"demoscene, raymarching, 64k, intro, demo, stairs",
+		],
+	),
+	passes: {
+		// Scene
+		BufferA: (
+			inputs: [
+				(
+					asset: Misc(BufferA),
+					sampler: Custom((
+						filter: nearest,
+						wrap: clamp,
+						vflip: true,
+					)),
+				),
+			],
+		),
+		// Multipass post-processing
+		Image: (
+			inputs: [
+				(
+					asset: Misc(BufferA),
+					sampler: Custom((
+						filter: nearest,
+						wrap: clamp,
+						vflip: true,
+					)),
+				),
+			],
+		),
+	},
+)

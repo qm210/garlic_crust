@@ -1,0 +1,21 @@
+#![enable(implicit_some, unwrap_newtypes)]
+(
+	res: "hd",
+	fps: 30,
+	inputs: [
+    ],
+	shaders: {
+		"funnystairs": "gfx/funnyStairs",
+	},
+	chains: [
+		(
+			id: "main",
+			inputs: [
+			],
+			layers: [
+				( fx: "funnystairs" ),
+			],
+		),
+	],
+	output: ( id: "main" ),
+)
