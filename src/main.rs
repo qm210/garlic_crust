@@ -96,12 +96,17 @@ fn show_error( message : *const i8 ) {
 // import printf() from C
 #[cfg_attr(all(windows, target_env="msvc"),
     link(name="legacy_stdio_definitions", kind="static-nobundle"),
-    link(name="msvcrt", kind="static-nobundle"),
+    // link(name="msvcrt", kind="static-nobundle"),
     link(name="ucrt", kind="static-nobundle"),
     link(name="user32", kind="static-nobundle")
 )]
 extern "C" {
     pub fn printf(format: *const u8, ...) -> i32;
+}
+
+#[link(name="msvcrt", kind="static-nobundle")]
+extern "C" {
+    pub fn  _chkstk() -> winapi::ctypes::c_ulong;
 }
 
 const WIDTH: u32 = 1920;
@@ -221,6 +226,7 @@ static mut H_WAVEOUT: winapi::um::mmsystem::HWAVEOUT = 0 as winapi::um::mmsystem
 pub type LPCSTR = *const winapi::ctypes::c_char;
 /// Pointer to a procedure of unknown type.
 pub type PROC = *mut winapi::ctypes::c_void;
+pub type ULONG64 = *mut winapi::ctypes::c_ulong;
 
 /*
 // no need to define, as it looks identical to the one given by wingdi::wglGetProcAddress
@@ -912,7 +918,7 @@ void main()
 \0";
 
 #[no_mangle]
-pub extern "system" fn mainCRTStartup() {
+pub fn main() {
     let ( _, hdc ) = create_window(  );
     let iTime_location_buffer_a: gl::GLint;
     let iTime_location_image: gl::GLint;
