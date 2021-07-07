@@ -128,8 +128,6 @@ extern "C" {
 
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
-const SAMPLE_RATE: u32 = 44100;
-const DURATION: f32 = 90.0;
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
@@ -1027,8 +1025,6 @@ pub fn main() {
                 waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
                 time = *mmtime.u.sample() as f32 / SAMPLE_RATE as f32;
 
-                printf("t=%.3f, sample=%d\n\0".as_ptr(), time as f64, *mmtime.u.sample() as i32);
-                
                 // Buffer A
                 gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
                 gl::UseProgram(program_buffer_a);
