@@ -5,6 +5,7 @@ use super::garlic_crust::*;
 mod garlic_clove1;
 mod garlic_clove2;
 mod garlic_clove3;
+mod garlic_clove4;
 mod garlic_master;
 mod garlic_smash;
 
@@ -13,176 +14,97 @@ mod garlic_dynamo;
 // TODO: track could be a byte array. if that saves us something?
 
 // PUT GARLIC_EXTRACT HERE >>>>>>>>
+pub const SECONDS: TimeFloat = 13.064;
 
-pub const SECONDS: TimeFloat = 13.5;
-
-const SEQUENCE_BASS: [SeqEvent; 37] = [
-    SeqEvent {pos: 0, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 17640, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 35280, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 44100, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 52920, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 70560, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 88200, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 97020, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 114660, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 141120, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 158760, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 176400, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 185220, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 202860, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 211680, message: SeqMsg::NoteOn(48, 100) },
-    SeqEvent {pos: 229320, message: SeqMsg::NoteOn(48, 100) },
-    SeqEvent {pos: 255780, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 264600, message: SeqMsg::NoteOn(53, 100) },
-    SeqEvent {pos: 282240, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 299880, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 317520, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 326340, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 335160, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 352800, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 370440, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 379260, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 396900, message: SeqMsg::NoteOn(58, 100) },
-    SeqEvent {pos: 423360, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 441000, message: SeqMsg::NoteOn(55, 100) },
-    SeqEvent {pos: 449820, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 467460, message: SeqMsg::NoteOn(57, 100) },
-    SeqEvent {pos: 485100, message: SeqMsg::NoteOn(51, 100) },
-    SeqEvent {pos: 493920, message: SeqMsg::NoteOn(53, 100) },
-    SeqEvent {pos: 511560, message: SeqMsg::NoteOn(53, 100) },
-    SeqEvent {pos: 529200, message: SeqMsg::NoteOn(60, 100) },
-    SeqEvent {pos: 546840, message: SeqMsg::NoteOn(60, 100) },
-    SeqEvent {pos: 564480, message: SeqMsg::NoteOff },
-];
-
-const SEQUENCE_0: [SeqEvent; 58] = [
-    SeqEvent {pos: 8820, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 17640, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 22050, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 35280, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 52920, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 61740, message: SeqMsg::NoteOn(72, 100) },
-    SeqEvent {pos: 79380, message: SeqMsg::NoteOn(75, 100) },
-    SeqEvent {pos: 92610, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 105840, message: SeqMsg::NoteOn(75, 100) },
-    SeqEvent {pos: 112455, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 123480, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 141120, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 149940, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 158760, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 163170, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 167580, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 171990, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 176400, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 185220, message: SeqMsg::NoteOn(69, 100) },
-    SeqEvent {pos: 189630, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 194040, message: SeqMsg::NoteOn(69, 100) },
-    SeqEvent {pos: 202860, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 207270, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 211680, message: SeqMsg::NoteOn(72, 100) },
-    SeqEvent {pos: 229320, message: SeqMsg::NoteOn(74, 100) },
-    SeqEvent {pos: 255780, message: SeqMsg::NoteOn(70, 100) },
-    SeqEvent {pos: 282240, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 291060, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 299880, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 304290, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 317520, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 335160, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 343980, message: SeqMsg::NoteOn(72, 100) },
-    SeqEvent {pos: 361620, message: SeqMsg::NoteOn(75, 100) },
-    SeqEvent {pos: 374850, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 388080, message: SeqMsg::NoteOn(70, 100) },
-    SeqEvent {pos: 394695, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 405720, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 423360, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 432180, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 441000, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 445410, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 449820, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 454230, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 458640, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 467460, message: SeqMsg::NoteOn(69, 100) },
-    SeqEvent {pos: 471870, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 476280, message: SeqMsg::NoteOn(69, 100) },
-    SeqEvent {pos: 485100, message: SeqMsg::NoteOn(67, 100) },
-    SeqEvent {pos: 489510, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 493920, message: SeqMsg::NoteOn(69, 100) },
-    SeqEvent {pos: 504945, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 507150, message: SeqMsg::NoteOn(69, 100) },
-    SeqEvent {pos: 511560, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 520380, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 529200, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 538020, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 564480, message: SeqMsg::NoteOff },
-];
-
-const SEQUENCE_1: [SeqEvent; 65] = [
-    SeqEvent {pos: 8820, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 17640, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 22050, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 35280, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 52920, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 61740, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 79380, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 92610, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 105840, message: SeqMsg::NoteOn(82, 100) },
-    SeqEvent {pos: 112455, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 123480, message: SeqMsg::NoteOn(82, 100) },
-    SeqEvent {pos: 141120, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 149940, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 158760, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 163170, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 167580, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 171990, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 176400, message: SeqMsg::NoteOn(84, 100) },
-    SeqEvent {pos: 185220, message: SeqMsg::NoteOn(82, 100) },
-    SeqEvent {pos: 189630, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 194040, message: SeqMsg::NoteOn(75, 100) },
-    SeqEvent {pos: 202860, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 207270, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 211680, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 220500, message: SeqMsg::NoteOn(82, 100) },
-    SeqEvent {pos: 229320, message: SeqMsg::NoteOn(87, 100) },
-    SeqEvent {pos: 238140, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 246960, message: SeqMsg::NoteOn(81, 100) },
-    SeqEvent {pos: 255780, message: SeqMsg::NoteOn(84, 100) },
-    SeqEvent {pos: 262395, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 264600, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 271215, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 273420, message: SeqMsg::NoteOn(81, 100) },
-    SeqEvent {pos: 282240, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 291060, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 299880, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 304290, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 317520, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 335160, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 343980, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 361620, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 374850, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 388080, message: SeqMsg::NoteOn(74, 100) },
-    SeqEvent {pos: 394695, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 405720, message: SeqMsg::NoteOn(72, 100) },
-    SeqEvent {pos: 423360, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 432180, message: SeqMsg::NoteOn(76, 100) },
-    SeqEvent {pos: 441000, message: SeqMsg::NoteOn(77, 100) },
-    SeqEvent {pos: 445410, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 449820, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 454230, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 458640, message: SeqMsg::NoteOn(84, 100) },
-    SeqEvent {pos: 467460, message: SeqMsg::NoteOn(82, 100) },
-    SeqEvent {pos: 471870, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 476280, message: SeqMsg::NoteOn(75, 100) },
-    SeqEvent {pos: 485100, message: SeqMsg::NoteOn(75, 100) },
-    SeqEvent {pos: 489510, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 493920, message: SeqMsg::NoteOn(72, 100) },
-    SeqEvent {pos: 504945, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 507150, message: SeqMsg::NoteOn(72, 100) },
-    SeqEvent {pos: 511560, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 520380, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 529200, message: SeqMsg::NoteOff },
-    SeqEvent {pos: 538020, message: SeqMsg::NoteOn(79, 100) },
-    SeqEvent {pos: 564480, message: SeqMsg::NoteOff },
+const SEQUENCE_0: [SeqEvent; 88] = [
+    SeqEvent {pos: 0, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 8139, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 8879, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 17018, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 17758, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 25897, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 26637, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 34776, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 53275, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 61414, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 62154, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 70293, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 71033, message: SeqMsg::NoteOn(64, 100) },
+    SeqEvent {pos: 79172, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 79912, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 88052, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 97671, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 105810, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 106550, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 114689, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 115429, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 123568, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 124308, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 132448, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 142067, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 150206, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 150946, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 159085, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 159825, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 167964, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 168704, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 176844, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 195342, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 203481, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 204221, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 212360, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 213100, message: SeqMsg::NoteOn(64, 100) },
+    SeqEvent {pos: 221240, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 221980, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 230119, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 239738, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 256757, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 257496, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 283394, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 284134, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 292273, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 293013, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 301153, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 301892, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 310032, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 310772, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 318911, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 337409, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 345549, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 346288, message: SeqMsg::NoteOn(58, 100) },
+    SeqEvent {pos: 354428, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 355168, message: SeqMsg::NoteOn(64, 100) },
+    SeqEvent {pos: 363307, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 364047, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 372186, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 381805, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 389945, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 390684, message: SeqMsg::NoteOn(59, 100) },
+    SeqEvent {pos: 398824, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 399564, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 407703, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 408443, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 416582, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 417322, message: SeqMsg::NoteOn(59, 100) },
+    SeqEvent {pos: 425461, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 426201, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 434341, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 435081, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 443220, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 443960, message: SeqMsg::NoteOn(56, 100) },
+    SeqEvent {pos: 452099, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 452839, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 460978, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 472077, message: SeqMsg::NoteOn(49, 100) },
+    SeqEvent {pos: 487616, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 488356, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 496495, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 497235, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 505374, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 506114, message: SeqMsg::NoteOn(52, 100) },
+    SeqEvent {pos: 514253, message: SeqMsg::NoteOff },
+    SeqEvent {pos: 523873, message: SeqMsg::NoteOn(54, 100) },
+    SeqEvent {pos: 532012, message: SeqMsg::NoteOff },
 ];
 
 const DYNAMO_BREAKPOINTS: usize = 1;
@@ -209,10 +131,11 @@ pub const EMPTY_BLOCKARRAY: BlockArray = [ZERO_SAMPLE; BLOCK_SIZE];
 pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 
-    let mut smash_state0 = garlic_smash::create_state(); // this gonne be my kick
-    let mut clove2_state0 = garlic_clove2::create_state();
-    let mut clove3_state0 = garlic_clove3::create_state();
-    let mut clove3_state1 = garlic_clove3::create_state();
+    //let mut smash_state0 = garlic_smash::create_state(); // this gonne be my kick
+    //let mut clove2_state0 = garlic_clove2::create_state();
+    //let mut clove3_state0 = garlic_clove3::create_state();
+    //let mut clove3_state1 = garlic_clove3::create_state();
+    let mut clove4_state0 = garlic_clove4::create_state();
 
     // we need global initialization, one per clove and each their sequence
     // let clove1_config1 = garlic_clove1::create_config1("default");
@@ -233,10 +156,13 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
             // garlic_clove1::process(&SEQUENCE_2, block_offset, &mut clove1_state2);
             // garlic_clove1::process(&SEQUENCE_3, block_offset, &mut clove1_state3);
 
+            /*
             garlic_smash::process(block_offset, &mut smash_state0);
             garlic_clove2::process(&SEQUENCE_BASS, block_offset, &mut clove2_state0);
             garlic_clove3::process(&SEQUENCE_0, block_offset, &mut clove3_state0);
             garlic_clove3::process(&SEQUENCE_1, block_offset, &mut clove3_state1);
+            */
+            garlic_clove4::process(&SEQUENCE_0, block_offset, &mut clove4_state0);
 
             for sample in 0 .. BLOCK_SIZE {
                 let master_sample = sample + master_piece * BLOCK_SIZE;
@@ -244,10 +170,13 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 // could merge the "put ZERO_SAMPLE" and first "add" to one "put", but we gönn ourselves for more symmetry.
                 garlic_master.put_at(master_sample, ZERO_SAMPLE);
 
+                /*
                 garlic_master.add_at(master_sample, smash_state0.output[sample]);
                 garlic_master.add_at(master_sample, clove2_state0.output[sample]);
                 garlic_master.add_at(master_sample, clove3_state0.output[sample]);
                 garlic_master.add_at(master_sample, clove3_state1.output[sample]);
+                */
+                garlic_master.add_at(master_sample, clove4_state0.output[sample]);
 
                 // garlic_master.add_at(master_sample, clove1_state0.output[sample]);
                 // garlic_master.add_at(master_sample, clove1_state1.output[sample]);

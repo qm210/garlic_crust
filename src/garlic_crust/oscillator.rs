@@ -28,9 +28,9 @@ impl Operator for Oscillator {
             SeqMsg::NoteOn(note_key, _) => {
                 self.frequency = self.freq_factor.clone_scaled(note_frequency(*note_key));
             },
-            SeqMsg::Loop => { // how could Loop work??
-                //self.seq_cursor = 0;
-            }
+            SeqMsg::Loop => { // how could Loop work?? fun fact: it doesn't.
+                self.seq_cursor = 0;
+            },
             // could react to Volume or whatevs here.
             _ => ()
         }

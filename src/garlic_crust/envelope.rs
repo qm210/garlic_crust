@@ -17,6 +17,9 @@ pub enum EnvShape{
         attack: Edge,
     },
     Const (MonoSample),
+    Sinc {
+        period: Edge
+    },
     Generic {
         func: MonoFunc
     }
@@ -37,7 +40,7 @@ impl Operator for Envelope {
                 self.playhead = 0.;
                 self.note_vel = self.note_vel_mod * (*note_vel as MonoSample / 127.);
             },
-            SeqMsg::Init => {
+            SeqMsg::Loop | SeqMsg::Init => {
                 self.playhead = 0.;
             },
             _ => ()
@@ -66,6 +69,10 @@ impl Operator for Envelope {
                 },
                 EnvShape::Const(value) => {
                     *value
+                },
+                EnvShape::Sinc { period } => {
+                    let x = crate::math::PI * self.playhead / period.evaluate_mono(sample, ch);
+                    crate::math::sin(x) / x
                 },
                 EnvShape::Generic { func } => {
                     func(self.playhead)

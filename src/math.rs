@@ -1,6 +1,7 @@
 use core::mem::MaybeUninit;
 
-pub const TAU: f32 = 3.14159265358979323846264338327950288 * 2.0;
+pub const PI: f32 = 3.14159265358979323846264338327950288;
+pub const TAU: f32 = PI * 2.0;
 const TWO_OVER_PI: f32 = 0.63661977236f32;
 
 pub const EPSILON: f32 = 3.0e-4;
