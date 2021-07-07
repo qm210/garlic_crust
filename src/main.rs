@@ -988,7 +988,6 @@ pub fn main() {
         winapi::um::mmeapi::waveOutPrepareHeader(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
         winapi::um::mmeapi::waveOutWrite(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
 
-        //(*mmTime).wType = winapi::um::mmsystem::TIME_MS; // Illegal Instruction
         #[cfg(debug_assertions)] {
             debug::write_wave_file(&GARLIC_DATA);
         }
@@ -1008,14 +1007,10 @@ pub fn main() {
         mmtime.wType = TIME_SAMPLES;
         let mut time: f32 = 0.0;
 
-        // let mut time_ms: u32 = 0;
-        // let start_ms = unsafe { winapi::um::timeapi::timeGetTime() };
-        // let end_ms = start_ms + (garlic_head::SECONDS * 1000.) as u32 + 100;
-
         loop {
 
             unsafe {
-                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= DURATION {
+                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= garlic_head::SECONDS {
                     break;
                 }
             }
@@ -1023,7 +1018,7 @@ pub fn main() {
             unsafe {
 
                 waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
-                time = *mmtime.u.sample() as f32 / SAMPLE_RATE as f32;
+                time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
 
                 // Buffer A
                 gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
@@ -1052,11 +1047,6 @@ pub fn main() {
             }
 
             // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
-
-            
-
-            // No idea how to read MMTIME out here, yet. Instead, just count some time upwards.
-            //time += 1.0 / 60.0;
         }
     }
 }
