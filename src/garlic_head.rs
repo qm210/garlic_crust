@@ -19,7 +19,7 @@ mod garlic_dynamo;
 const DYNAMO_BREAKPOINTS: usize = 1;
 pub type DynamoArray = [TimeFloat; DYNAMO_BREAKPOINTS];
 
-pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(150.); // original for this midi was 160.13
+pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(149.);
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
@@ -41,13 +41,14 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 
     // we need global initialization, one per clove and each their sequence
-    let mut clove3_state0 = garlic_clove3::create_state();
-    let mut clove4_state0 = garlic_clove4::create_state();
-    let mut clove5_state0 = garlic_clove5::create_state();
-    let mut clove6_state0 = garlic_clove6::create_state();
-    let mut clove6_state1 = garlic_clove6::create_state();
-    let mut clove6_state2 = garlic_clove6::create_state();
-    //let mut smash_state0 = garlic_smash::create_state(); // this gonne be my kick
+    let mut clove_lead_a = garlic_clove3::create_state();
+    let mut clove_bass = garlic_clove4::create_state();
+    let mut clove_lead_b = garlic_clove5::create_state();
+    let mut clove_strings_0 = garlic_clove6::create_state();
+    let mut clove_strings_1 = garlic_clove6::create_state();
+    let mut clove_strings_2 = garlic_clove6::create_state();
+
+    let mut smash_kick = garlic_smash::create_state(); // this gonne be my kick
 
     let mut master_block_offset = 0;
     let mut block_offset = 0;
@@ -56,12 +57,20 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
         for master_piece in 0 .. MASTER_BLOCK_FACTOR {
 
-            garlic_clove4::process(&SEQUENCE_BASS, block_offset, &mut clove4_state0);
-            garlic_clove3::process(&SEQUENCE_LEAD, block_offset, &mut clove3_state0);
-            garlic_clove5::process(&SEQUENCE_LEAD, block_offset, &mut clove5_state0);
-            garlic_clove6::process(&CHORDS_0, block_offset, &mut clove6_state0);
-            garlic_clove6::process(&CHORDS_1, block_offset, &mut clove6_state1);
-            garlic_clove6::process(&CHORDS_2, block_offset, &mut clove6_state2);
+            garlic_clove4::process(&SEQUENCE_BASS, block_offset, &mut clove_bass);
+            garlic_clove3::process(&SEQUENCE_LEAD, block_offset, &mut clove_lead_a);
+            garlic_clove5::process(&SEQUENCE_LEAD, block_offset, &mut clove_lead_b);
+            garlic_clove6::process(&CHORDS_0, block_offset, &mut clove_strings_0);
+            garlic_clove6::process(&CHORDS_1, block_offset, &mut clove_strings_1);
+            garlic_clove6::process(&CHORDS_2, block_offset, &mut clove_strings_2);
+
+            garlic_smash::process(block_offset, &mut smash_kick);
+            // TODO: fix timing
+            // ADD SNARE
+            // ADD HIHATS
+            // ADD clap?
+            // ADD perlin noise to kick LELELEL
+            // multiple reverb settings?
 
             for sample in 0 .. BLOCK_SIZE {
                 let master_sample = sample + master_piece * BLOCK_SIZE;
@@ -69,19 +78,22 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 // could merge the "put ZERO_SAMPLE" and first "add" to one "put", but we gönn ourselves for more symmetry.
                 garlic_master.put_at(master_sample, ZERO_SAMPLE);
 
-                garlic_master.add_at(master_sample, clove6_state0.output[sample]);
-                garlic_master.add_at(master_sample, clove6_state1.output[sample]);
-                garlic_master.add_at(master_sample, clove6_state2.output[sample]);
+                garlic_master.add_at(master_sample, clove_strings_0.output[sample]);
+                garlic_master.add_at(master_sample, clove_strings_1.output[sample]);
+                garlic_master.add_at(master_sample, clove_strings_2.output[sample]);
 
-                // no idea why, but remove that first mystery note
+                // no idea why it would be there, but remove that first mystery note
                 if master_block_offset + master_sample >= SEQUENCE_LEAD[0].pos {
-                    garlic_master.add_at(master_sample, clove3_state0.output[sample]);
-                    garlic_master.add_at(master_sample, clove5_state0.output[sample]);
+                    garlic_master.add_at(master_sample, clove_lead_a.output[sample]);
+                    garlic_master.add_at(master_sample, clove_lead_b.output[sample]);
                 }
+
+                garlic_master.add_at(master_sample, smash_kick.output[sample]);
+
                 garlic_master.apply_reverb(master_sample, 1.0);
                 garlic_master.saturate(master_sample);
 
-                garlic_master.add_at(master_sample, clove4_state0.output[sample]);
+                garlic_master.add_at(master_sample, clove_bass.output[sample]);
             }
             block_offset += BLOCK_SIZE;
         }

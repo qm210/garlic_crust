@@ -126,39 +126,18 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 pub fn trigger(total_sample: usize) -> bool {
     let total_beat = DYNAMO.beat(total_sample);
     //if total_beat >= pattern_start_beat && total_beat < pattern_end_beat //inside beat condition
-    let pattern_start_beat = 0.;
-    let pattern_end_beat = 4.;
-    let beat = libm::fmodf(total_beat - pattern_start_beat, pattern_end_beat - pattern_start_beat);
+    // let pattern_start_beat = 0.;
+    // let pattern_end_beat = 4.;
+    // let beat = libm::fmodf(total_beat - pattern_start_beat, pattern_end_beat - pattern_start_beat);
     // two options: something regular (-> fmodf) or one-shots
 
-    let beat_trigger = match beat {
-        /*
-        x if x > 1.75 && x < 1.85 => {
-            INV_SAMPLERATE // anything >= INV_SAMPLERATE means no beat, is there a better constant?
+    return match total_beat {
+        b if b >= 5. && b < 10. => {
+            libm::fmodf(b - 5., 2.) < INV_SAMPLERATE
         },
-        x if x > 1.85 && x < 2. => {
-            libm::fmodf(beat, 0.25 / 3.)
-        }
-        x if x > 3. => {
-            libm::fmodf(beat, 0.25 / 3.) + libm::fmodf(beat + 0.25/3., 0.25 / 3.)
+        b if b >= 18. && b < 21. => {
+            libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
         },
-        */
-        _ => {
-            libm::fmodf(beat, 0.25)
-        }
+        _ => false
     };
-
-    return beat_trigger < INV_SAMPLERATE; // && beat_trigger >= 0. , is actually wumpe cause always true
 }
-
-// with this commit: 71.3 seconds for 16 second track (outputs not stored in Op, block_size 1024)
-// same with block_size 256: 10 seconds?? wtf?
-// block_size 512: 55 seconds;
-
-// THINGS TO TEST:
-// put "env_osc1_output" again as a field of "env_osc1.output", if that helps the compiler?
-// Split Sequence into Chunks, one for each 512-sample-block
-// Put Sequence into Byte Array
-// use get_unchecked()
-// multithreading?? -- each Smash can be processed simultaneously
-// should every Edge always hold its array??
