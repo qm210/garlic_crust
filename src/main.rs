@@ -156,8 +156,8 @@ fn create_window( ) -> ( HWND, HDC ) {
         SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
         wglMakeCurrent(hdc, wglCreateContext(hdc));
 
-        winapi::um::wingdi::SelectObject (hdc, winapi::um::wingdi::GetStockObject (winapi::um::wingdi::SYSTEM_FONT as i32)); 
-        winapi::um::wingdi::wglUseFontBitmapsA (hdc, 0, 255, 1000); 
+        winapi::um::wingdi::SelectObject (hdc, winapi::um::wingdi::GetStockObject (winapi::um::wingdi::SYSTEM_FONT as i32));
+        winapi::um::wingdi::wglUseFontBitmapsA (hdc, 0, 255, 1000);
 
         ( hwnd, hdc )
     }
@@ -529,7 +529,7 @@ float effect6(vec3 x, float zj, float r, float s)
         pj = rp.x-dp,
         dr = mod(rp.y, msize)-.5*msize,
         rj = rp.y-dr;
-    
+
     vec2 yj = (rj - .2*sin(pi*zj-r)) * vec2(cos(pj), sin(pj)),
         aj = rp.y * vec2(cos(rp.x), sin(rp.x));
     float da = -length(mat2(cos(iTime-zj), sin(iTime-zj), -sin(iTime-zj), cos(iTime-zj))*(x.xy-yj)) +.001 +.1*(.5+.5*s)+.05*(.6+.4*scale)+.01*zj*(.5+.5*r);
@@ -699,7 +699,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     d = -(o.z)/dir.z;
     x = o + d * dir;
-        
+
     // Material ray
     if(ray(col, x, d, dir, s, o, l, n))
     {
@@ -745,7 +745,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                         res = 0.;
                         break;
                     }
-                    if(x.z >= .1) // 0? 
+                    if(x.z >= .1) // 0?
                     {
                         res = 1.;
                         break;
@@ -841,7 +841,7 @@ float lfnoise(vec2 t)
     vec2 i = floor(t);
     t = fract(t);
     t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)),
         v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
     v1 = c.zz+2.*mix(v1, v2, t.y);
     return mix(v1.x, v1.y, t.x);
@@ -873,27 +873,27 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // edge glow
     uv = fragCoord/iResolution.xy;
     vec2 unit = 1./iResolution.xy;
-    
+
     float o = 1.0;
     float p = 3.0;
     float q = 0.0;
-    
-    
+
+
     vec4 col11 = texture(iChannel0, uv + vec2(-unit.x, -unit.y));
     vec4 col12 = texture(iChannel0, uv + vec2( 0., -unit.y));
     vec4 col13 = texture(iChannel0, uv + vec2( unit.x, -unit.y));
-    
+
     vec4 col21 = texture(iChannel0, uv + vec2(-unit.x, 0.));
     vec4 col22 = texture(iChannel0, uv + vec2( 0., 0.));
     vec4 col23 = texture(iChannel0, uv + vec2( unit.x, 0.));
-    
+
     vec4 col31 = texture(iChannel0, uv + vec2(-unit.x, unit.y));
     vec4 col32 = texture(iChannel0, uv + vec2( 0., unit.y));
     vec4 col33 = texture(iChannel0, uv + vec2( unit.x, unit.y));
-    
+
     vec4 x = col11 * -o + col12 * -p + col13 * -o + col31 * o + col32 * p + col33 * o + col22 * q;
     vec4 y = col11 * -o + col21 * -p + col31 * -o + col13 * o + col23 * p + col33 * o + col22 * q;
-    
+
     // Output to screen
     fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
     fragColor = vec4(mix(col, fragColor.rgb, clamp((.25+.5*lfnoise(.5*nbeats*c.xx))+.5*scale,0.,1.)),1.0);
@@ -987,7 +987,7 @@ pub fn main() {
         loop {
 
             unsafe {
-                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= garlic_head::SECONDS {
+                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
                     libc::exit(0);
                     break;
                 }
@@ -1020,13 +1020,13 @@ pub fn main() {
                 gl::ActiveTexture(gl::TEXTURE0);
                 gl::Recti(-1,-1,1,1);
                 gl::Flush();
-                
+
                 // Text
                 if time > 2.
                 {
                     const xv: f32 = -0.5;
                     gl::UseProgram(0);
-                    gl::ListBase (1000); 
+                    gl::ListBase (1000);
                     gl::RasterPos2f(xv, 0.2);
                     gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
                     gl::RasterPos2f(xv, 0.1);
