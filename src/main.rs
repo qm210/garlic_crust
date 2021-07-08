@@ -127,8 +127,8 @@ extern "C" {
     ) -> MMRESULT;
 }
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 1280;
+const HEIGHT: u32 = 720;
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
@@ -155,6 +155,9 @@ fn create_window( ) -> ( HWND, HDC ) {
 
         SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
         wglMakeCurrent(hdc, wglCreateContext(hdc));
+
+        winapi::um::wingdi::SelectObject (hdc, winapi::um::wingdi::GetStockObject (winapi::um::wingdi::SYSTEM_FONT as i32)); 
+        winapi::um::wingdi::wglUseFontBitmapsA (hdc, 0, 255, 1000); 
 
         ( hwnd, hdc )
     }
@@ -261,58 +264,18 @@ static buffer_a_frag: &'static str = "
 uniform sampler2D iChannel0;
 uniform vec2 iResolution;
 uniform float iTime;
+uniform int iFrame;
 
 const vec3 c = vec3(1.,0.,-1.);
 const float pi = 3.14159,
     PHI = 1.618,
-    bpm = 60.,
+    bpm = 120.,
     spb =  60. / bpm;
 mat3 RR = mat3(1.),
     RRA = mat3(1.);
 float scale,
     nbeats;
-const float tmax = 20.;
-
-vec3 data[20] = vec3[20](
-    vec3(0, PHI, 1), // Dodecahedron
-    vec3(0, -PHI, 1),
-    vec3(1, 0, PHI),
-    vec3(-1, 0, PHI),
-    vec3(PHI, 1, 0),
-    vec3(-PHI, 1, 0), // Icosahedron, Octahedron
-    vec3(1, 1, 1),
-    vec3(-1, 1, 1),
-    vec3(1, -1, 1),
-    vec3(1, 1, -1),
-    vec3(0, 1, PHI+1.),
-    vec3(0, -1, PHI+1.),
-    vec3(PHI+1., 0, 1),
-    vec3(-PHI-1., 0, 1),
-    vec3(1, PHI+1., 0),
-    vec3(-1, PHI+1., 0),
-    vec3(sqrt(2.), sqrt(6.), 1.), // Tetrahedron
-    vec3(-sqrt(8.), 0., 1.),
-    vec3(sqrt(2.), -sqrt(6.), 1.),
-    vec3(0., 0., -3.)
-);
-
-// Inspired here, modified for sizecoding and removed loads of
-// unneccessary code: https://www.shadertoy.com/view/WdlGRf
-// The paper they reference is very useful for understanding the regular polyhedron distances
-// fHedron(0,6): Dodecahedron
-// fHedron(6,10): Octahedron
-// fHedron(6,16): Icosahedron
-float fHedron(vec3 p, int offset, int len, float r, bool symmetric)
-{
-    float d = 0.,
-        da;
-    for(int i=offset; i<len; ++i)
-    {
-        da = dot(p, normalize(data[i]));
-        d = max(d, symmetric?abs(da):da);
-    }
-    return d - r;
-}
+const float tmax = 90.;
 
 // iq's code
 float smoothmin(float a, float b, float k)
@@ -426,84 +389,6 @@ float spiral(in vec2 x, in float k)
     return k*min(a,tau-a);
 }
 
-// float mn(in vec2 a)
-// {
-//     a = abs(a);
-//     return a.x+a.y;
-// }
-
-// float ml(in vec2 x, in vec2 p1, in vec2 p2)
-// {
-//     return (mn(x-p1)-mn(x-p2))/pow(mn(p2-p1),.5);
-// }
-
-// void dmanhattanvoronoi(in vec2 x, out float d, out vec2 z)
-// {
-//     vec2 y = floor(x);
-//        float ret = 1.;
-//     vec2 pf=c.yy, p;
-//     float df=10.;
-
-//     for(int i=-1; i<=1; i+=1)
-//         for(int j=-1; j<=1; j+=1)
-//         {
-//             p = y + vec2(float(i), float(j));
-//             vec2 pa = vec2(lfnoise(p-.5*iTime), lfnoise(p+13.-.5*iTime));
-//             pa = .5+.25*pa;
-//             //rand(p, pa);
-//             p += pa;
-
-//             d = mn(x-p);
-
-//             if(d < df)
-//             {
-//                 df = d;
-//                 pf = p;
-//             }
-//         }
-//     for(int i=-1; i<=1; i+=1)
-//         for(int j=-1; j<=1; j+=1)
-//         {
-//             p = y + vec2(float(i), float(j));
-//             vec2 pa = vec2(lfnoise(p-.5*iTime), lfnoise(p+13.-.5*iTime));
-//             pa = .5+.25*pa;
-//             //rand(p, pa);
-//             p += pa;
-
-//             d = abs(ml(x, pf, p));
-//             ret = min(ret, d);
-//         }
-
-//     d = ret;
-//     z = pf;
-// }
-
-// float circlesegment(in vec2 x, in float r, in float p0, in float p1)
-// {
-//     float p = atan(x.y, x.x),
-//         t = 2.*pi;
-
-//     vec2 philo = vec2(p0, p1);
-//     philo = sign(philo)*floor(abs(philo)/t)*t;
-//     philo = vec2(min(philo.x, philo.y), max(philo.x,philo.y));
-//     philo.y = mix(philo.y,philo.x,.5+.5*sign(p0-p1));
-
-//     p0 -= philo.y;
-//     p1 -= philo.y;
-
-//     philo = vec2(max(p0, p1), min(p0, p1));
-
-//     if((p < philo.x && p > philo.y)
-//        || (p+t < philo.x && p+t > philo.y)
-//        || (p-t < philo.x && p-t > philo.y)
-//       )
-//     	return abs(length(x)-r);
-//     return min(
-//         length(x-r*vec2(cos(p0), sin(p0))),
-//         length(x-r*vec2(cos(p1), sin(p1)))
-//         );
-// }
-
 // Distance to line segment
 float linesegment(in vec2 x, in vec2 p1, in vec2 p2)
 {
@@ -600,33 +485,34 @@ float effect1(vec3 x, float zj, float r, float s)
 
 float effect2(vec3 x, float zj, float r, float s)
 {
-    // spiral effect
-    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
-    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
+    // noise
+    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
 }
 
 float effect3(vec3 x, float zj, float r, float s)
 {
-    // noise
-    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
+    // spiral effect
+    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
+    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
 }
 
 float effect4(vec3 x, float zj, float r, float s)
 {
     // Team210 logo
     float rsize = .3;
-    return -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
-
+    float da = -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    return da;
+    // return -abs(da) + .01 - .5*zj;
     // circle tornado
     // float rsize = .3;
-    return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    // return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
 }
 
 float effect5(vec3 x, float zj, float r, float s)
 {
     // hexagon style
     vec2 vi;
-    float vsize = 3.+3.*r,
+    float vsize = 2.+2.*r,
         v;
     dhexagonpattern(vsize*x.xy, v, vi);
     return -abs(v / vsize) + .01 - .5*zj;
@@ -634,10 +520,20 @@ float effect5(vec3 x, float zj, float r, float s)
 
 float effect6(vec3 x, float zj, float r, float s)
 {
-    // box bissle scheise
-    const float bside = .2;
-    // // return -dbox3(RRA*(vec3(x.xy,zj)+1.5*bside*c.yyx*(.5+.5*r)), vec3(bside)*(.5+.5*r));
-    return -fHedron(RRA*(vec3(x.xy,zj)+2.*bside*c.yyx*(.5+.5*r)),6,16,bside, true);
+    // Steckenmist, sieht fet aus denk ich
+    const float aside = .4,
+        psize = pi/6.,
+        msize = .5;
+    vec2 rp = vec2(atan(x.y,x.x), length(x.xy));
+    float dp = mod(rp.x, psize)-.5*psize,
+        pj = rp.x-dp,
+        dr = mod(rp.y, msize)-.5*msize,
+        rj = rp.y-dr;
+    
+    vec2 yj = (rj - .2*sin(pi*zj-r)) * vec2(cos(pj), sin(pj)),
+        aj = rp.y * vec2(cos(rp.x), sin(rp.x));
+    float da = -length(mat2(cos(iTime-zj), sin(iTime-zj), -sin(iTime-zj), cos(iTime-zj))*(x.xy-yj)) +.001 +.1*(.5+.5*s)+.05*(.6+.4*scale)+.01*zj*(.5+.5*r);
+    return mod(da, .2)-.09*2.1;
 }
 
 float holeSDF(vec3 x, float zj)
@@ -645,46 +541,40 @@ float holeSDF(vec3 x, float zj)
     float r = lfnoise(.5*nbeats*c.xx-zj),
         s = lfnoise(.5*nbeats*c.xx+1337.-zj);
 
-    // return length(vec3(x.xy, zj+.15*r))-.3*r;
-    // return length(x.xy-zj)+.4*zj;
-
-    // return abs(abs(mfnoise(x.xy-zj-.3*nbeats, 1., 1.e2, .35))-.3)-.2;
-
-    // SLOW manhattan voronoi pattern
-    // vec2 wi;
-    // float wsize = 1.+3.*r,
-    //     w;
-    // dmanhattanvoronoi(wsize*x.xy, w, wi);
-    // return -abs(w / wsize) + .01 - .5*zj;
-
     float selector = 1.-clamp(iTime/tmax,0.,1.);
     //lfnoise(.05*nbeats*c.xx+133.);
     // selector = .5+.5*selector;
-    float N = 6.;
+    const float N = 6.;
 
-    if(selector < 1./N)
+    if(selector < 1.5/N)
     {
-        return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(.8/N, .9/N, selector));
-    }
-    else if(selector < 2./N)
-    {
-        return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(1.8/N, 1.9/N, selector));
+        return mix(effect1(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(.1/N, 0., selector)*smoothstep(1.4/N, 1.5/N, selector));
+        // return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(1.4/N, 1.5/N, selector));
     }
     else if(selector < 3./N)
     {
-        return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(2.8/N, 2.9/N, selector));
+        return mix(effect2(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(1.6/N, 1.5/N, selector)*smoothstep(2.9/N, 3./N, selector));
+        // return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(2.9/N, 3./N, selector));
+    }
+    else if(selector < 3.5/N)
+    {
+        return mix(effect3(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.1/N, 3./N, selector)*smoothstep(3.4/N, 3.5/N, selector));
+        // return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(3.4/N, 3.5/N, selector));
     }
     else if(selector < 4./N)
     {
-        return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.8/N, 3.9/N, selector));
+        return mix(effect4(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.6/N, 3.5/N, selector)*smoothstep(3.9/N, 4./N, selector));
+        // return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.9/N, 4./N, selector));
     }
     else if(selector < 5./N)
     {
-        return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.8/N, 4.9/N, selector));
+        return mix(effect5(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(4.1/N, 4./N, selector)*smoothstep(4.9/N, 5./N, selector));
+        // return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.9/N, 5./N, selector));
     }
     else
     {
-        return effect6(x, zj, r, s);
+        return mix(effect6(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(5.1/N, 5./N, selector)*smoothstep(5.9/N, 6./N, selector));
+        // return effect6(x, zj, r, s);
     }
 }
 
@@ -746,7 +636,7 @@ vec3 palette(float scale)
 
 bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec3 o, vec3 l, out vec3 n)
 {
-    for(int i=0; i<250; ++i)
+    for(int i=0-min(iFrame, 0); i<250+min(iFrame,0); ++i)
     {
         x = o + d * dir;
         s = scene(x);
@@ -780,19 +670,22 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Rotation tools
     RR = rot3(iTime*vec3(0.,0.,.6));
     RRA = rot3(iTime*vec3(.7,.9,1.32));
+
+    // Sync tools
     float stepTime = mod(iTime, spb)-.5*spb;
-        // stepIndex = (iTime-stepTime)/spb;
     nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
 
+    // Marching tools
     float d = 0.,
         d1;
     vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
     vec3 o = RR*c.yzx,
-        col,
-        c1,
+        col = c.yyy,
+        c1 = c.yyy,
         x,
         x1,
         n,
@@ -804,8 +697,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     SceneData s,
         s1;
 
-    d = -(o.z-.01)/dir.z;
-
+    d = -(o.z)/dir.z;
+    x = o + d * dir;
+        
     // Material ray
     if(ray(col, x, d, dir, s, o, l, n))
     {
@@ -825,20 +719,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 col = mix(col, c1, s.transmittivity);
         }
 
-        // // Hard Shadow
-        // d1 = 1.e-2;
-        // if(ray(c1, x1, d1, normalize(l-x), s1, x, l, n1))
-        // {
-        //     if(length(l-x1) < length(l-x))
-        //         col *= .5;
-        // }
-
         s1 = s;
         d1 = d;
         n1 = n;
 
         // Soft shadow
-        if(x.z < 0.)
+        if(x.z <= .1)
         {
             // Soft Shadow
             o = x;
@@ -859,7 +745,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                         res = 0.;
                         break;
                     }
-                    if(x.z > 0.)
+                    if(x.z >= .1) // 0? 
                     {
                         res = 1.;
                         break;
@@ -896,6 +782,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // fog (looks crap)
     // col = mix(col, palette(length(uv)), smoothstep(.1,.5, d1));
 
+    // Fade from and to black
+    col = mix(c.yyy, col, smoothstep(0.,1.,iTime)*smoothstep(tmax,tmax-1.,iTime));
+
     fragColor = mix(texture(iChannel0, fragCoord.xy/iResolution.xy), vec4(clamp(col,0.,1.),1.), .5);
 }
 
@@ -912,11 +801,60 @@ static image_frag: &'static str = "
 uniform sampler2D iChannel0;
 uniform vec2 iResolution;
 uniform float iTime;
+uniform int iFrame;
 
 const float fsaa = 144.;
+const vec3 c = vec3(1.,0.,-1.);
+float scale,
+    nbeats,
+    bpm = 120.,
+    spb =  60. / bpm;
+const float tmax = 90.;
+
+float m(vec2 x)
+{
+    return max(x.x,x.y);
+}
+
+float d210(vec2 x)
+{
+    return min(max(max(max(max(min(max(max(m(abs(vec2(abs(abs(x.x)-.25)-.25, x.y))-vec2(.2)), -m(abs(vec2(x.x+.5, abs(abs(x.y)-.05)-.05))-vec2(.12,.02))), -m(abs(vec2(abs(x.x+.5)-.1, x.y-.05*sign(x.x+.5)))-vec2(.02,.07))), m(abs(vec2(x.x+.5,x.y+.1))-vec2(.08,.04))), -m(abs(vec2(x.x, x.y-.04))-vec2(.02, .08))), -m(abs(vec2(x.x, x.y+.1))-vec2(.02))), -m(abs(vec2(x.x-.5, x.y))-vec2(.08,.12))), -m(abs(vec2(x.x-.5, x.y-.05))-vec2(.12, .07))), m(abs(vec2(x.x-.5, x.y))-vec2(.02, .08)));
+}
+
+float sm(in float d)
+{
+    return smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d);
+}
+
+// Creative Commons Attribution-ShareAlike 4.0 International Public License
+// Created by David Hoskins.
+// See https://www.shadertoy.com/view/4djSRW
+float hash12(vec2 p)
+{
+	vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+float lfnoise(vec2 t)
+{
+    vec2 i = floor(t);
+    t = fract(t);
+    t = smoothstep(c.yy, c.xx, t);
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
+        v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
+    v1 = c.zz+2.*mix(v1, v2, t.y);
+    return mix(v1.x, v1.y, t.x);
+}
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Sync tools
+    float stepTime = mod(iTime, spb)-.5*spb;
+    nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
+    scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
+
+    // SSAA
     vec3 col = vec3(0.);
     float bound = sqrt(fsaa)-1.;
    	for(float i = -.5*bound; i<=.5*bound; i+=1.)
@@ -925,7 +863,40 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
      		col += texture(iChannel0, fragCoord/iResolution.xy+vec2(i,j)*mix(3.,20.,2.*abs(fragCoord.y/iResolution.y-.5))*exp(-abs(1.e-2*length(fragCoord.xy)/iResolution.y-.5))/max(bound, 1.)/iResolution.xy).xyz;
         }
     col /= fsaa;
-    fragColor = vec4(col,1.0);
+
+    vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
+
+    // team210 watermark
+    float d = d210(8.*(uv-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
+    col = mix(col, mix(col, c.xxx, .5), sm(d));
+
+    // edge glow
+    uv = fragCoord/iResolution.xy;
+    vec2 unit = 1./iResolution.xy;
+    
+    float o = 1.0;
+    float p = 3.0;
+    float q = 0.0;
+    
+    
+    vec4 col11 = texture(iChannel0, uv + vec2(-unit.x, -unit.y));
+    vec4 col12 = texture(iChannel0, uv + vec2( 0., -unit.y));
+    vec4 col13 = texture(iChannel0, uv + vec2( unit.x, -unit.y));
+    
+    vec4 col21 = texture(iChannel0, uv + vec2(-unit.x, 0.));
+    vec4 col22 = texture(iChannel0, uv + vec2( 0., 0.));
+    vec4 col23 = texture(iChannel0, uv + vec2( unit.x, 0.));
+    
+    vec4 col31 = texture(iChannel0, uv + vec2(-unit.x, unit.y));
+    vec4 col32 = texture(iChannel0, uv + vec2( 0., unit.y));
+    vec4 col33 = texture(iChannel0, uv + vec2( unit.x, unit.y));
+    
+    vec4 x = col11 * -o + col12 * -p + col13 * -o + col31 * o + col32 * p + col33 * o + col22 * q;
+    vec4 y = col11 * -o + col21 * -p + col31 * -o + col13 * o + col23 * p + col33 * o + col22 * q;
+    
+    // Output to screen
+    fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
+    fragColor = vec4(mix(col, fragColor.rgb, clamp((.25+.5*lfnoise(.5*nbeats*c.xx))+.5*scale,0.,1.)),1.0);
 }
 
 void main()
@@ -944,6 +915,8 @@ pub fn main() {
     let iResolution_location_image: gl::GLint;
     let iChannel0_location_buffer_a: gl::GLint;
     let iChannel0_location_image: gl::GLint;
+    let iFrame_location_buffer_a: gl::GLint;
+    let iFrame_location_image: gl::GLint;
     let mut first_pass_framebuffer: gl::GLuint = 0;
     let mut first_pass_texture: gl::GLuint = 0;
     let program_buffer_a: gl::GLuint;
@@ -957,6 +930,7 @@ pub fn main() {
         iTime_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iTime\0".as_ptr());
         iResolution_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iResolution\0".as_ptr());
         iChannel0_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iChannel0\0".as_ptr());
+        iFrame_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iFrame\0".as_ptr());
 
         program_image = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, image_frag);
 
@@ -964,6 +938,7 @@ pub fn main() {
         iTime_location_image = gl::GetUniformLocation(program_image, "iTime\0".as_ptr());
         iResolution_location_image = gl::GetUniformLocation(program_image, "iResolution\0".as_ptr());
         iChannel0_location_image = gl::GetUniformLocation(program_image, "iChannel0\0".as_ptr());
+        iFrame_location_image = gl::GetUniformLocation(program_image, "iFrame\0".as_ptr());
 
         gl::GenFramebuffers(1, &mut first_pass_framebuffer);
         gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
@@ -1007,11 +982,13 @@ pub fn main() {
         let mut mmtime: MMTIME = core::mem::zeroed();
         mmtime.wType = TIME_SAMPLES;
         let mut time: f32 = 0.0;
+        let mut frame: i32 = 0;
 
         loop {
 
             unsafe {
-                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
+                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= garlic_head::SECONDS {
+                    libc::exit(0);
                     break;
                 }
             }
@@ -1027,6 +1004,7 @@ pub fn main() {
                 gl::Uniform1f(iTime_location_buffer_a, time);
                 gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
                 gl::Uniform1i(iChannel0_location_buffer_a, 0);
+                gl::Uniform1i(iFrame_location_buffer_a, frame);
                 gl::ActiveTexture(gl::TEXTURE0);
 
                 gl::Recti(-1,-1,1,1);
@@ -1038,13 +1016,40 @@ pub fn main() {
                 gl::Uniform1f(iTime_location_image, time);
                 gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
                 gl::Uniform1i(iChannel0_location_image, 0);
+                gl::Uniform1i(iFrame_location_image, frame);
                 gl::ActiveTexture(gl::TEXTURE0);
-
                 gl::Recti(-1,-1,1,1);
                 gl::Flush();
+                
+                // Text
+                if time > 2.
+                {
+                    const xv: f32 = -0.5;
+                    gl::UseProgram(0);
+                    gl::ListBase (1000); 
+                    gl::RasterPos2f(xv, 0.2);
+                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, 0.1);
+                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, 0.0);
+                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.05);
+                    gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.1);
+                    gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.2);
+                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.4);
+                    gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.45);
+                    gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.5);
+                    gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
+                }
 
                 SwapBuffers(hdc);
 
+                frame += 1;
             }
 
             // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
