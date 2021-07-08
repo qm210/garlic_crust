@@ -66,6 +66,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
             garlic_smash::process(block_offset, &mut smash_kick);
             // TODO: fix timing
+            // fix mastering (drums less loud, maybe sidechain)
             // ADD SNARE
             // ADD HIHATS
             // ADD clap?

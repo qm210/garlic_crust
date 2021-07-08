@@ -258,7 +258,7 @@ extern "system" {
 }
 */
 
-static buffer_a_frag: &'static str = "
+static BUFFER_A_FRAG: &'static str = "
 #version 450
 
 uniform sampler2D iChannel0;
@@ -795,7 +795,7 @@ void main()
 
 \0";
 
-static image_frag: &'static str = "
+static IMAGE_FRAG: &'static str = "
 #version 450
 
 uniform sampler2D iChannel0;
@@ -906,6 +906,8 @@ void main()
 
 \0";
 
+const XV: f32 = -0.5;
+
 #[no_mangle]
 pub fn main() {
     let ( _, hdc ) = create_window(  );
@@ -924,7 +926,7 @@ pub fn main() {
 
     unsafe {
         gl::init();
-        program_buffer_a = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, buffer_a_frag);
+        program_buffer_a = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, BUFFER_A_FRAG);
 
         gl::UseProgram(program_buffer_a);
         iTime_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iTime\0".as_ptr());
@@ -932,7 +934,7 @@ pub fn main() {
         iChannel0_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iChannel0\0".as_ptr());
         iFrame_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iFrame\0".as_ptr());
 
-        program_image = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, image_frag);
+        program_image = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, IMAGE_FRAG);
 
         gl::UseProgram(program_image);
         iTime_location_image = gl::GetUniformLocation(program_image, "iTime\0".as_ptr());
@@ -986,70 +988,67 @@ pub fn main() {
 
         loop {
 
-            unsafe {
-                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
-                    libc::exit(0);
-                }
 
-                waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
-                time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
-
-                // Buffer A
-                gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
-                gl::UseProgram(program_buffer_a);
-                gl::Uniform1f(iTime_location_buffer_a, time);
-                gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
-                gl::Uniform1i(iChannel0_location_buffer_a, 0);
-                gl::Uniform1i(iFrame_location_buffer_a, frame);
-                gl::ActiveTexture(gl::TEXTURE0);
-
-                gl::Recti(-1,-1,1,1);
-                gl::Flush();
-
-                // Image
-                gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-                gl::UseProgram(program_image);
-                gl::Uniform1f(iTime_location_image, time);
-                gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
-                gl::Uniform1i(iChannel0_location_image, 0);
-                gl::Uniform1i(iFrame_location_image, frame);
-                gl::ActiveTexture(gl::TEXTURE0);
-                gl::Recti(-1,-1,1,1);
-                gl::Flush();
-
-                // Text
-                if time > 2.
-                {
-                    const xv: f32 = -0.5;
-                    gl::UseProgram(0);
-                    gl::ListBase (1000);
-                    gl::RasterPos2f(xv, 0.2);
-                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, 0.1);
-                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, 0.0);
-                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.05);
-                    gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.1);
-                    gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.2);
-                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.4);
-                    gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.45);
-                    gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.5);
-                    gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
-                }
-
-                SwapBuffers(hdc);
-
-                frame += 1;
+            if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
+                libc::exit(0);
             }
 
-            // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
+            waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
+            time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
+
+            // Buffer A
+            gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
+            gl::UseProgram(program_buffer_a);
+            gl::Uniform1f(iTime_location_buffer_a, time);
+            gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
+            gl::Uniform1i(iChannel0_location_buffer_a, 0);
+            gl::Uniform1i(iFrame_location_buffer_a, frame);
+            gl::ActiveTexture(gl::TEXTURE0);
+
+            gl::Recti(-1,-1,1,1);
+            gl::Flush();
+
+            // Image
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::UseProgram(program_image);
+            gl::Uniform1f(iTime_location_image, time);
+            gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
+            gl::Uniform1i(iChannel0_location_image, 0);
+            gl::Uniform1i(iFrame_location_image, frame);
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::Recti(-1,-1,1,1);
+            gl::Flush();
+
+            // Text
+            if time > 2.
+            {
+                gl::UseProgram(0);
+                gl::ListBase (1000);
+                gl::RasterPos2f(XV, 0.2);
+                gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, 0.1);
+                gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, 0.0);
+                gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, -0.05);
+                gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, -0.1);
+                gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, -0.2);
+                gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, -0.4);
+                gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, -0.45);
+                gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(XV, -0.5);
+                gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
+            }
+
+            SwapBuffers(hdc);
+
+            frame += 1;
         }
+
     }
 }
 
