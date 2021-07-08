@@ -25,11 +25,11 @@ pub struct CloveState {
 pub fn create_state() -> CloveState {
     CloveState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.05,
+        volume: 0.1,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            freq_factor: Edge::constant(0.25),
+            freq_factor: Edge::constant(1.),
             detune: Edge::constant_stereo([0.,0.005]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
@@ -38,8 +38,8 @@ pub fn create_state() -> CloveState {
 
         freq_env: envelope::Envelope {
             shape: envelope::EnvShape::Sinc {
-                gain: Edge::constant(25.),
-                period: Edge::constant(0.002),
+                gain: Edge::constant(10.),
+                period: Edge::constant(0.004),
                 suppression: Edge::constant(1.0)
             },
             ..Default::default()
@@ -59,7 +59,7 @@ pub fn create_state() -> CloveState {
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(2000.),
+            cutoff: Edge::constant(500.),
             ..Default::default()
         },
         lp_output: Edge::zero(),
@@ -86,31 +86,5 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut CloveStat
     state.lp.input = state.osc_output;
     process_operator(&mut state.lp, &mut state.lp_output);
 
-    //waveshape(&mut state.hp_output, some_shape, 1.);
-    //math_overdrive_const(&mut state.hp_output, 1.);
-
     state.lp_output.write_to(&mut state.output, state.volume);
 }
-
-fn some_shape(t: f32) -> f32 {
-    match t {
-        x if x < 0.1 => {
-            crate::math::powerslope(t, 0.0, 0.1, 0., 0.5, 0.3)
-        },
-        x if x < 0.3 => {
-            crate::math::powerslope(t, 0.1, 0.3, 0.5, 0.2, 4.)
-        }
-        x if x < 1. => {
-            crate::math::powerslope(t, 0.3, 1., 0., 1., 0.6)
-        }
-        _ => 0.
-    }
-}
-
-// THINGS TO TEST:
-// put "env_osc1_output" again as a field of "env_osc1.output", if that helps the compiler?
-// Split Sequence into Chunks, one for each 512-sample-block
-// Put Sequence into Byte Array
-// use get_unchecked()
-// multithreading?? -- each Clove can be processed simultaneously
-// should every Edge always hold its array??

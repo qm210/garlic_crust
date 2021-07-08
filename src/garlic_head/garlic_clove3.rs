@@ -26,9 +26,9 @@ pub fn create_state() -> Clove3State {
         volume: 0.2,
 
         osc: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Square,
+            shape: oscillator::BaseWave::Saw,
             freq_factor: Edge::constant(1.00),
-            detune: Edge::constant_stereo([-0.008,0.05]),
+            detune: Edge::constant_stereo([-0.008,0.005]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
         },
@@ -72,8 +72,7 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove3Sta
     state.hp.input = state.osc_output;
     process_operator(&mut state.hp, &mut state.hp_output);
 
-    //waveshape(&mut state.hp_output, some_shape, 1.);
-    //math_overdrive_const(&mut state.hp_output, 1.);
+    math_overdrive_const(&mut state.hp_output, 2.);
 
     state.hp_output.write_to(&mut state.output, state.volume);
 }

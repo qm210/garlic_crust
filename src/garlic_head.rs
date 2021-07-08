@@ -40,23 +40,14 @@ pub const EMPTY_BLOCKARRAY: BlockArray = [ZERO_SAMPLE; BLOCK_SIZE];
 pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 
-    //let mut smash_state0 = garlic_smash::create_state(); // this gonne be my kick
-    //let mut clove2_state0 = garlic_clove2::create_state();
+    // we need global initialization, one per clove and each their sequence
     let mut clove3_state0 = garlic_clove3::create_state();
-    //let mut clove3_state1 = garlic_clove3::create_state();
     let mut clove4_state0 = garlic_clove4::create_state();
     let mut clove5_state0 = garlic_clove5::create_state();
     let mut clove6_state0 = garlic_clove6::create_state();
     let mut clove6_state1 = garlic_clove6::create_state();
     let mut clove6_state2 = garlic_clove6::create_state();
-
-    // we need global initialization, one per clove and each their sequence
-    // let clove1_config1 = garlic_clove1::create_config1("default");
-    // let clove1_config2 = garlic_clove1::create_config2("default");
-    // let mut clove1_state0 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
-    // let mut clove1_state1 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
-    // let mut clove1_state2 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
-    // let mut clove1_state3 = garlic_clove1::create_state(&clove1_config1, &clove1_config2);
+    //let mut smash_state0 = garlic_smash::create_state(); // this gonne be my kick
 
     let mut master_block_offset = 0;
     let mut block_offset = 0;
@@ -65,8 +56,8 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
         for master_piece in 0 .. MASTER_BLOCK_FACTOR {
 
-            garlic_clove3::process(&SEQUENCE_LEAD, block_offset, &mut clove3_state0);
             garlic_clove4::process(&SEQUENCE_BASS, block_offset, &mut clove4_state0);
+            garlic_clove3::process(&SEQUENCE_LEAD, block_offset, &mut clove3_state0);
             garlic_clove5::process(&SEQUENCE_LEAD, block_offset, &mut clove5_state0);
             garlic_clove6::process(&CHORDS_0, block_offset, &mut clove6_state0);
             garlic_clove6::process(&CHORDS_1, block_offset, &mut clove6_state1);
@@ -83,7 +74,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 garlic_master.add_at(master_sample, clove6_state2.output[sample]);
 
                 // no idea why, but remove that first mystery note
-                if master_sample >= SEQUENCE_LEAD[0].pos {
+                if master_block_offset + master_sample >= SEQUENCE_LEAD[0].pos {
                     garlic_master.add_at(master_sample, clove3_state0.output[sample]);
                     garlic_master.add_at(master_sample, clove5_state0.output[sample]);
                 }

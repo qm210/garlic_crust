@@ -50,7 +50,7 @@ pub fn create_state() -> CloveState {
             shape: envelope::EnvShape::Sinc {
                 gain: Edge::constant(10.),
                 period: Edge::constant(0.1),
-                suppression: Edge::constant(1.5)
+                suppression: Edge::constant(0.8),
             },
             ..Default::default()
         },
@@ -96,31 +96,5 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut CloveStat
     state.lp.input = state.osc_output;
     process_operator(&mut state.lp, &mut state.lp_output);
 
-    //waveshape(&mut state.hp_output, some_shape, 1.);
-    //math_overdrive_const(&mut state.hp_output, 1.);
-
     state.lp_output.write_to(&mut state.output, state.volume);
 }
-
-fn some_shape(t: f32) -> f32 {
-    match t {
-        x if x < 0.1 => {
-            crate::math::powerslope(t, 0.0, 0.1, 0., 0.5, 0.3)
-        },
-        x if x < 0.3 => {
-            crate::math::powerslope(t, 0.1, 0.3, 0.5, 0.2, 4.)
-        }
-        x if x < 1. => {
-            crate::math::powerslope(t, 0.3, 1., 0., 1., 0.6)
-        }
-        _ => 0.
-    }
-}
-
-// THINGS TO TEST:
-// put "env_osc1_output" again as a field of "env_osc1.output", if that helps the compiler?
-// Split Sequence into Chunks, one for each 512-sample-block
-// Put Sequence into Byte Array
-// use get_unchecked()
-// multithreading?? -- each Clove can be processed simultaneously
-// should every Edge always hold its array??

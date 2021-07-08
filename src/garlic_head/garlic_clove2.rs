@@ -31,21 +31,20 @@ pub struct Clove2State {
 pub fn create_state() -> Clove2State {
     Clove2State {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.4,
+        volume: 0.05,
 
         sub: oscillator::Oscillator {
             shape: oscillator::BaseWave::Sine,
-            //freq_factor: Edge::constant(0.25),
-            detune: Edge::constant_stereo([-0.51, -0.746]),
-            phasemod: Edge::constant_stereo([0., -0.003]),
-            volume_factor: [2., 2.],
+            freq_factor: Edge::constant(0.25),
+            detune: Edge::constant_stereo([0.051, -0.0746]),
+            phasemod: Edge::constant_stereo([0.4, -0.003]),
             ..Default::default()
         },
         sub_output: Edge::zero(),
 
         osc1: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Sine,
-            volume: Edge::constant(1.),
+            shape: oscillator::BaseWave::Square,
+            volume_factor: [0.3, 0.3],
             ..Default::default()
         },
         osc1_output: Edge::zero(),
@@ -83,7 +82,7 @@ pub fn create_state() -> Clove2State {
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(2000.),
+            cutoff: Edge::constant(1000.),
             ..Default::default()
         },
         lp_output: Edge::zero(),
