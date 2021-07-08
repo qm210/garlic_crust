@@ -38,7 +38,7 @@ pub fn create_state() -> Clove2State {
             //freq_factor: Edge::constant(0.25),
             detune: Edge::constant_stereo([-0.51, -0.746]),
             phasemod: Edge::constant_stereo([0., -0.003]),
-            volume_factor: 2.,
+            volume_factor: [2., 2.],
             ..Default::default()
         },
         sub_output: Edge::zero(),
@@ -64,7 +64,7 @@ pub fn create_state() -> Clove2State {
         osc2: oscillator::Oscillator {
             shape: oscillator::BaseWave::Sine,
             volume: Edge::constant(1.),
-            volume_factor: 3.,
+            volume_factor: [3., 3.],
             freq_factor: Edge::constant(0.5),
             ..Default::default()
         },

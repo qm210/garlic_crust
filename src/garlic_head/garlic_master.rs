@@ -15,7 +15,7 @@ pub struct WaveshapeState {
 impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
-            reverb: GarlicBreath::new(0.2, 0.8, 0.95, 0.8, false),
+            reverb: GarlicBreath::new(0.1, 0.8, 0.95, 0.8, false),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -39,30 +39,29 @@ impl GarlicMaster {
         }
     }
 
-    pub fn process(&mut self, sample: usize) {
+    pub fn apply_reverb(&mut self, sample: usize) {
+        let dry = self.data[sample];
+        let wet = self.reverb.tick(dry);
+        for ch in 0 .. 2 {
+            self.data[sample][ch] = dry[ch] + wet[ch];
+        }
+    }
+
+    pub fn saturate(&mut self, sample: usize) {
+        for channel in 0 .. 2 {
+            self.data[sample][channel] = crate::math::satanurate(self.data[sample][channel]);
+        }
+    }
+
+    pub fn waveshape_lel(&mut self, sample: usize) {
         for channel in 0 .. 2 {
             let mut value = self.data[sample][channel];
-            /*
-            // simple waveshaper, for se lolz
             value = (value + self.waveshape_state.amount * waveshape1(value)) / (1. + self.waveshape_state.amount);
-            self.waveshape_state.amount += 0.7e-5;
-            */
-
-            //self.data[sample][channel] = crate::math::satanurate(value);
-            // in need of clipping instead of saturation:
-            //self.data[sample][channel] = value.clamp(-1., 1.);
+            self.data[sample][channel] = value.clamp(-1., 1.);
         }
-
-        let mut value = self.data[sample];
-        let wet = self.reverb.tick(value);
-
-        for channel in 0 .. 2 {
-            value[channel] = 1.5 * crate::math::satanurate(value[channel] + wet[channel]);
-        }
-
-        self.data[sample] = value;
     }
 }
+
 
 fn waveshape1(x: MonoSample) -> MonoSample {
     x + 0.2 * crate::math::sin(9.*x) - 0.15 * crate::math::sin(x)

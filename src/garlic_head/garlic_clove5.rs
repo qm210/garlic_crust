@@ -25,11 +25,11 @@ pub struct CloveState {
 pub fn create_state() -> CloveState {
     CloveState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.05,
+        volume: 0.04,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            freq_factor: Edge::constant(0.25),
+            freq_factor: Edge::constant(1.),
             detune: Edge::constant_stereo([0.,0.005]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
@@ -38,28 +38,38 @@ pub fn create_state() -> CloveState {
 
         freq_env: envelope::Envelope {
             shape: envelope::EnvShape::Sinc {
-                gain: Edge::constant(25.),
-                period: Edge::constant(0.002),
-                suppression: Edge::constant(1.0)
+                gain: Edge::constant(20.),
+                period: Edge::constant(0.001),
+                suppression: Edge::constant(1.5)
             },
             ..Default::default()
         },
         freq_env_output: Edge::zero(),
 
         env: envelope::Envelope {
-            shape: envelope::EnvShape::Common {
-                base: envelope::BaseEnv::ExpDecay,
-                attack: Edge::constant(0.04),
-                decay: Edge::constant(0.4),
-                sustain: Edge::constant(0.2),
+            shape: envelope::EnvShape::Sinc {
+                gain: Edge::constant(10.),
+                period: Edge::constant(0.1),
+                suppression: Edge::constant(1.5)
             },
             ..Default::default()
         },
+        /*
+        env: envelope::Envelope {
+            shape: envelope::EnvShape::Common {
+                base: envelope::BaseEnv::ExpDecay,
+                attack: Edge::constant(0.02),
+                decay: Edge::constant(0.4),
+                sustain: Edge::constant(1.),
+            },
+            ..Default::default()
+        },
+        */
         env_output: Edge::zero(),
 
         lp: filter::Filter {
-            shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(2000.),
+            shape: filter::FilterType::HiPass,
+            cutoff: Edge::constant(4000.),
             ..Default::default()
         },
         lp_output: Edge::zero(),

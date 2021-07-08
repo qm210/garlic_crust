@@ -12,6 +12,7 @@
 mod gl;
 pub mod util;
 pub mod math;
+pub mod sequence;
 mod garlic_crust;
 mod garlic_head;
 mod garlic_helper;
@@ -120,8 +121,8 @@ extern "C" {
 #[link(name="winmm", kind="static-nobundle")]
 extern "C" {
     pub fn waveOutGetPosition(
-        hwo: HWAVEOUT, 
-        pmmt: LPMMTIME, 
+        hwo: HWAVEOUT,
+        pmmt: LPMMTIME,
         cbmmt: UINT
     ) -> MMRESULT;
 }
@@ -331,10 +332,10 @@ float zextrude(float z, float d2d, float h)
     return min(max(w.x,w.y),0.0) + length(max(w,0.0));
 }
 
-void dhexagonpattern(in vec2 p, out float d, out vec2 ind) 
+void dhexagonpattern(in vec2 p, out float d, out vec2 ind)
 {
     vec2 q = vec2( p.x*1.2, p.y + p.x*0.6 );
-    
+
     vec2 pi = floor(q);
     vec2 pf = fract(q);
 
@@ -343,7 +344,7 @@ void dhexagonpattern(in vec2 p, out float d, out vec2 ind)
     float ca = step(1.,v);
     float cb = step(2.,v);
     vec2  ma = step(pf.xy,pf.yx);
-    
+
     d = dot( ma, 1.0-pf.yx + ca*(pf.x+pf.y-1.0) + cb*(pf.yx-2.0*pf.xy) );
     ind = pi + ca - cb*ma;
     ind = vec2(ind.x/1.2, ind.y);
@@ -372,7 +373,7 @@ float lfnoise(vec2 t)
     vec2 i = floor(t);
     t = fract(t);
     t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)),
         v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
     v1 = c.zz+2.*mix(v1, v2, t.y);
     return mix(v1.x, v1.y, t.x);
@@ -442,7 +443,7 @@ float spiral(in vec2 x, in float k)
 //        float ret = 1.;
 //     vec2 pf=c.yy, p;
 //     float df=10.;
-    
+
 //     for(int i=-1; i<=1; i+=1)
 //         for(int j=-1; j<=1; j+=1)
 //         {
@@ -451,9 +452,9 @@ float spiral(in vec2 x, in float k)
 //             pa = .5+.25*pa;
 //             //rand(p, pa);
 //             p += pa;
-            
+
 //             d = mn(x-p);
-            
+
 //             if(d < df)
 //             {
 //                 df = d;
@@ -468,11 +469,11 @@ float spiral(in vec2 x, in float k)
 //             pa = .5+.25*pa;
 //             //rand(p, pa);
 //             p += pa;
-            
+
 //             d = abs(ml(x, pf, p));
 //             ret = min(ret, d);
 //         }
-    
+
 //     d = ret;
 //     z = pf;
 // }
@@ -481,19 +482,19 @@ float spiral(in vec2 x, in float k)
 // {
 //     float p = atan(x.y, x.x),
 //         t = 2.*pi;
-    
+
 //     vec2 philo = vec2(p0, p1);
 //     philo = sign(philo)*floor(abs(philo)/t)*t;
 //     philo = vec2(min(philo.x, philo.y), max(philo.x,philo.y));
 //     philo.y = mix(philo.y,philo.x,.5+.5*sign(p0-p1));
-    
+
 //     p0 -= philo.y;
 //     p1 -= philo.y;
-    
+
 //     philo = vec2(max(p0, p1), min(p0, p1));
-    
-//     if((p < philo.x && p > philo.y) 
-//        || (p+t < philo.x && p+t > philo.y) 
+
+//     if((p < philo.x && p > philo.y)
+//        || (p+t < philo.x && p+t > philo.y)
 //        || (p-t < philo.x && p-t > philo.y)
 //       )
 //     	return abs(length(x)-r);
@@ -520,11 +521,11 @@ float star(in vec2 x, in float r1, in float r2, in float N)
     	parity = mod(round((p+pi-dp)*.5/k), 2.),
         dk = k,
         dkp = mix(dk,-dk,parity);
-    
+
     vec2 p1 = r1*vec2(cos(k-dkp),sin(k-dkp)),
         p2 = r2*vec2(cos(k+dkp),sin(k+dkp)),
         dpp = p2-p1,
-        n = normalize(p2-p1).yx*c.xz, 
+        n = normalize(p2-p1).yx*c.xz,
         xp = length(x)*vec2(cos(dp), sin(dp));
     float t = dot(xp-p1,dpp)/dot(dpp,dpp);
     float r = mix(1.,-1.,parity)*dot(xp-p1,n);
@@ -553,22 +554,22 @@ struct SceneData
 
         // Material for palette
         material,
-    
+
         // Distance
         dist,
-    
+
         // Light accumulation for clouds
         accumulation,
-    
+
         // Reflectivity
         reflectivity,
-    
+
         // Transmittivity
         transmittivity,
-    
+
         // Illumination
         specular,
-    
+
         // Diffuse
         diffuse;
 };
@@ -636,7 +637,7 @@ float effect6(vec3 x, float zj, float r, float s)
     // box bissle scheise
     const float bside = .2;
     // // return -dbox3(RRA*(vec3(x.xy,zj)+1.5*bside*c.yyx*(.5+.5*r)), vec3(bside)*(.5+.5*r));
-    return -fHedron(RRA*(vec3(x.xy,zj)+2.*bside*c.yyx*(.5+.5*r)),6,16,bside, true);  
+    return -fHedron(RRA*(vec3(x.xy,zj)+2.*bside*c.yyx*(.5+.5*r)),6,16,bside, true);
 }
 
 float holeSDF(vec3 x, float zj)
@@ -662,7 +663,7 @@ float holeSDF(vec3 x, float zj)
     float N = 6.;
 
     if(selector < 1./N)
-    {        
+    {
         return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(.8/N, .9/N, selector));
     }
     else if(selector < 2./N)
@@ -722,8 +723,8 @@ vec3 normal(vec3 x)
     float s = scene(x).dist,
         dx = 5.e-5;
     return normalize(vec3(
-        scene(x+dx*c.xyy).dist, 
-        scene(x+dx*c.yxy).dist, 
+        scene(x+dx*c.xyy).dist,
+        scene(x+dx*c.yxy).dist,
         scene(x+dx*c.yyx).dist
     )-s);
 }
@@ -749,8 +750,8 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
     {
         x = o + d * dir;
         s = scene(x);
-        
-        if(s.dist < 1.e-4) 
+
+        if(s.dist < 1.e-4)
         {
             // Blinn-Phong Illumination
             n = normal(x);
@@ -759,7 +760,7 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
             {
                 col = c.yyy;
             }
-            else 
+            else
             {
                 col = palette(s.material+rj*10. - .1*length(x.xy));
             }
@@ -770,7 +771,7 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
 
             return true;
         }
-        
+
         d += min(s.dist,s.dist>1.e0?1.e-2:5.e-3);
         // d += s.dist;
     }
@@ -800,11 +801,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         t = c.yyy,
         dir = normalize(uv.x * r + uv.y * cross(r,normalize(t-o))-o),
         l = c.zzx;
-    SceneData s, 
+    SceneData s,
         s1;
 
     d = -(o.z-.01)/dir.z;
-        
+
     // Material ray
     if(ray(col, x, d, dir, s, o, l, n))
     {
@@ -822,8 +823,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             d1 = 2.e-3;
             if(ray(c1, x1, d1, refract(dir,n, .99), s1, x, l, n1))
                 col = mix(col, c1, s.transmittivity);
-        }    
-        
+        }
+
         // // Hard Shadow
         // d1 = 1.e-2;
         // if(ray(c1, x1, d1, normalize(l-x), s1, x, l, n1))
@@ -843,7 +844,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             o = x;
             dir = normalize(l-x);
             d1 = 1.e-2;
-            
+
             // if(d < 1.e2)
             {
                 float res = 1.0;
@@ -853,12 +854,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 {
                     x = o + d1 * dir;
                     s = scene(x);
-                    if(s.dist < 1.e-4) 
+                    if(s.dist < 1.e-4)
                     {
                         res = 0.;
                         break;
                     }
-                    if(x.z > 0.) 
+                    if(x.z > 0.)
                     {
                         res = 1.;
                         break;
@@ -870,7 +871,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     d1 += min(s.dist,s.dist>5.e-1?1.e-2:5.e-3);
     //                d1 += min(s.dist,s.dist>1.e-1?1.e-2:5.e-3);
                 }
-                col = mix(.5*col, col, res);    
+                col = mix(.5*col, col, res);
             }
         }
     }
@@ -883,15 +884,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         c1 = rgb2hsv(col);
         c1.r = pi*lfnoise(.5*nbeats*c.xx);
         col = mix(col, hsv2rgb(c1),.5);
-        
+
         // Gamma
         col = col + col*col + col*col*col;
-        // col *= col; 
+        // col *= col;
     }
 
     // Highlights
     col = mix(col, mix(col, col + col*col + col*col*col,.5), smoothstep(.9, 1.4, abs(dot(c.xzx, n))));
-    
+
     // fog (looks crap)
     // col = mix(col, palette(length(uv)), smoothstep(.1,.5, d1));
 
@@ -951,7 +952,7 @@ pub fn main() {
     unsafe {
         gl::init();
         program_buffer_a = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, buffer_a_frag);
-        
+
         gl::UseProgram(program_buffer_a);
         iTime_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iTime\0".as_ptr());
         iResolution_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iResolution\0".as_ptr());
@@ -1010,7 +1011,7 @@ pub fn main() {
         loop {
 
             unsafe {
-                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= garlic_head::SECONDS {
+                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
                     break;
                 }
             }

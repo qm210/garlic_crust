@@ -28,7 +28,7 @@ pub fn create_state() -> Clove3State {
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
             freq_factor: Edge::constant(1.00),
-            detune: Edge::constant_stereo([0.,0.005]),
+            detune: Edge::constant_stereo([-0.008,0.05]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
         },
@@ -37,7 +37,7 @@ pub fn create_state() -> Clove3State {
         env: envelope::Envelope {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::ExpDecay,
-                attack: Edge::constant(0.1),
+                attack: Edge::constant(0.06),
                 decay: Edge::constant(0.4),
                 sustain: Edge::constant(0.2),
             },

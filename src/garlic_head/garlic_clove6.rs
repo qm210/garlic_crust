@@ -12,7 +12,7 @@ pub struct CloveState {
     osc: oscillator::Oscillator,
     osc_output: Edge,
 
-    freq_env: envelope::Envelope,
+    freq_env: oscillator::Oscillator,
     freq_env_output: Edge,
 
     env: envelope::Envelope,
@@ -28,20 +28,19 @@ pub fn create_state() -> CloveState {
         volume: 0.05,
 
         osc: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Square,
-            freq_factor: Edge::constant(0.25),
-            detune: Edge::constant_stereo([0.,0.005]),
-            phasemod: Edge::constant_stereo([-0.04,0.1]),
+            shape: oscillator::BaseWave::Saw,
+            freq_factor: Edge::constant(1.),
+            detune: Edge::constant_stereo([0.01,0.025]),
+            phasemod: Edge::constant_stereo([-0.3,0.3]),
             ..Default::default()
         },
         osc_output: Edge::zero(),
 
-        freq_env: envelope::Envelope {
-            shape: envelope::EnvShape::Sinc {
-                gain: Edge::constant(25.),
-                period: Edge::constant(0.002),
-                suppression: Edge::constant(1.0)
-            },
+        freq_env: oscillator::Oscillator {
+            shape: oscillator::BaseWave::Saw,
+            volume_factor: [0.3, 0.3],
+            frequency: Edge::constant(0.013),
+            phasemod: Edge::constant_stereo([0., 0.2]),
             ..Default::default()
         },
         freq_env_output: Edge::zero(),
@@ -49,9 +48,9 @@ pub fn create_state() -> CloveState {
         env: envelope::Envelope {
             shape: envelope::EnvShape::Common {
                 base: envelope::BaseEnv::ExpDecay,
-                attack: Edge::constant(0.04),
+                attack: Edge::constant(0.1),
                 decay: Edge::constant(0.4),
-                sustain: Edge::constant(0.2),
+                sustain: Edge::constant(0.),
             },
             ..Default::default()
         },
@@ -59,7 +58,7 @@ pub fn create_state() -> CloveState {
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
-            cutoff: Edge::constant(2000.),
+            cutoff: Edge::constant(4000.),
             ..Default::default()
         },
         lp_output: Edge::zero(),

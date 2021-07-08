@@ -48,6 +48,13 @@ impl Edge {
         }
     }
 
+    pub fn fill_stereo_const(&mut self, value: Sample) {
+        self.array[0][L] = value[L];
+        self.array[0][R] = value[R];
+        self.is_const = true;
+        self.is_mono = value[L] == value[R];
+    }
+
     pub fn put_at(&mut self, pos: usize, value: Sample) {
         self.is_const = false;
         self.array[pos] = value;
