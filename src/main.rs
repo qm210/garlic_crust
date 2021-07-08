@@ -120,6 +120,11 @@ extern "C" {
 
 #[link(name="winmm", kind="static-nobundle")]
 extern "C" {
+    pub fn ExitProcess(uExitCode: UINT);
+}
+
+#[link(name="winmm", kind="static-nobundle")]
+extern "C" {
     pub fn waveOutGetPosition(
         hwo: HWAVEOUT,
         pmmt: LPMMTIME,
@@ -841,7 +846,7 @@ float lfnoise(vec2 t)
     vec2 i = floor(t);
     t = fract(t);
     t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)),
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
         v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
     v1 = c.zz+2.*mix(v1, v2, t.y);
     return mix(v1.x, v1.y, t.x);
@@ -866,37 +871,38 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
 
-    // team210 watermark
-    float d = d210(8.*(uv-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
-    col = mix(col, mix(col, c.xxx, .5), sm(d));
-
     // edge glow
+    vec2 uv2 = uv;
     uv = fragCoord/iResolution.xy;
     vec2 unit = 1./iResolution.xy;
-
+    
     float o = 1.0;
     float p = 3.0;
     float q = 0.0;
-
-
+    
+    
     vec4 col11 = texture(iChannel0, uv + vec2(-unit.x, -unit.y));
     vec4 col12 = texture(iChannel0, uv + vec2( 0., -unit.y));
     vec4 col13 = texture(iChannel0, uv + vec2( unit.x, -unit.y));
-
+    
     vec4 col21 = texture(iChannel0, uv + vec2(-unit.x, 0.));
     vec4 col22 = texture(iChannel0, uv + vec2( 0., 0.));
     vec4 col23 = texture(iChannel0, uv + vec2( unit.x, 0.));
-
+    
     vec4 col31 = texture(iChannel0, uv + vec2(-unit.x, unit.y));
     vec4 col32 = texture(iChannel0, uv + vec2( 0., unit.y));
     vec4 col33 = texture(iChannel0, uv + vec2( unit.x, unit.y));
-
+    
     vec4 x = col11 * -o + col12 * -p + col13 * -o + col31 * o + col32 * p + col33 * o + col22 * q;
     vec4 y = col11 * -o + col21 * -p + col31 * -o + col13 * o + col23 * p + col33 * o + col22 * q;
-
+    
     // Output to screen
     fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
     fragColor = vec4(mix(col, fragColor.rgb, clamp((.25+.5*lfnoise(.5*nbeats*c.xx))+.5*scale,0.,1.)),1.0);
+
+    // team210 watermark
+    float d = d210(8.*(uv2-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
+    fragColor.rgb = mix(fragColor.rgb, mix(fragColor.rgb, c.xxx, .5), sm(d));
 }
 
 void main()
