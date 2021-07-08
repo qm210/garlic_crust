@@ -989,11 +989,7 @@ pub fn main() {
             unsafe {
                 if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
                     libc::exit(0);
-                    break;
                 }
-            }
-
-            unsafe {
 
                 waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
                 time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;

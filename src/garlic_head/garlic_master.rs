@@ -15,7 +15,7 @@ pub struct WaveshapeState {
 impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
-            reverb: GarlicBreath::new(0.1, 0.8, 0.95, 0.8, false),
+            reverb: GarlicBreath::new(0.5, 0.95, 0.95, 0.9, false), // (wet, width, dampen, size, frozen)
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -39,11 +39,11 @@ impl GarlicMaster {
         }
     }
 
-    pub fn apply_reverb(&mut self, sample: usize) {
+    pub fn apply_reverb(&mut self, sample: usize, amount: f32) {
         let dry = self.data[sample];
         let wet = self.reverb.tick(dry);
         for ch in 0 .. 2 {
-            self.data[sample][ch] = dry[ch] + wet[ch];
+            self.data[sample][ch] = dry[ch] + amount * wet[ch];
         }
     }
 

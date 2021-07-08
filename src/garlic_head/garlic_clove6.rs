@@ -38,7 +38,7 @@ pub fn create_state() -> CloveState {
 
         freq_env: oscillator::Oscillator {
             shape: oscillator::BaseWave::Saw,
-            volume_factor: [0.3, 0.3],
+            volume_factor: [0.7, 0.7],
             frequency: Edge::constant(0.013),
             phasemod: Edge::constant_stereo([0., 0.2]),
             ..Default::default()

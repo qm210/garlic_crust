@@ -88,6 +88,7 @@ impl Operator for Envelope {
                 },
             };
         }
+
         result
     }
 

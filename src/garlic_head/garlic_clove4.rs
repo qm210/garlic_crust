@@ -2,9 +2,6 @@ use crate::garlic_crust::*;
 use crate::garlic_helper::*;
 use super::*;
 
-// A garlic clove is basically a garlic crust "preset", i.e. its internal wiring
-
-// the member fields. I think these might even be called CloveState here?
 pub struct CloveState {
     pub output: BlockArray,
     pub volume: MonoSample,
@@ -14,6 +11,7 @@ pub struct CloveState {
 
     freq_env: envelope::Envelope,
     freq_env_output: Edge,
+    freq_env_amount: Edge,
 
     env: envelope::Envelope,
     env_output: Edge,
@@ -29,7 +27,7 @@ pub fn create_state() -> CloveState {
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
-            freq_factor: Edge::constant(1.),
+            freq_factor: Edge::constant(0.5),
             detune: Edge::constant_stereo([0.,0.005]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
@@ -38,13 +36,14 @@ pub fn create_state() -> CloveState {
 
         freq_env: envelope::Envelope {
             shape: envelope::EnvShape::Sinc {
-                gain: Edge::constant(10.),
-                period: Edge::constant(0.004),
-                suppression: Edge::constant(1.0)
+                gain: Edge::constant(20.0),
+                period: Edge::constant(0.0012),
+                suppression: Edge::constant(1.8)
             },
             ..Default::default()
         },
         freq_env_output: Edge::zero(),
+        freq_env_amount: Edge::zero(),
 
         env: envelope::Envelope {
             shape: envelope::EnvShape::Common {
@@ -75,9 +74,11 @@ pub fn create_state() -> CloveState {
 
 #[inline]
 pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut CloveState) {
+    generate_from_func(func_phasemod_gain, block_offset, &mut state.freq_env_amount);
 
     process_operator_seq(&mut state.freq_env, &sequence, block_offset, &mut state.freq_env_output);
     state.osc.phasemod = state.freq_env_output;
+    state.osc.phasemod.multiply(&state.freq_env_amount);
 
     process_operator_seq(&mut state.env, &sequence, block_offset, &mut state.env_output);
     state.osc.volume = state.env_output;
@@ -87,4 +88,13 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut CloveStat
     process_operator(&mut state.lp, &mut state.lp_output);
 
     state.lp_output.write_to(&mut state.output, state.volume);
+}
+
+fn func_phasemod_gain(t: TimeFloat) -> Sample {
+    let result = match t {
+        t if t < 17. => { crate::math::powerslope(t, 0.0, 17.0, 9000., 100.0, 0.25) }
+        _ => { 100.0 }
+    };
+    let amountL = 0.5 + 0.5 * libm::cosf(crate::math::TAU * t * 2.4);
+    [result * amountL, result * (1. - amountL)]
 }
