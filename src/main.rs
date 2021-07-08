@@ -263,6 +263,7 @@ static buffer_a_frag: &'static str = "
 uniform sampler2D iChannel0;
 uniform vec2 iResolution;
 uniform float iTime;
+uniform int iFrame;
 
 const vec3 c = vec3(1.,0.,-1.);
 const float pi = 3.14159,
@@ -483,33 +484,34 @@ float effect1(vec3 x, float zj, float r, float s)
 
 float effect2(vec3 x, float zj, float r, float s)
 {
-    // spiral effect
-    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
-    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
+    // noise
+    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
 }
 
 float effect3(vec3 x, float zj, float r, float s)
 {
-    // noise
-    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
+    // spiral effect
+    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
+    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
 }
 
 float effect4(vec3 x, float zj, float r, float s)
 {
     // Team210 logo
     float rsize = .3;
-    return -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
-
+    float da = -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    return da;
+    // return -abs(da) + .01 - .5*zj;
     // circle tornado
     // float rsize = .3;
-    return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    // return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
 }
 
 float effect5(vec3 x, float zj, float r, float s)
 {
     // hexagon style
     vec2 vi;
-    float vsize = 3.+3.*r,
+    float vsize = 2.+2.*r,
         v;
     dhexagonpattern(vsize*x.xy, v, vi);
     return -abs(v / vsize) + .01 - .5*zj;
@@ -541,31 +543,37 @@ float holeSDF(vec3 x, float zj)
     float selector = 1.-clamp(iTime/tmax,0.,1.);
     //lfnoise(.05*nbeats*c.xx+133.);
     // selector = .5+.5*selector;
-    float N = 6.;
+    const float N = 6.;
 
-    if(selector < 1./N)
-    {        
-        return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(.8/N, .9/N, selector));
-    }
-    else if(selector < 2./N)
+    if(selector < 1.5/N)
     {
-        return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(1.8/N, 1.9/N, selector));
+        return mix(effect1(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(.1/N, 0., selector)*smoothstep(1.4/N, 1.5/N, selector));
+        // return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(1.4/N, 1.5/N, selector));
     }
     else if(selector < 3./N)
     {
-        return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(2.8/N, 2.9/N, selector));
+        return mix(effect2(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(1.6/N, 1.5/N, selector)*smoothstep(2.9/N, 3./N, selector));
+        // return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(2.9/N, 3./N, selector));
+    }
+    else if(selector < 3.5/N)
+    {
+        return mix(effect3(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.1/N, 3./N, selector)*smoothstep(3.4/N, 3.5/N, selector));
+        // return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(3.4/N, 3.5/N, selector));
     }
     else if(selector < 4./N)
     {
-        return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.8/N, 3.9/N, selector));
+        return mix(effect4(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.6/N, 3.5/N, selector)*smoothstep(3.9/N, 4./N, selector));
+        // return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.9/N, 4./N, selector));
     }
     else if(selector < 5./N)
     {
-        return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.8/N, 4.9/N, selector));
+        return mix(effect5(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(4.1/N, 4./N, selector)*smoothstep(4.9/N, 5./N, selector));
+        // return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.9/N, 5./N, selector));
     }
     else
     {
-        return effect6(x, zj, r, s);
+        return mix(effect6(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(5.1/N, 5./N, selector)*smoothstep(5.9/N, 6./N, selector));
+        // return effect6(x, zj, r, s);
     }
 }
 
@@ -627,7 +635,7 @@ vec3 palette(float scale)
 
 bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec3 o, vec3 l, out vec3 n)
 {
-    for(int i=0; i<250; ++i)
+    for(int i=0-min(iFrame, 0); i<250+min(iFrame,0); ++i)
     {
         x = o + d * dir;
         s = scene(x);
@@ -661,19 +669,22 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Rotation tools
     RR = rot3(iTime*vec3(0.,0.,.6));
     RRA = rot3(iTime*vec3(.7,.9,1.32));
+
+    // Sync tools
     float stepTime = mod(iTime, spb)-.5*spb;
-        // stepIndex = (iTime-stepTime)/spb;
     nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
 
+    // Marching tools
     float d = 0.,
         d1;
     vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
     vec3 o = RR*c.yzx,
-        col,
-        c1,
+        col = c.yyy,
+        c1 = c.yyy,
         x,
         x1,
         n,
@@ -685,7 +696,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     SceneData s, 
         s1;
 
-    d = -(o.z-.01)/dir.z;
+    d = -(o.z)/dir.z;
+    x = o + d * dir;
         
     // Material ray
     if(ray(col, x, d, dir, s, o, l, n))
@@ -788,9 +800,15 @@ static image_frag: &'static str = "
 uniform sampler2D iChannel0;
 uniform vec2 iResolution;
 uniform float iTime;
+uniform int iFrame;
 
 const float fsaa = 144.;
 const vec3 c = vec3(1.,0.,-1.);
+float scale,
+    nbeats,
+    bpm = 120.,
+    spb =  60. / bpm;
+const float tmax = 90.;
 
 float m(vec2 x)
 {
@@ -807,8 +825,35 @@ float sm(in float d)
     return smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d);
 }
 
+// Creative Commons Attribution-ShareAlike 4.0 International Public License
+// Created by David Hoskins.
+// See https://www.shadertoy.com/view/4djSRW
+float hash12(vec2 p)
+{
+	vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+float lfnoise(vec2 t)
+{
+    vec2 i = floor(t);
+    t = fract(t);
+    t = smoothstep(c.yy, c.xx, t);
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
+        v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
+    v1 = c.zz+2.*mix(v1, v2, t.y);
+    return mix(v1.x, v1.y, t.x);
+}
+
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Sync tools
+    float stepTime = mod(iTime, spb)-.5*spb;
+    nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
+    scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
+
+    // SSAA
     vec3 col = vec3(0.);
     float bound = sqrt(fsaa)-1.;
    	for(float i = -.5*bound; i<=.5*bound; i+=1.)
@@ -824,9 +869,34 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float d = d210(8.*(uv-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
     col = mix(col, mix(col, c.xxx, .5), sm(d));
 
-    fragColor = vec4(col,1.0);
+    // edge glow
+    uv = fragCoord/iResolution.xy;
+    vec2 unit = 1./iResolution.xy;
+    
+    float o = 1.0;
+    float p = 3.0;
+    float q = 0.0;
+    
+    
+    vec4 col11 = texture(iChannel0, uv + vec2(-unit.x, -unit.y));
+    vec4 col12 = texture(iChannel0, uv + vec2( 0., -unit.y));
+    vec4 col13 = texture(iChannel0, uv + vec2( unit.x, -unit.y));
+    
+    vec4 col21 = texture(iChannel0, uv + vec2(-unit.x, 0.));
+    vec4 col22 = texture(iChannel0, uv + vec2( 0., 0.));
+    vec4 col23 = texture(iChannel0, uv + vec2( unit.x, 0.));
+    
+    vec4 col31 = texture(iChannel0, uv + vec2(-unit.x, unit.y));
+    vec4 col32 = texture(iChannel0, uv + vec2( 0., unit.y));
+    vec4 col33 = texture(iChannel0, uv + vec2( unit.x, unit.y));
+    
+    vec4 x = col11 * -o + col12 * -p + col13 * -o + col31 * o + col32 * p + col33 * o + col22 * q;
+    vec4 y = col11 * -o + col21 * -p + col31 * -o + col13 * o + col23 * p + col33 * o + col22 * q;
+    
+    // Output to screen
+    fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
+    fragColor = vec4(mix(col, fragColor.rgb, clamp((.25+.5*lfnoise(.5*nbeats*c.xx))+.5*scale,0.,1.)),1.0);
 }
-
 
 void main()
 {
@@ -844,6 +914,8 @@ pub fn main() {
     let iResolution_location_image: gl::GLint;
     let iChannel0_location_buffer_a: gl::GLint;
     let iChannel0_location_image: gl::GLint;
+    let iFrame_location_buffer_a: gl::GLint;
+    let iFrame_location_image: gl::GLint;
     let mut first_pass_framebuffer: gl::GLuint = 0;
     let mut first_pass_texture: gl::GLuint = 0;
     let program_buffer_a: gl::GLuint;
@@ -857,6 +929,7 @@ pub fn main() {
         iTime_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iTime\0".as_ptr());
         iResolution_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iResolution\0".as_ptr());
         iChannel0_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iChannel0\0".as_ptr());
+        iFrame_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iFrame\0".as_ptr());
 
         program_image = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, image_frag);
 
@@ -864,6 +937,7 @@ pub fn main() {
         iTime_location_image = gl::GetUniformLocation(program_image, "iTime\0".as_ptr());
         iResolution_location_image = gl::GetUniformLocation(program_image, "iResolution\0".as_ptr());
         iChannel0_location_image = gl::GetUniformLocation(program_image, "iChannel0\0".as_ptr());
+        iFrame_location_image = gl::GetUniformLocation(program_image, "iFrame\0".as_ptr());
 
         gl::GenFramebuffers(1, &mut first_pass_framebuffer);
         gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
@@ -907,6 +981,7 @@ pub fn main() {
         let mut mmtime: MMTIME = core::mem::zeroed();
         mmtime.wType = TIME_SAMPLES;
         let mut time: f32 = 0.0;
+        let mut frame: i32 = 0;
 
         loop {
 
@@ -928,6 +1003,7 @@ pub fn main() {
                 gl::Uniform1f(iTime_location_buffer_a, time);
                 gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
                 gl::Uniform1i(iChannel0_location_buffer_a, 0);
+                gl::Uniform1i(iFrame_location_buffer_a, frame);
                 gl::ActiveTexture(gl::TEXTURE0);
 
                 gl::Recti(-1,-1,1,1);
@@ -939,6 +1015,7 @@ pub fn main() {
                 gl::Uniform1f(iTime_location_image, time);
                 gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
                 gl::Uniform1i(iChannel0_location_image, 0);
+                gl::Uniform1i(iFrame_location_image, frame);
                 gl::ActiveTexture(gl::TEXTURE0);
                 gl::Recti(-1,-1,1,1);
                 gl::Flush();
@@ -970,6 +1047,8 @@ pub fn main() {
                 }
 
                 SwapBuffers(hdc);
+
+                frame += 1;
             }
 
             // qm: this loop is obviously lame because we render the whole track beforehand. maybe we do the block-splitting later on
