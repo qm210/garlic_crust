@@ -31,3 +31,6 @@ midly = { version = "0.5.1", default-features = false, features = [] }
 
 # dependencies only for debug mode (which can use std and stuff.)
 hound = "3.4.0" # debug write to .wav file!
+
+[build-dependencies]
+ron = "0.6.4"
