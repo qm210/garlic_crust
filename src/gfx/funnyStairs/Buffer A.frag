@@ -63,6 +63,16 @@ float hash12(vec2 p)
     return fract((p3.x + p3.y) * p3.z);
 }
 
+// Creative Commons Attribution-ShareAlike 4.0 International Public License
+// Created by David Hoskins.
+// See https://www.shadertoy.com/view/4djSRW
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
+
 float lfnoise(vec2 t)
 {
     vec2 i = floor(t);
@@ -454,6 +464,20 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         s1 = s;
         d1 = d;
         n1 = n;
+
+        
+        // Ambient occlusion
+        // float calcOcclusion( in vec3 pos, in vec3 nor, float ra )
+        float occ = 0.;
+        for(int i=0; i<32; ++i)
+        {
+            float h = .01 + 4.0*pow(float(i)/31.0,2.0);
+            vec2 an = hash22( hash12(iTime*c.xx)*c.xx + float(i)*13.1 )*vec2( 3.14159, 6.2831 );
+            vec3 dir2 = vec3( sin(an.x)*sin(an.y), sin(an.x)*cos(an.y), cos(an.x) );
+            dir2 *= sign( dot(dir2,n) );
+            occ += clamp( 5.0*scene( x + h*dir2 ).dist/h, -1.0, 1.0);
+        }
+        col = mix(sqrt(col), col, clamp(occ/32.,0.,1.));
 
         // Soft shadow
         if(x.z <= .1)
