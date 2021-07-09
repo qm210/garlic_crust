@@ -301,45 +301,30 @@ float holeSDF(vec3 x, float zj)
         s = lfnoise(.5*nbeats*c.xx+1337.-zj);
 
     float selector = 1.-clamp(iTime/tmax,0.,1.);
-    //lfnoise(.05*nbeats*c.xx+133.);
-    // selector = .5+.5*selector;
-    // const float N = 6.;
 
     if(selector < lockToBeat(.25)) // star escalation
     {
         return effect1(x, zj, r, s);
-        // return mix(effect1(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(.1/N, 0., selector)*smoothstep(1.4/N, 1.5/N, selector));
-        // return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(1.4/N, 1.5/N, selector));
     }
     else if(selector < lockToBeat(.45)) // noise
     {
         return effect2(x, zj, r, s);
-        // return mix(effect2(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(1.6/N, 1.5/N, selector)*smoothstep(2.9/N, 3./N, selector));
-        // return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(2.9/N, 3./N, selector));
     }
     else if(selector < lockToBeat(.6)) // Spiral
     {
         return effect3(x, zj, r, s);
-        // return mix(effect3(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.1/N, 3./N, selector)*smoothstep(3.4/N, 3.5/N, selector));
-        // return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(3.4/N, 3.5/N, selector));
     }
     else if(selector < lockToBeat(.8)) // Team210
     {
         return effect4(x, zj, r, s);
-        // return mix(effect4(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.6/N, 3.5/N, selector)*smoothstep(3.9/N, 4./N, selector));
-        // return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.9/N, 4./N, selector));
     }
     else if(selector < lockToBeat(.9)) // Hexagon
     {
         return effect5(x, zj, r, s);
-        // return mix(effect5(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(4.1/N, 4./N, selector)*smoothstep(4.9/N, 5./N, selector));
-        // return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.9/N, 5./N, selector));
     }
     else // Stecken
     {
         return effect6(x, zj, r, s);
-        // return mix(effect6(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(5.1/N, 5./N, selector)*smoothstep(5.9/N, 6./N, selector));
-        // return effect6(x, zj, r, s);
     }
 }
 
