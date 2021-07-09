@@ -8,8 +8,9 @@ uniform int iFrame;
 const float fsaa = 144.;
 const vec3 c = vec3(1.,0.,-1.);
 float scale,
+    alternateScale,
     nbeats,
-    bpm = 120.,
+    bpm = .5*149.,
     spb =  60. / bpm;
 const float tmax = 90.;
 
@@ -52,9 +53,10 @@ float lfnoise(vec2 t)
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // Sync tools
-    float stepTime = mod(iTime, spb)-.5*spb;
-    nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
+    float stepTime = mod(iTime+.5*spb, spb)-.5*spb;
+    nbeats = (iTime-stepTime+.5*spb)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
+    alternateScale = mix(smoothstep(-.4*spb, -.5*spb, stepTime),smoothstep(-.5*spb, -.4*spb, stepTime), mod(round((iTime-stepTime)/spb), 2.));
 
     // SSAA
     vec3 col = vec3(0.);
@@ -95,7 +97,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     
     // Output to screen
     fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
-    fragColor = vec4(mix(col, fragColor.rgb, clamp((.25+.5*lfnoise(.5*nbeats*c.xx))+.5*scale,0.,1.)),1.0);
+    fragColor = vec4(mix(col, fragColor.rgb, clamp(/*(.25+.5*lfnoise(.5*nbeats*c.xx))+*/.5*alternateScale,0.,1.)),1.0);
 
     // team210 watermark
     float d = d210(8.*(uv2-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));

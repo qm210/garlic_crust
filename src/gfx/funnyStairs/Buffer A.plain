@@ -8,7 +8,7 @@ uniform int iFrame;
 const vec3 c = vec3(1.,0.,-1.);
 const float pi = 3.14159,
     PHI = 1.618,
-    bpm = 120.,
+    bpm = .5*149.,
     spb =  60. / bpm;
 mat3 RR = mat3(1.),
     RRA = mat3(1.);
