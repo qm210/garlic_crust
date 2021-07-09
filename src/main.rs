@@ -279,7 +279,19 @@ mat3 RR = mat3(1.),
     RRA = mat3(1.);
 float scale,
     nbeats;
-const float tmax = 90.;
+const float tmax = 80.521;
+
+const int NM = 41;
+const float syncMagics[NM] = float[NM](
+    // Intro synth part
+    0,1,2,3,6,7,
+    8,9,11,12,13,14,
+    16,17,18,19,22,23,
+    24,25,27,29,
+    32,33,34,35,38,39,
+    40,41,43,44,45,46,47,
+    48,49,50,51,53,55
+);
 
 // iq's code
 float smoothmin(float a, float b, float k)
@@ -333,6 +345,16 @@ float hash12(vec2 p)
 	vec3 p3  = fract(vec3(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+// Creative Commons Attribution-ShareAlike 4.0 International Public License
+// Created by David Hoskins.
+// See https://www.shadertoy.com/view/4djSRW
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
 }
 
 float lfnoise(vec2 t)
@@ -727,6 +749,20 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         d1 = d;
         n1 = n;
 
+        
+        // Ambient occlusion
+        // float calcOcclusion( in vec3 pos, in vec3 nor, float ra )
+        float occ = 0.;
+        for(int i=0; i<32; ++i)
+        {
+            float h = .01 + 4.0*pow(float(i)/31.0,2.0);
+            vec2 an = hash22( hash12(iTime*c.xx)*c.xx + float(i)*13.1 )*vec2( 3.14159, 6.2831 );
+            vec3 dir2 = vec3( sin(an.x)*sin(an.y), sin(an.x)*cos(an.y), cos(an.x) );
+            dir2 *= sign( dot(dir2,n) );
+            occ += clamp( 5.0*scene( x + h*dir2 ).dist/h, -1.0, 1.0);
+        }
+        col = mix(sqrt(col), col, clamp(occ/32.,0.,1.));
+
         // Soft shadow
         if(x.z <= .1)
         {
@@ -761,7 +797,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     d1 += min(s.dist,s.dist>5.e-1?1.e-2:5.e-3);
     //                d1 += min(s.dist,s.dist>1.e-1?1.e-2:5.e-3);
                 }
-                col = mix(.5*col, col, res);    
+                col = mix(.5*col, col, res);
             }
         }
     }
@@ -787,7 +823,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // col = mix(col, palette(length(uv)), smoothstep(.1,.5, d1));
 
     // Fade from and to black
-    col = mix(c.yyy, col, smoothstep(0.,1.,iTime)*smoothstep(tmax,tmax-1.,iTime));
+    col = mix(c.yyy, col, smoothstep(0.,1.,iTime)*smoothstep(tmax+10,tmax,iTime));
 
     fragColor = mix(texture(iChannel0, fragCoord.xy/iResolution.xy), vec4(clamp(col,0.,1.),1.), .5);
 }
