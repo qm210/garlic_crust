@@ -7,6 +7,7 @@ pub enum BaseWave {
     Saw,
     Square,
     Triangle,
+    WhiteNoise,
     Zero,
 }
 
@@ -74,7 +75,8 @@ impl Oscillator {
             BaseWave::Square => (37. * sin(TAU * phase)).clamp(-1., 1.),
             BaseWave::Saw => 2. * libm::fmodf(phase, 1.) - 1.,
             BaseWave::Triangle => 4. * libm::fabsf(libm::fmodf(phase, 1.) - 0.5) - 1.0,
-            _ => 0.,
+            BaseWave::WhiteNoise => 1.0,
+            BaseWave::Zero => 0.
         };
 
         basewave_value.clamp(-1., 1.)

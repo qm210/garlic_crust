@@ -71,7 +71,6 @@ pub fn process_operator<O: Operator>(op: &mut O, output: &mut Edge) {
 }
 
 pub fn process_operator_dyn<O: Operator>(op: &mut O, trigger: &TriggerFunc, block_offset: usize, output: &mut Edge) {
-
     for sample in 0 .. BLOCK_SIZE {
         if trigger(block_offset + sample) {
             op.handle_message(&TRIGGER);

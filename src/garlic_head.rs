@@ -10,7 +10,9 @@ mod garlic_clove4;
 mod garlic_clove5;
 mod garlic_clove6;
 mod garlic_master;
-mod garlic_smash;
+mod garlic_smash_kick;
+mod garlic_smash_hihat;
+mod garlic_smash_snare;
 
 mod garlic_dynamo;
 
@@ -23,8 +25,8 @@ pub const DYNAMO: garlic_dynamo::Dynamo = garlic_dynamo::Dynamo::create(149.);
 
 // <<<<<<<< PUT GARLIC_EXTRACT HERE
 
-pub const BLOCK_SIZE: usize = 100; // larger blocks might result in STATUS_STACK_OVERFLOW
-const MASTER_BLOCK_FACTOR: usize = 17; // my stolen freeverb needs BLOCK_SIZE * MASTER_BLOCK_FACTOR >= 1640
+pub const BLOCK_SIZE: usize = 50; // larger blocks might result in STATUS_STACK_OVERFLOW
+const MASTER_BLOCK_FACTOR: usize = 34; // my stolen freeverb needs BLOCK_SIZE * MASTER_BLOCK_FACTOR >= 1640
 pub const MASTER_BLOCK_SIZE: usize = BLOCK_SIZE * MASTER_BLOCK_FACTOR;
 const MASTER_BLOCK_NUMBER: usize = ((SAMPLERATE * SECONDS) as usize / MASTER_BLOCK_SIZE) + 1;
 pub const SAMPLES: usize = MASTER_BLOCK_NUMBER * MASTER_BLOCK_SIZE;
@@ -48,7 +50,9 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut clove_strings_1 = garlic_clove6::create_state();
     let mut clove_strings_2 = garlic_clove6::create_state();
 
-    let mut smash_kick = garlic_smash::create_state(); // this gonne be my kick
+    let mut smash_kick = garlic_smash_kick::create_state(); // this gonne be my kick
+    let mut smash_hihat = garlic_smash_hihat::create_state();
+    let mut smash_snare = garlic_smash_snare::create_state();
 
     let mut master_block_offset = 0;
     let mut block_offset = 0;
@@ -64,7 +68,9 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
             garlic_clove6::process(&CHORDS_1, block_offset, &mut clove_strings_1);
             garlic_clove6::process(&CHORDS_2, block_offset, &mut clove_strings_2);
 
-            garlic_smash::process(block_offset, &mut smash_kick);
+            garlic_smash_kick::process(block_offset, &mut smash_kick);
+            garlic_smash_hihat::process(block_offset, &mut smash_hihat);
+            garlic_smash_snare::process(block_offset, &mut smash_snare);
             // TODO: fix timing
             // fix mastering (drums less loud, maybe sidechain)
             // ADD SNARE
@@ -90,7 +96,12 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 }
                 garlic_master.apply_heavy_reverb(master_sample, 1.0);
 
-                garlic_master.add_at(master_sample, smash_kick.output[sample]);
+                // remove mystery drums in second zero. have to fix process_operator_dyn / trigger logic, but deadline is in 2h
+                if master_block_offset + master_sample >= 10000 {
+                    garlic_master.add_at(master_sample, smash_kick.output[sample]);
+                    garlic_master.add_at(master_sample, smash_hihat.output[sample]);
+                    garlic_master.add_at(master_sample, smash_snare.output[sample]);
+                }
 
                 garlic_master.apply_soft_reverb(master_sample, 1.0);
                 garlic_master.saturate(master_sample);

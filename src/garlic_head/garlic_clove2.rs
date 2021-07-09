@@ -102,12 +102,12 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut Clove2Sta
     //generate_from_func(func_osc_phasemod, block_offset, &mut state.osc_osc1.phasemod);
 
     // first branch - carrier
-    process_operator_dyn(&mut state.env1, &super::garlic_smash::trigger, block_offset, &mut state.env1_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
+    process_operator_dyn(&mut state.env1, &super::garlic_smash_kick::trigger, block_offset, &mut state.env1_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
 
     process_operator_seq(&mut state.sub, &sequence, block_offset, &mut state.sub_output);
 
     // second branch - modulator
-    process_operator_dyn(&mut state.env2, &super::garlic_smash::trigger, block_offset, &mut state.env2_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
+    process_operator_dyn(&mut state.env2, &super::garlic_smash_kick::trigger, block_offset, &mut state.env2_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
     state.osc2.volume = state.env2_output;
     process_operator_seq(&mut state.osc2, &sequence, block_offset, &mut state.osc2_output);
 

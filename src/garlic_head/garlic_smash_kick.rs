@@ -112,7 +112,6 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
     process_operator(&mut state.lp, &mut state.lp_output);
 
     waveshape_quad(&mut state.lp_output, &state.quad_shape);
-    //math_distort(&mut state.osc_output);
 
     math_overdrive(&mut state.lp_output, &state.dist);
 
@@ -124,14 +123,7 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 */
 #[inline]
 pub fn trigger(total_sample: usize) -> bool {
-    let total_beat = DYNAMO.beat(total_sample);
-    //if total_beat >= pattern_start_beat && total_beat < pattern_end_beat //inside beat condition
-    // let pattern_start_beat = 0.;
-    // let pattern_end_beat = 4.;
-    // let beat = libm::fmodf(total_beat - pattern_start_beat, pattern_end_beat - pattern_start_beat);
-    // two options: something regular (-> fmodf) or one-shots
-
-    return match total_beat {
+    match DYNAMO.beat(total_sample) {
         b if b >= 5. && b < 10. => {
             libm::fmodf(b - 5., 2.) < INV_SAMPLERATE
         },
@@ -139,5 +131,5 @@ pub fn trigger(total_sample: usize) -> bool {
             libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
         },
         _ => false
-    };
+    }
 }

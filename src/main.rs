@@ -1039,7 +1039,7 @@ pub fn main() {
                 gl::RasterPos2f(XV, -0.4);
                 gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
                 gl::RasterPos2f(XV, -0.45);
-                gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::CallLists (127, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, http://die.wissen.de/n, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
                 gl::RasterPos2f(XV, -0.5);
                 gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
             }

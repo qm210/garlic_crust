@@ -1,6 +1,6 @@
 use super::garlic_crust::*;
 
-pub const SECONDS: TimeFloat = 80.521 + 2.;
+pub const SECONDS: TimeFloat = 80.521 + 12.;
 
 pub const SEQUENCE_BASS: [SeqEvent; 470] = [
     SeqEvent {pos: 0, message: SeqMsg::NoteOn(56, 100) },

@@ -17,7 +17,7 @@ impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
             heavy_reverb: GarlicBreath::new(0.5, 0.95, 0.95, 0.9, false), // (wet, width, dampen, size, frozen)
-            soft_reverb: GarlicBreath::new(0.2, 0.75, 0.8, 0.6, false),
+            soft_reverb: GarlicBreath::new(0.3, 0.9, 0.8, 0.6, false),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
