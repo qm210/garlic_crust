@@ -1,11 +1,12 @@
 #![enable(implicit_some, unwrap_newtypes)]
 (
-	res: "hd",
+	res: "720p",
 	fps: 30,
 	inputs: [
     ],
 	shaders: {
-		"funnystairs": "gfx/funnyStairs",
+		// name:path
+		"funnystairs": "funnyStairs",
 	},
 	chains: [
 		(

@@ -263,654 +263,11 @@ extern "system" {
 }
 */
 
-static BUFFER_A_FRAG: &'static str = "
-#version 450
-
-uniform sampler2D iChannel0;
-uniform vec2 iResolution;
-uniform float iTime;
-uniform int iFrame;
-
-const vec3 c = vec3(1.,0.,-1.);
-const float pi = 3.14159,
-    PHI = 1.618,
-    bpm = 120.,
-    spb =  60. / bpm;
-mat3 RR = mat3(1.),
-    RRA = mat3(1.);
-float scale,
-    nbeats;
-const float tmax = 90.;
-
-// iq's code
-float smoothmin(float a, float b, float k)
-{
-    float h = max( k-abs(a-b), 0.0 )/k;
-    return min( a, b ) - h*h*h*k*(1.0/6.0);
-}
-
-float smoothmax(float a, float b, float k)
-{
-    return a + b - smoothmin(a,b,k);
-}
-
-float zextrude(float z, float d2d, float h)
-{
-    vec2 w = vec2(d2d, abs(z)-0.5*h);
-    return min(max(w.x,w.y),0.0) + length(max(w,0.0));
-}
-
-void dhexagonpattern(in vec2 p, out float d, out vec2 ind)
-{
-    vec2 q = vec2( p.x*1.2, p.y + p.x*0.6 );
-
-    vec2 pi = floor(q);
-    vec2 pf = fract(q);
-
-    float v = mod(pi.x + pi.y, 3.0);
-
-    float ca = step(1.,v);
-    float cb = step(2.,v);
-    vec2  ma = step(pf.xy,pf.yx);
-
-    d = dot( ma, 1.0-pf.yx + ca*(pf.x+pf.y-1.0) + cb*(pf.yx-2.0*pf.xy) );
-    ind = pi + ca - cb*ma;
-    ind = vec2(ind.x/1.2, ind.y);
-    ind = vec2(ind.x, ind.y-ind.x*.6);
-}
-
-mat3 rot3(in vec3 p)
-{
-    return mat3(c.xyyy, cos(p.x), sin(p.x), 0., -sin(p.x), cos(p.x))
-        *mat3(cos(p.y), 0., -sin(p.y), c.yxy, sin(p.y), 0., cos(p.y))
-        *mat3(cos(p.z), -sin(p.z), 0., sin(p.z), cos(p.z), c.yyyx);
-}
-
-// Creative Commons Attribution-ShareAlike 4.0 International Public License
-// Created by David Hoskins.
-// See https://www.shadertoy.com/view/4djSRW
-float hash12(vec2 p)
-{
-	vec3 p3  = fract(vec3(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-float lfnoise(vec2 t)
-{
-    vec2 i = floor(t);
-    t = fract(t);
-    t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)),
-        v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
-    v1 = c.zz+2.*mix(v1, v2, t.y);
-    return mix(v1.x, v1.y, t.x);
-}
-
-float mfnoise(vec2 x, float d, float b, float e)
-{
-    float n = 0.;
-    float a = 1., nf = 0., buf;
-    for(float f = d; f<b; f *= 2.)
-    {
-        n += a*lfnoise(f*x-2.*iTime);
-        a *= e;
-        nf += 1.;
-    }
-    return n * (1.-e)/(1.-pow(e, nf));
-}
-
-vec3 hsv2rgb(vec3 cc)
-{
-    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(cc.xxx + K.xyz) * 6.0 - K.www);
-    return cc.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), cc.y);
-}
-
-vec3 rgb2hsv(vec3 cc)
-{
-    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    vec4 p = mix(vec4(cc.bg, K.wz), vec4(cc.gb, K.xy), step(cc.b, cc.g));
-    vec4 q = mix(vec4(p.xyw, cc.r), vec4(cc.r, p.yzx), step(p.x, cc.r));
-
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-}
-
-float dbox3(vec3 x, vec3 b)
-{
-    vec3 da = abs(x) - b;
-    return length(max(da,0.0))
-            + min(max(da.x,max(da.y,da.z)),0.0);
-}
-
-// Distance to spiral
-float spiral(in vec2 x, in float k)
-{
-    float tau = 2.*pi;
-    vec2 dpr = mod(vec2(atan(x.y,x.x),length(x)/k),tau);
-    float a = abs(dpr.y-dpr.x);
-    return k*min(a,tau-a);
-}
-
-// Distance to line segment
-float linesegment(in vec2 x, in vec2 p1, in vec2 p2)
-{
-    vec2 da = p2-p1;
-    return length(x-mix(p1, p2, clamp(dot(x-p1, da)/dot(da,da),0.,1.)));
-}
-
-// Distance to star
-float star(in vec2 x, in float r1, in float r2, in float N)
-{
-    N *= 2.;
-    float p = atan(x.y,x.x),
-        k = pi/N,
-    	dp = mod(p+pi, 2.*k),
-    	parity = mod(round((p+pi-dp)*.5/k), 2.),
-        dk = k,
-        dkp = mix(dk,-dk,parity);
-
-    vec2 p1 = r1*vec2(cos(k-dkp),sin(k-dkp)),
-        p2 = r2*vec2(cos(k+dkp),sin(k+dkp)),
-        dpp = p2-p1,
-        n = normalize(p2-p1).yx*c.xz,
-        xp = length(x)*vec2(cos(dp), sin(dp));
-    float t = dot(xp-p1,dpp)/dot(dpp,dpp);
-    float r = mix(1.,-1.,parity)*dot(xp-p1,n);
-    if(t < 0.)
-        return sign(r)*length(xp-p1);
-    else if(t > 1.)
-        return sign(r)*length(xp-p2);
-    else
-	    return r;
-}
-
-float m(vec2 x)
-{
-    return max(x.x,x.y);
-}
-
-float d210(vec2 x)
-{
-    return min(max(max(max(max(min(max(max(m(abs(vec2(abs(abs(x.x)-.25)-.25, x.y))-vec2(.2)), -m(abs(vec2(x.x+.5, abs(abs(x.y)-.05)-.05))-vec2(.12,.02))), -m(abs(vec2(abs(x.x+.5)-.1, x.y-.05*sign(x.x+.5)))-vec2(.02,.07))), m(abs(vec2(x.x+.5,x.y+.1))-vec2(.08,.04))), -m(abs(vec2(x.x, x.y-.04))-vec2(.02, .08))), -m(abs(vec2(x.x, x.y+.1))-vec2(.02))), -m(abs(vec2(x.x-.5, x.y))-vec2(.08,.12))), -m(abs(vec2(x.x-.5, x.y-.05))-vec2(.12, .07))), m(abs(vec2(x.x-.5, x.y))-vec2(.02, .08)));
-}
-
-// Scene marching information
-struct SceneData
-{
-    float
-
-        // Material for palette
-        material,
-
-        // Distance
-        dist,
-
-        // Light accumulation for clouds
-        accumulation,
-
-        // Reflectivity
-        reflectivity,
-
-        // Transmittivity
-        transmittivity,
-
-        // Illumination
-        specular,
-
-        // Diffuse
-        diffuse;
-};
-
-SceneData defaultMaterial(float d)
-{
-    return SceneData(1.3, d, 1., .1, .1, .5, 1.);
-}
-
-SceneData add(SceneData a, SceneData b)
-{
-    if(a.dist < b.dist) return a;
-    return b;
-}
-
-float rj;
-
-float effect1(vec3 x, float zj, float r, float s)
-{
-    // star effect
-    float ag = mix(2.,12.,.5+.5*r)*zj*r;
-    mat2 RB = mat2(cos(ag), sin(ag), -sin(ag), cos(ag));
-    float da = -abs(star(RB*(x.xy-vec2(r,s)*.5), abs(1.*r+.1*zj), abs(1.*s-.1*zj), round(5.+r+s)))+.01-.1*zj,
-        db = mod(da, .2)-.09*2.1;
-    rj = da - db;
-    return db;
-}
-
-float effect2(vec3 x, float zj, float r, float s)
-{
-    // noise
-    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
-}
-
-float effect3(vec3 x, float zj, float r, float s)
-{
-    // spiral effect
-    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
-    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
-}
-
-float effect4(vec3 x, float zj, float r, float s)
-{
-    // Team210 logo
-    float rsize = .3;
-    float da = -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
-    return da;
-    // return -abs(da) + .01 - .5*zj;
-    // circle tornado
-    // float rsize = .3;
-    // return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
-}
-
-float effect5(vec3 x, float zj, float r, float s)
-{
-    // hexagon style
-    vec2 vi;
-    float vsize = 2.+2.*r,
-        v;
-    dhexagonpattern(vsize*x.xy, v, vi);
-    return -abs(v / vsize) + .01 - .5*zj;
-}
-
-float effect6(vec3 x, float zj, float r, float s)
-{
-    // Steckenmist, sieht fet aus denk ich
-    const float aside = .4,
-        psize = pi/6.,
-        msize = .5;
-    vec2 rp = vec2(atan(x.y,x.x), length(x.xy));
-    float dp = mod(rp.x, psize)-.5*psize,
-        pj = rp.x-dp,
-        dr = mod(rp.y, msize)-.5*msize,
-        rj = rp.y-dr;
-
-    vec2 yj = (rj - .2*sin(pi*zj-r)) * vec2(cos(pj), sin(pj)),
-        aj = rp.y * vec2(cos(rp.x), sin(rp.x));
-    float da = -length(mat2(cos(iTime-zj), sin(iTime-zj), -sin(iTime-zj), cos(iTime-zj))*(x.xy-yj)) +.001 +.1*(.5+.5*s)+.05*(.6+.4*scale)+.01*zj*(.5+.5*r);
-    return mod(da, .2)-.09*2.1;
-}
-
-float holeSDF(vec3 x, float zj)
-{
-    float r = lfnoise(.5*nbeats*c.xx-zj),
-        s = lfnoise(.5*nbeats*c.xx+1337.-zj);
-
-    float selector = 1.-clamp(iTime/tmax,0.,1.);
-    //lfnoise(.05*nbeats*c.xx+133.);
-    // selector = .5+.5*selector;
-    const float N = 6.;
-
-    if(selector < 1.5/N)
-    {
-        return mix(effect1(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(.1/N, 0., selector)*smoothstep(1.4/N, 1.5/N, selector));
-        // return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(1.4/N, 1.5/N, selector));
-    }
-    else if(selector < 3./N)
-    {
-        return mix(effect2(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(1.6/N, 1.5/N, selector)*smoothstep(2.9/N, 3./N, selector));
-        // return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(2.9/N, 3./N, selector));
-    }
-    else if(selector < 3.5/N)
-    {
-        return mix(effect3(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.1/N, 3./N, selector)*smoothstep(3.4/N, 3.5/N, selector));
-        // return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(3.4/N, 3.5/N, selector));
-    }
-    else if(selector < 4./N)
-    {
-        return mix(effect4(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.6/N, 3.5/N, selector)*smoothstep(3.9/N, 4./N, selector));
-        // return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.9/N, 4./N, selector));
-    }
-    else if(selector < 5./N)
-    {
-        return mix(effect5(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(4.1/N, 4./N, selector)*smoothstep(4.9/N, 5./N, selector));
-        // return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.9/N, 5./N, selector));
-    }
-    else
-    {
-        return mix(effect6(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(5.1/N, 5./N, selector)*smoothstep(5.9/N, 6./N, selector));
-        // return effect6(x, zj, r, s);
-    }
-}
-
-SceneData scene(vec3 x)
-{
-    SceneData sdf = SceneData(0., x.z+.5, 0., 0., 0., .7, 1.);
-
-    float dz = .03,
-        z = mod(x.z, dz) - .5 * dz,
-        zj = x.z - z,
-        zjz = zj / dz;
-
-    if(zj <= 0.)
-    {
-        vec3 d2d = -vec3(holeSDF(x,zj-dz), holeSDF(x, zj), holeSDF(x, zj+dz));
-        float d = smoothmin(
-            smoothmin(
-                zextrude(z-dz, d2d.x, .5*dz)-.15*dz,
-                zextrude(z, d2d.y, .5*dz)-.15*dz,
-                .01
-            ),
-            zextrude(z+dz, d2d.z, .5*dz)-.15*dz,
-            .01
-        );
-        sdf = add(
-            sdf,
-            SceneData(-1.+3.*abs(zjz/.5*dz), d, 0., 0., 0., .7, 1.)
-        );
-    }
-
-    return sdf;
-}
-
-vec3 normal(vec3 x)
-{
-    float s = scene(x).dist,
-        dx = 5.e-5;
-    return normalize(vec3(
-        scene(x+dx*c.xyy).dist,
-        scene(x+dx*c.yxy).dist,
-        scene(x+dx*c.yyx).dist
-    )-s);
-}
-
-vec3 palette(float scale)
-{
-    const int N = 4;
-    vec3 colors[N] = vec3[N](
-        // .8*c.xxx,
-        vec3(1.00,0.22,0.30),
-        c.yyy,
-        vec3(0.13,0.44,0.66),
-        vec3(0.00,0.80,0.73)
-    );
-    float i = floor(scale),
-        ip1 = mod(i + 1., float(N));
-    return mix(colors[int(i)], colors[int(ip1)], fract(scale));
-}
-
-bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec3 o, vec3 l, out vec3 n)
-{
-    for(int i=0-min(iFrame, 0); i<250+min(iFrame,0); ++i)
-    {
-        x = o + d * dir;
-        s = scene(x);
-
-        if(s.dist < 1.e-4)
-        {
-            // Blinn-Phong Illumination
-            n = normal(x);
-
-            if(s.material == 0.)
-            {
-                col = c.yyy;
-            }
-            else
-            {
-                col = palette(s.material+rj*10. - .1*length(x.xy));
-            }
-
-            col = .2 * col
-                + s.diffuse * col*max(dot(normalize(l-x),n),0.)
-                + s.specular * col*pow(max(dot(reflect(normalize(l-x),n),dir),0.),2.);
-
-            return true;
-        }
-
-        d += min(s.dist,s.dist>1.e0?1.e-2:5.e-3);
-        // d += s.dist;
-    }
-    return false;
-}
-
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
-{
-    // Rotation tools
-    RR = rot3(iTime*vec3(0.,0.,.6));
-    RRA = rot3(iTime*vec3(.7,.9,1.32));
-
-    // Sync tools
-    float stepTime = mod(iTime, spb)-.5*spb;
-    nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
-    scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
-
-    // Marching tools
-    float d = 0.,
-        d1;
-    vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
-    vec3 o = RR*c.yzx,
-        col = c.yyy,
-        c1 = c.yyy,
-        x,
-        x1,
-        n,
-        n1,
-        r = RR*c.xyy,
-        t = c.yyy,
-        dir = normalize(uv.x * r + uv.y * cross(r,normalize(t-o))-o),
-        l = c.zzx;
-    SceneData s,
-        s1;
-
-    d = -(o.z)/dir.z;
-    x = o + d * dir;
-
-    // Material ray
-    if(ray(col, x, d, dir, s, o, l, n))
-    {
-        // Reflections
-        if(s.reflectivity > 0.)
-        {
-            d1 = 2.e-3;
-            if(ray(c1, x1, d1, reflect(dir,n), s1, x, l, n1))
-                col = mix(col, c1, s.reflectivity);
-        }
-
-        // Refractions
-        if(s.transmittivity > 0.)
-        {
-            d1 = 2.e-3;
-            if(ray(c1, x1, d1, refract(dir,n, .99), s1, x, l, n1))
-                col = mix(col, c1, s.transmittivity);
-        }
-
-        s1 = s;
-        d1 = d;
-        n1 = n;
-
-        // Soft shadow
-        if(x.z <= .1)
-        {
-            // Soft Shadow
-            o = x;
-            dir = normalize(l-x);
-            d1 = 1.e-2;
-
-            // if(d < 1.e2)
-            {
-                float res = 1.0;
-                float ph = 1.e20;
-                for(int i=0; i<250; ++i)
-                // for(d=1.e-2; x.z<.5; )
-                {
-                    x = o + d1 * dir;
-                    s = scene(x);
-                    if(s.dist < 1.e-4)
-                    {
-                        res = 0.;
-                        break;
-                    }
-                    if(x.z >= .1) // 0?
-                    {
-                        res = 1.;
-                        break;
-                    }
-                    float y = s.dist*s.dist/(2.0*ph)/12.;
-                    float da = sqrt(s.dist*s.dist-y*y);
-                    res = min( res, 100.0*da/max(0.0,d1-y) );
-                    ph = s.dist;
-                    d1 += min(s.dist,s.dist>5.e-1?1.e-2:5.e-3);
-    //                d1 += min(s.dist,s.dist>1.e-1?1.e-2:5.e-3);
-                }
-                col = mix(.5*col, col, res);
-            }
-        }
-    }
-
-    s = s1;
-
-    // Color drift
-    if(s.material != 0.)
-    {
-        c1 = rgb2hsv(col);
-        c1.r = pi*lfnoise(.5*nbeats*c.xx);
-        col = mix(col, hsv2rgb(c1),.5);
-
-        // Gamma
-        col = col + col*col + col*col*col;
-        // col *= col;
-    }
-
-    // Highlights
-    col = mix(col, mix(col, col + col*col + col*col*col,.5), smoothstep(.9, 1.4, abs(dot(c.xzx, n))));
-
-    // fog (looks crap)
-    // col = mix(col, palette(length(uv)), smoothstep(.1,.5, d1));
-
-    // Fade from and to black
-    col = mix(c.yyy, col, smoothstep(0.,1.,iTime)*smoothstep(tmax,tmax-1.,iTime));
-
-    fragColor = mix(texture(iChannel0, fragCoord.xy/iResolution.xy), vec4(clamp(col,0.,1.),1.), .5);
-}
-
-void main()
-{
-    mainImage(gl_FragColor, gl_FragCoord.xy);
-}
-
-\0";
-
-static IMAGE_FRAG: &'static str = "
-#version 450
-
-uniform sampler2D iChannel0;
-uniform vec2 iResolution;
-uniform float iTime;
-uniform int iFrame;
-
-const float fsaa = 144.;
-const vec3 c = vec3(1.,0.,-1.);
-float scale,
-    nbeats,
-    bpm = 120.,
-    spb =  60. / bpm;
-const float tmax = 90.;
-
-float m(vec2 x)
-{
-    return max(x.x,x.y);
-}
-
-float d210(vec2 x)
-{
-    return min(max(max(max(max(min(max(max(m(abs(vec2(abs(abs(x.x)-.25)-.25, x.y))-vec2(.2)), -m(abs(vec2(x.x+.5, abs(abs(x.y)-.05)-.05))-vec2(.12,.02))), -m(abs(vec2(abs(x.x+.5)-.1, x.y-.05*sign(x.x+.5)))-vec2(.02,.07))), m(abs(vec2(x.x+.5,x.y+.1))-vec2(.08,.04))), -m(abs(vec2(x.x, x.y-.04))-vec2(.02, .08))), -m(abs(vec2(x.x, x.y+.1))-vec2(.02))), -m(abs(vec2(x.x-.5, x.y))-vec2(.08,.12))), -m(abs(vec2(x.x-.5, x.y-.05))-vec2(.12, .07))), m(abs(vec2(x.x-.5, x.y))-vec2(.02, .08)));
-}
-
-float sm(in float d)
-{
-    return smoothstep(1.5/iResolution.y, -1.5/iResolution.y, d);
-}
-
-// Creative Commons Attribution-ShareAlike 4.0 International Public License
-// Created by David Hoskins.
-// See https://www.shadertoy.com/view/4djSRW
-float hash12(vec2 p)
-{
-	vec3 p3  = fract(vec3(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-float lfnoise(vec2 t)
-{
-    vec2 i = floor(t);
-    t = fract(t);
-    t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
-        v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
-    v1 = c.zz+2.*mix(v1, v2, t.y);
-    return mix(v1.x, v1.y, t.x);
-}
-
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
-{
-    // Sync tools
-    float stepTime = mod(iTime, spb)-.5*spb;
-    nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
-    scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
-
-    // SSAA
-    vec3 col = vec3(0.);
-    float bound = sqrt(fsaa)-1.;
-   	for(float i = -.5*bound; i<=.5*bound; i+=1.)
-        for(float j=-.5*bound; j<=.5*bound; j+=1.)
-        {
-     		col += texture(iChannel0, fragCoord/iResolution.xy+vec2(i,j)*mix(3.,20.,2.*abs(fragCoord.y/iResolution.y-.5))*exp(-abs(1.e-2*length(fragCoord.xy)/iResolution.y-.5))/max(bound, 1.)/iResolution.xy).xyz;
-        }
-    col /= fsaa;
-
-    vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
-
-    // edge glow
-    vec2 uv2 = uv;
-    uv = fragCoord/iResolution.xy;
-    vec2 unit = 1./iResolution.xy;
-    
-    float o = 1.0;
-    float p = 3.0;
-    float q = 0.0;
-    
-    
-    vec4 col11 = texture(iChannel0, uv + vec2(-unit.x, -unit.y));
-    vec4 col12 = texture(iChannel0, uv + vec2( 0., -unit.y));
-    vec4 col13 = texture(iChannel0, uv + vec2( unit.x, -unit.y));
-    
-    vec4 col21 = texture(iChannel0, uv + vec2(-unit.x, 0.));
-    vec4 col22 = texture(iChannel0, uv + vec2( 0., 0.));
-    vec4 col23 = texture(iChannel0, uv + vec2( unit.x, 0.));
-    
-    vec4 col31 = texture(iChannel0, uv + vec2(-unit.x, unit.y));
-    vec4 col32 = texture(iChannel0, uv + vec2( 0., unit.y));
-    vec4 col33 = texture(iChannel0, uv + vec2( unit.x, unit.y));
-    
-    vec4 x = col11 * -o + col12 * -p + col13 * -o + col31 * o + col32 * p + col33 * o + col22 * q;
-    vec4 y = col11 * -o + col21 * -p + col31 * -o + col13 * o + col23 * p + col33 * o + col22 * q;
-    
-    // Output to screen
-    fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
-    fragColor = vec4(mix(col, fragColor.rgb, clamp((.25+.5*lfnoise(.5*nbeats*c.xx))+.5*scale,0.,1.)),1.0);
-
-    // team210 watermark
-    float d = d210(8.*(uv2-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
-    fragColor.rgb = mix(fragColor.rgb, mix(fragColor.rgb, c.xxx, .5), sm(d));
-}
-
-void main()
-{
-    mainImage(gl_FragColor, gl_FragCoord.xy);
-}
-
-\0";
+static buffer_a_frag: &'static str = "#version 450
+uniform sampler2D iChannel0;uniform vec2 iResolution;uniform float iTime;uniform int iFrame;const vec3 v=vec3(1.,0.,-1.);const float m=3.14159,f=1.618,s=120.,y=60./s;mat3 i=mat3(1.),r=mat3(1.);float x,e;const float a=90.;float n(float v,float y,float m){float s=max(m-abs(v-y),0.)/m;return min(v,y)-s*s*s*m*(1./6.);}float p(float v,float f,float y){return v+f-n(v,f,y);}float t(float y,float v,float m){vec2 f=vec2(v,abs(y)-.5*m);return min(max(f.x,f.y),0.)+length(max(f,0.));}void h(in vec2 v,out float f,out vec2 i){vec2 y=vec2(v.x*1.2,v.y+v.x*.6),m=floor(y),s=fract(y);float x=mod(m.x+m.y,3.),e=step(1.,x),a=step(2.,x);vec2 l=step(s.xy,s.yx);f=dot(l,1.-s.yx+e*(s.x+s.y-1.)+a*(s.yx-2.*s.xy));i=m+e-a*l;i=vec2(i.x/1.2,i.y);i=vec2(i.x,i.y-i.x*.6);}mat3 h(in vec3 y){return mat3(v.xyyy,cos(y.x),sin(y.x),0.,-sin(y.x),cos(y.x))*mat3(cos(y.y),0.,-sin(y.y),v.yxy,sin(y.y),0.,cos(y.y))*mat3(cos(y.z),-sin(y.z),0.,sin(y.z),cos(y.z),v.yyyx);}float n(vec2 v){vec3 f=fract(vec3(v.xyx)*.1031);f+=dot(f,f.yzx+33.33);return fract((f.x+f.y)*f.z);}float p(vec2 f){vec2 y=floor(f);f=fract(f);f=smoothstep(v.yy,v.xx,f);vec2 i=vec2(n(y),n(y+v.xy)),s=vec2(n(y+v.yx),n(y+v.xx));i=v.zz+2.*mix(i,s,f.y);return mix(i.x,i.y,f.x);}float h(vec2 y,float m,float v,float f){float i=0.,s=1.,x=0.,c;for(float r=m;r<v;r*=2.)i+=s*p(r*y-2.*iTime),s*=f,x+=1.;return i*(1.-f)/(1.-pow(f,x));}vec3 t(vec3 v){vec4 i=vec4(1.,2./3.,1./3.,3.);vec3 y=abs(fract(v.xxx+i.xyz)*6.-i.www);return v.z*mix(i.xxx,clamp(y-i.xxx,0.,1.),v.y);}vec3 d(vec3 v){vec4 f=vec4(0.,-1./3.,2./3.,-1.),i=mix(vec4(v.zy,f.wz),vec4(v.yz,f.xy),step(v.z,v.y)),m=mix(vec4(i.xyw,v.x),vec4(v.x,i.yzx),step(i.x,v.x));float s=m.x-min(m.w,m.y),y=1e-10;return vec3(abs(m.z+(m.w-m.y)/(6.*s+y)),s/(m.x+y),m.x);}float d(vec3 y,vec3 v){vec3 f=abs(y)-v;return length(max(f,0.))+min(max(f.x,max(f.y,f.z)),0.);}float h(in vec2 v,in float y){float f=2.*m;vec2 i=mod(vec2(atan(v.y,v.x),length(v)/y),f);float x=abs(i.y-i.x);return y*min(x,f-x);}float d(in vec2 v,in vec2 y,in vec2 f){vec2 i=f-y;return length(v-mix(y,f,clamp(dot(v-y,i)/dot(i,i),0.,1.)));}float d(in vec2 y,in float f,in float i,in float x){x*=2.;float a=atan(y.y,y.x),s=m/x,c=mod(a+m,2.*s),e=mod(round((a+m-c)*.5/s),2.),l=s,r=mix(l,-l,e);vec2 z=f*vec2(cos(s-r),sin(s-r)),o=i*vec2(cos(s+r),sin(s+r)),t=o-z,d=normalize(o-z).yx*v.xz,n=length(y)*vec2(cos(c),sin(c));float S=dot(n-z,t)/dot(t,t),u=mix(1.,-1.,e)*dot(n-z,d);if(S<0.)return sign(u)*length(n-z);else if(S>1.)return sign(u)*length(n-o);else return u;}float c(vec2 v){return max(v.x,v.y);}float l(vec2 v){return min(max(max(max(max(min(max(max(c(abs(vec2(abs(abs(v.x)-.25)-.25,v.y))-vec2(.2)),-c(abs(vec2(v.x+.5,abs(abs(v.y)-.05)-.05))-vec2(.12,.02))),-c(abs(vec2(abs(v.x+.5)-.1,v.y-.05*sign(v.x+.5)))-vec2(.02,.07))),c(abs(vec2(v.x+.5,v.y+.1))-vec2(.08,.04))),-c(abs(vec2(v.x,v.y-.04))-vec2(.02,.08))),-c(abs(vec2(v.x,v.y+.1))-vec2(.02))),-c(abs(vec2(v.x-.5,v.y))-vec2(.08,.12))),-c(abs(vec2(v.x-.5,v.y-.05))-vec2(.12,.07))),c(abs(vec2(v.x-.5,v.y))-vec2(.02,.08)));}struct SceneData{float material,dist,accumulation,reflectivity,transmittivity,specular,diffuse;};SceneData S(float y){return SceneData(1.3,y,1.,.1,.1,.5,1.);}SceneData S(SceneData v,SceneData y){if(v.dist<y.dist)return v;return y;}float u;float S(vec3 v,float y,float x,float f){float i=mix(2.,12.,.5+.5*x)*y*x;mat2 m=mat2(cos(i),sin(i),-sin(i),cos(i));float s=-abs(d(m*(v.xy-vec2(x,f)*.5),abs(x+.1*y),abs(f-.1*y),round(5.+x+f)))+.01-.1*y,a=mod(s,.2)-.189;u=s-a;return a;}float c(vec3 v,float y,float f,float x){return-1.+h(v.xy-f*.3,3.,10.,.45)-3.*y;}float l(vec3 v,float y,float x,float f){mat2 i=mat2(cos(iTime),sin(iTime),-sin(iTime),cos(iTime));return-abs(h(i*i*v.xy-.3*x,mix(.05,.1,.5+.5*x)))-.3*y+.01*x;}float n(vec3 v,float y,float f,float i){float s=.3,m=-abs(mod(l(v.xy-y*.4),s)+.5*s-.4-.2*f-.5*y)+.01+.01*x+.001*y;return m;}float p(vec3 v,float y,float f,float x){vec2 i;float m=2.+2.*f,s;h(m*v.xy,s,i);return-abs(s/m)+.01-.5*y;}float t(vec3 v,float y,float f,float i){const float s=.4,e=m/6.,z=.5;vec2 a=vec2(atan(v.y,v.x),length(v.xy));float l=mod(a.x,e)-.5*e,c=a.x-l,r=mod(a.y,z)-.5*z,n=a.y-r;vec2 t=(n-.2*sin(m*y-f))*vec2(cos(c),sin(c)),o=a.y*vec2(cos(a.x),sin(a.x));float S=-length(mat2(cos(iTime-y),sin(iTime-y),-sin(iTime-y),cos(iTime-y))*(v.xy-t))+.001+.1*(.5+.5*i)+.05*(.6+.4*x)+.01*y*(.5+.5*f);return mod(S,.2)-.189;}float c(vec3 y,float f){float i=p(.5*e*v.xx-f),s=p(.5*e*v.xx+1337.-f),x=1.-clamp(iTime/a,0.,1.);const float m=6.;if(x<1.5/m)return mix(S(y,f,i,s),-abs(length(y.xy)-.3+.05*f)+.01-.5*f,smoothstep(.1/m,0.,x)*smoothstep(1.4/m,1.5/m,x));else if(x<3./m)return mix(c(y,f,i,s),-abs(length(y.xy)-.3+.05*f)+.01-.5*f,smoothstep(1.6/m,1.5/m,x)*smoothstep(2.9/m,3./m,x));else if(x<3.5/m)return mix(l(y,f,i,s),-abs(length(y.xy)-.3+.05*f)+.01-.5*f,smoothstep(3.1/m,3./m,x)*smoothstep(3.4/m,3.5/m,x));else if(x<4./m)return mix(n(y,f,i,s),-abs(length(y.xy)-.3+.05*f)+.01-.5*f,smoothstep(3.6/m,3.5/m,x)*smoothstep(3.9/m,4./m,x));else if(x<5./m)return mix(p(y,f,i,s),-abs(length(y.xy)-.3+.05*f)+.01-.5*f,smoothstep(4.1/m,4./m,x)*smoothstep(4.9/m,5./m,x));else return mix(t(y,f,i,s),-abs(length(y.xy)-.3+.05*f)+.01-.5*f,smoothstep(5.1/m,5./m,x)*smoothstep(5.9/m,6./m,x));}SceneData o(vec3 v){SceneData y=SceneData(0.,v.z+.5,0.,0.,0.,.7,1.);float f=.03,i=mod(v.z,f)-.5*f,x=v.z-i,s=x/f;if(x<=0.){vec3 m=-vec3(c(v,x-f),c(v,x),c(v,x+f));float a=n(n(t(i-f,m.x,.5*f)-.15*f,t(i,m.y,.5*f)-.15*f,.01),t(i+f,m.z,.5*f)-.15*f,.01);y=S(y,SceneData(-1.+3.*abs(s/.5*f),a,0.,0.,0.,.7,1.));}return y;}vec3 w(vec3 y){float f=o(y).dist,s=5e-05;return normalize(vec3(o(y+s*v.xyy).dist,o(y+s*v.yxy).dist,o(y+s*v.yyx).dist)-f);}vec3 z(float y){const int i=4;vec3 f[i]=vec3[i](vec3(1.,.22,.3),v.yyy,vec3(.13,.44,.66),vec3(0.,.8,.73));float x=floor(y),s=mod(x+1.,float(i));return mix(f[int(x)],f[int(s)],fract(y));}bool S(out vec3 f,out vec3 y,inout float m,vec3 x,out SceneData i,vec3 s,vec3 a,out vec3 r){for(int e=0-min(iFrame,0);e<250+min(iFrame,0);++e){y=s+m*x;i=o(y);if(i.dist<.0001){r=w(y);if(i.material==0.)f=v.yyy;else f=z(i.material+u*10.-.1*length(y.xy));f=.2*f+i.diffuse*f*max(dot(normalize(a-y),r),0.)+i.specular*f*pow(max(dot(reflect(normalize(a-y),r),x),0.),2.);return true;}m+=min(i.dist,i.dist>1.?.01:.005);}return false;}void l(out vec4 f,in vec2 s){i=h(iTime*vec3(0.,0.,.6));r=h(iTime*vec3(.7,.9,1.32));float c=mod(iTime,y)-.5*y;e=(iTime-c-.5)/y+smoothstep(-.2*y,.2*y,c);x=smoothstep(-.3*y,0.,c)*smoothstep(.3*y,0.,c);float l=0.,z;vec2 n=(s.xy-.5*iResolution.xy)/iResolution.y;vec3 u=i*v.yzx,w=v.yyy,g=v.yyy,b,T,k,D,F=i*v.xyy,R=v.yyy,C=normalize(n.x*F+n.y*cross(F,normalize(R-u))-u),q=v.zzx;SceneData Z,Y;l=-u.z/C.z;b=u+l*C;if(S(w,b,l,C,Z,u,q,k)){if(Z.reflectivity>0.){z=.002;if(S(g,T,z,reflect(C,k),Y,b,q,D))w=mix(w,g,Z.reflectivity);}if(Z.transmittivity>0.){z=.002;if(S(g,T,z,refract(C,k,.99),Y,b,q,D))w=mix(w,g,Z.transmittivity);}Y=Z;z=l;D=k;if(b.z<=.1){u=b;C=normalize(q-b);z=.01;{float X=1.,W=1e+20;for(int V=0;V<250;++V){b=u+z*C;Z=o(b);if(Z.dist<.0001){X=0.;break;}if(b.z>=.1){X=1.;break;}float U=Z.dist*Z.dist/(2.*W)/12.,Q=sqrt(Z.dist*Z.dist-U*U);X=min(X,100.*Q/max(0.,z-U));W=Z.dist;z+=min(Z.dist,Z.dist>.5?.01:.005);}w=mix(.5*w,w,X);}}}Z=Y;if(Z.material!=0.)g=d(w),g.x=m*p(.5*e*v.xx),w=mix(w,t(g),.5),w=w+w*w+w*w*w;w=mix(w,mix(w,w+w*w+w*w*w,.5),smoothstep(.9,1.4,abs(dot(v.xzx,k))));w=mix(v.yyy,w,smoothstep(0.,1.,iTime)*smoothstep(a,a-1.,iTime));f=mix(texture(iChannel0,s.xy/iResolution.xy),vec4(clamp(w,0.,1.),1.),.5);}void main(){l(gl_FragColor,gl_FragCoord.xy);}\0";
+
+static image_frag: &'static str = "#version 450
+uniform sampler2D iChannel0;uniform vec2 iResolution;uniform float iTime;uniform int iFrame;const float v=144.;const vec3 i=vec3(1.,0.,-1.);float x,y,e=120.,z=60./e;const float f=90.;float s(vec2 i){return max(i.x,i.y);}float t(vec2 i){return min(max(max(max(max(min(max(max(s(abs(vec2(abs(abs(i.x)-.25)-.25,i.y))-vec2(.2)),-s(abs(vec2(i.x+.5,abs(abs(i.y)-.05)-.05))-vec2(.12,.02))),-s(abs(vec2(abs(i.x+.5)-.1,i.y-.05*sign(i.x+.5)))-vec2(.02,.07))),s(abs(vec2(i.x+.5,i.y+.1))-vec2(.08,.04))),-s(abs(vec2(i.x,i.y-.04))-vec2(.02,.08))),-s(abs(vec2(i.x,i.y+.1))-vec2(.02))),-s(abs(vec2(i.x-.5,i.y))-vec2(.08,.12))),-s(abs(vec2(i.x-.5,i.y-.05))-vec2(.12,.07))),s(abs(vec2(i.x-.5,i.y))-vec2(.02,.08)));}float p(in float i){return smoothstep(1.5/iResolution.y,-1.5/iResolution.y,i);}float a(vec2 i){vec3 v=fract(vec3(i.xyx)*.1031);v+=dot(v,v.yzx+33.33);return fract((v.x+v.y)*v.z);}float m(vec2 v){vec2 y=floor(v);v=fract(v);v=smoothstep(i.yy,i.xx,v);vec2 x=vec2(a(y),a(y+i.xy)),z=vec2(a(y+i.yx),a(y+i.xx));x=i.zz+2.*mix(x,z,v.y);return mix(x.x,x.y,v.x);}void a(out vec4 a,in vec2 n){float s=mod(iTime,z)-.5*z;y=(iTime-s-.5)/z+smoothstep(-.2*z,.2*z,s);x=smoothstep(-.3*z,0.,s)*smoothstep(.3*z,0.,s);vec3 f=vec3(0.);float e=sqrt(v)-1.;for(float c=-.5*e;c<=.5*e;c+=1.)for(float u=-.5*e;u<=.5*e;u+=1.)f+=texture(iChannel0,n/iResolution.xy+vec2(c,u)*mix(3.,20.,2.*abs(n.y/iResolution.y-.5))*exp(-abs(.01*length(n.xy)/iResolution.y-.5))/max(e,1.)/iResolution.xy).xyz;f/=v;vec2 c=(n.xy-.5*iResolution.xy)/iResolution.y,u=c;c=n/iResolution.xy;vec2 g=1./iResolution.xy;float l=1.,o=3.,r=0.;vec4 d=texture(iChannel0,c+vec2(-g.x,-g.y)),b=texture(iChannel0,c+vec2(0.,-g.y)),h=texture(iChannel0,c+vec2(g.x,-g.y)),R=texture(iChannel0,c+vec2(-g.x,0.)),C=texture(iChannel0,c+vec2(0.,0.)),T=texture(iChannel0,c+vec2(g.x,0.)),F=texture(iChannel0,c+vec2(-g.x,g.y)),D=texture(iChannel0,c+vec2(0.,g.y)),q=texture(iChannel0,c+vec2(g.x,g.y)),Z=d*-l+b*-o+h*-l+F*l+D*o+q*l+C*r,Y=d*-l+R*-o+F*-l+h*l+T*o+q*l+C*r;a=vec4(abs(Y.xyz)*.5+abs(Z.xyz)*.5,1.);a=vec4(mix(f,a.xyz,clamp(.25+.5*m(.5*y*i.xx)+.5*x,0.,1.)),1.);float X=t(8.*(u-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));a.xyz=mix(a.xyz,mix(a.xyz,i.xxx,.5),p(X));}void main(){a(gl_FragColor,gl_FragCoord.xy);}\0";
 
 const XV: f32 = -0.5;
 
@@ -994,6 +351,63 @@ pub fn main() {
 
         loop {
 
+            unsafe {
+                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
+                    break;
+                    // libc::exit(0);
+                }
+
+                waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
+                time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
+
+                // Buffer A
+                gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
+                gl::UseProgram(program_buffer_a);
+                gl::Uniform1f(iTime_location_buffer_a, time);
+                gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
+                gl::Uniform1i(iChannel0_location_buffer_a, 0);
+                gl::Uniform1i(iFrame_location_buffer_a, frame);
+                gl::ActiveTexture(gl::TEXTURE0);
+
+                gl::Recti(-1,-1,1,1);
+                gl::Flush();
+
+                // Image
+                gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+                gl::UseProgram(program_image);
+                gl::Uniform1f(iTime_location_image, time);
+                gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
+                gl::Uniform1i(iChannel0_location_image, 0);
+                gl::Uniform1i(iFrame_location_image, frame);
+                gl::ActiveTexture(gl::TEXTURE0);
+                gl::Recti(-1,-1,1,1);
+                gl::Flush();
+
+                // Text
+                if time > 2.
+                {
+                    const xv: f32 = -0.5;
+                    gl::UseProgram(0);
+                    gl::ListBase (1000);
+                    gl::RasterPos2f(xv, 0.2);
+                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, 0.1);
+                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, 0.0);
+                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.05);
+                    gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.1);
+                    gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.2);
+                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.4);
+                    gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.45);
+                    gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::RasterPos2f(xv, -0.5);
+                    gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
+                }
 
             if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS {
                 libc::exit(0);
