@@ -562,45 +562,41 @@ float effect6(vec3 x, float zj, float r, float s)
     return mod(da, .2)-.09*2.1;
 }
 
+float lockToBeat(float selector)
+{
+    return round(selector*tmax/spb)*spb/tmax;
+}
+
 float holeSDF(vec3 x, float zj)
 {
     float r = lfnoise(.5*nbeats*c.xx-zj),
         s = lfnoise(.5*nbeats*c.xx+1337.-zj);
 
     float selector = 1.-clamp(iTime/tmax,0.,1.);
-    //lfnoise(.05*nbeats*c.xx+133.);
-    // selector = .5+.5*selector;
-    const float N = 6.;
 
-    if(selector < 1.5/N)
+    if(selector < lockToBeat(.25)) // star escalation
     {
-        return mix(effect1(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(.1/N, 0., selector)*smoothstep(1.4/N, 1.5/N, selector));
-        // return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(1.4/N, 1.5/N, selector));
+        return effect1(x, zj, r, s);
     }
-    else if(selector < 3./N)
+    else if(selector < lockToBeat(.45)) // noise
     {
-        return mix(effect2(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(1.6/N, 1.5/N, selector)*smoothstep(2.9/N, 3./N, selector));
-        // return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(2.9/N, 3./N, selector));
+        return effect2(x, zj, r, s);
     }
-    else if(selector < 3.5/N)
+    else if(selector < lockToBeat(.6)) // Spiral
     {
-        return mix(effect3(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.1/N, 3./N, selector)*smoothstep(3.4/N, 3.5/N, selector));
-        // return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(3.4/N, 3.5/N, selector));
+        return effect3(x, zj, r, s);
     }
-    else if(selector < 4./N)
+    else if(selector < lockToBeat(.7)) // Team210
     {
-        return mix(effect4(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(3.6/N, 3.5/N, selector)*smoothstep(3.9/N, 4./N, selector));
-        // return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.9/N, 4./N, selector));
+        return effect4(x, zj, r, s);
     }
-    else if(selector < 5./N)
+    else if(selector < lockToBeat(.8)) // Hexagon
     {
-        return mix(effect5(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(4.1/N, 4./N, selector)*smoothstep(4.9/N, 5./N, selector));
-        // return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.9/N, 5./N, selector));
+        return effect5(x, zj, r, s);
     }
-    else
+    else // Stecken
     {
-        return mix(effect6(x, zj, r, s), -abs(length(x.xy)-.3+.05*zj) + .01 - .5*zj, smoothstep(5.1/N, 5./N, selector)*smoothstep(5.9/N, 6./N, selector));
-        // return effect6(x, zj, r, s);
+        return effect6(x, zj, r, s);
     }
 }
 
@@ -1091,7 +1087,7 @@ pub fn main() {
                     gl::RasterPos2f(xv, -0.45);
                     gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
                     gl::RasterPos2f(xv, -0.5);
-                    gl::CallLists (120, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, spacepigs, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
+                    gl::CallLists (121, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, metalvotze, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
                 }
             }
 

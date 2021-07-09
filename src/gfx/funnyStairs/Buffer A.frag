@@ -314,11 +314,11 @@ float holeSDF(vec3 x, float zj)
     {
         return effect3(x, zj, r, s);
     }
-    else if(selector < lockToBeat(.8)) // Team210
+    else if(selector < lockToBeat(.7)) // Team210
     {
         return effect4(x, zj, r, s);
     }
-    else if(selector < lockToBeat(.9)) // Hexagon
+    else if(selector < lockToBeat(.8)) // Hexagon
     {
         return effect5(x, zj, r, s);
     }
