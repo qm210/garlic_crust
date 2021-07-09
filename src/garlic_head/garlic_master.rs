@@ -3,7 +3,8 @@ use super::*;
 use garlic_breath::GarlicBreath;
 
 pub struct GarlicMaster {
-    reverb: GarlicBreath,
+    heavy_reverb: GarlicBreath,
+    soft_reverb: GarlicBreath,
     waveshape_state: WaveshapeState,
     data: MasterBlockArray,
 }
@@ -15,7 +16,8 @@ pub struct WaveshapeState {
 impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
-            reverb: GarlicBreath::new(0.5, 0.95, 0.95, 0.9, false), // (wet, width, dampen, size, frozen)
+            heavy_reverb: GarlicBreath::new(0.5, 0.95, 0.95, 0.9, false), // (wet, width, dampen, size, frozen)
+            soft_reverb: GarlicBreath::new(0.2, 0.75, 0.8, 0.6, false),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -39,9 +41,17 @@ impl GarlicMaster {
         }
     }
 
-    pub fn apply_reverb(&mut self, sample: usize, amount: f32) {
+    pub fn apply_heavy_reverb(&mut self, sample: usize, amount: f32) {
         let dry = self.data[sample];
-        let wet = self.reverb.tick(dry);
+        let wet = self.heavy_reverb.tick(dry);
+        for ch in 0 .. 2 {
+            self.data[sample][ch] = dry[ch] + amount * wet[ch];
+        }
+    }
+
+    pub fn apply_soft_reverb(&mut self, sample: usize, amount: f32) {
+        let dry = self.data[sample];
+        let wet = self.soft_reverb.tick(dry);
         for ch in 0 .. 2 {
             self.data[sample][ch] = dry[ch] + amount * wet[ch];
         }

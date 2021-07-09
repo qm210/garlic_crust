@@ -88,10 +88,11 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                     garlic_master.add_at(master_sample, clove_lead_a.output[sample]);
                     garlic_master.add_at(master_sample, clove_lead_b.output[sample]);
                 }
+                garlic_master.apply_heavy_reverb(master_sample, 1.0);
 
                 garlic_master.add_at(master_sample, smash_kick.output[sample]);
 
-                garlic_master.apply_reverb(master_sample, 1.0);
+                garlic_master.apply_soft_reverb(master_sample, 1.0);
                 garlic_master.saturate(master_sample);
 
                 garlic_master.add_at(master_sample, clove_bass.output[sample]);
