@@ -500,7 +500,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     if(s.material != 0.)
     {
         c1 = rgb2hsv(col);
-        c1.r = pi*lfnoise(.5*nbeats*c.xx);
+        c1.r = pi*lfnoise(.1*nbeats*c.xx);
         col = mix(col, hsv2rgb(c1),.5);
         
         // Gamma
