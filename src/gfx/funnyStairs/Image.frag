@@ -92,6 +92,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
     fragColor = vec4(mix(col, fragColor.rgb, clamp(/*(.25+.5*lfnoise(.5*nbeats*c.xx))+*/.5*alternateScale,0.,1.)),1.0);
 
+    // Vignette
+    uv = fragCoord.xy / iResolution.xy;
+    uv *=  1.0 - uv.yx;
+    float vig = uv.x*uv.y * 15.0;
+    vig = pow(vig, 0.2);
+    fragColor *= vig; 
+
     // team210 watermark
     float d = d210(8.*(uv2-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
     fragColor.rgb = mix(fragColor.rgb, mix(fragColor.rgb, c.xxx, .5), sm(d));
