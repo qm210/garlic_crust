@@ -22,6 +22,7 @@ pub struct Smash1State {
 
     dist: Edge,
     quad_shape: QuadWaveShape,
+    overall_volume: Edge,
 
     lp: filter::Filter,
     lp_output: Edge,
@@ -59,6 +60,7 @@ pub fn create_state() -> Smash1State {
 
         dist: Edge::constant(5.),
         quad_shape: QuadWaveShape::create(0., 0.1, 0.8, 0., 0.2, 0.15, 0.7),
+        overall_volume: Edge::zero(),
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
@@ -113,6 +115,8 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
     waveshape_quad(&mut state.lp_output, &state.quad_shape);
 
     //math_overdrive(&mut state.lp_output, &state.dist);
+    generate_from_mono_func(overall_volume, block_offset, &mut state.overall_volume);
+    state.lp_output.multiply(&state.overall_volume);
 
     state.lp_output.write_to(&mut state.output, state.volume);
 }
@@ -126,11 +130,35 @@ pub fn trigger(total_sample: usize) -> bool {
         b if b >= 5. && b < 10. => {
             libm::fmodf(b - 5., 2.) < INV_SAMPLERATE
         },
-        b if b >= 18. && b < 21. => {
+        b if b >= 11. && b < 18. => {
+            let eighth_beat_inside = libm::fmodf(b, 2.) * 8.;
+            let eighth_beat = libm::fmodf(b, 0.125);
+
+            eighth_beat < INV_SAMPLERATE && (
+                eighth_beat_inside < 5. ||
+                (eighth_beat_inside >= 8. && eighth_beat_inside <= 11.)
+            )
+        },
+        b if (b >= 18. && b < 21.) || b >= 44. => {
             libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
         },
+        b if b >= 21. && b < 44. => {
+            libm::fmodf(b, 0.5) < INV_SAMPLERATE
+            || libm::fmodf(b + 0.125, 1.) < INV_SAMPLERATE
+        }
         _ => {
             false
         }
+    }
+}
+
+#[inline]
+fn overall_volume(t: TimeFloat) -> MonoSample {
+    return 0.5; // quick fix
+
+    match t {
+        _t if _t > 30. && t < 50. => crate::math::slope(_t, 30., 50., 1., 0.7),
+        _t if t >= 50. => 0.7,
+        _ => 1.
     }
 }

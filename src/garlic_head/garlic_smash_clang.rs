@@ -125,20 +125,16 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 */
 #[inline]
 pub fn trigger(total_sample: usize) -> bool {
-    return false;
-
     match DYNAMO.beat(total_sample) {
-        b => {
+        b if b < 8. => {
             let b_5 = libm::fmodf(b, 0.5);
-            libm::fmodf(b, 0.25) < INV_SAMPLERATE && b_5 > 0.25
-        }
+            libm::fmodf(b, 0.125) < INV_SAMPLERATE && b_5 > 0.125
+        },
+        b if b + 1. >= 21. && b + 1. < 44. => { // forgot the +1 in match condition, thus shifted
+            let b_quarter = libm::fmodf(b, 0.25);
+            let b_inside = libm::fmodf(b + 0.25, 0.5);
+            b_quarter < INV_SAMPLERATE && b_inside < INV_SAMPLERATE
+        },
+        _ => false
     }
 }
-
-/*
-fn make_chaos(t: TimeFloat) -> Sample {
-    [
-        0., 0.
-    ]
-}
-*/

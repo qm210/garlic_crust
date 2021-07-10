@@ -33,7 +33,7 @@ pub struct SmashState {
 pub fn create_state() -> SmashState {
     SmashState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.1, // could be parameter in create_state
+        volume: 0.16, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(8000.), // F#1
@@ -115,6 +115,7 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 
     waveshape_quad(&mut state.filter_output, &state.quad_shape);
 
+    generate_from_mono_func(overall_volume, block_offset, &mut state.dist);
     math_overdrive(&mut state.filter_output, &state.dist);
 
     state.filter_output.write_to(&mut state.output, state.volume);
@@ -132,10 +133,11 @@ pub fn trigger(total_sample: usize) -> bool {
     }
 }
 
-/*
-fn make_chaos(t: TimeFloat) -> Sample {
-    [
-        0., 0.
-    ]
+const MAX_DIST: f32 = 3.4;
+
+fn overall_volume(t: TimeFloat) -> MonoSample {
+    match t {
+        _t if _t < 32. => crate::math::slope(_t, 0., 32., 0.2, MAX_DIST),
+        _ => MAX_DIST
+    }
 }
-*/

@@ -25,6 +25,7 @@ pub struct SmashState {
 
     dist: Edge,
     quad_shape: QuadWaveShape,
+    overall_volume: Edge,
 
     lp: filter::Filter,
     lp_output: Edge,
@@ -33,7 +34,7 @@ pub struct SmashState {
 pub fn create_state() -> SmashState {
     SmashState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.3, // could be parameter in create_state
+        volume: 0.4, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::zero(),
@@ -68,6 +69,7 @@ pub fn create_state() -> SmashState {
 
         dist: Edge::constant(50.),
         quad_shape: QuadWaveShape::create(0., 0.2, 0.4, -0.4, 0.24, 0.05, 0.7),
+        overall_volume: Edge::zero(),
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
@@ -130,6 +132,9 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 
     math_overdrive(&mut state.lp_output, &state.dist);
 
+    generate_from_func(overall_volume, block_offset, &mut state.overall_volume);
+    state.lp_output.multiply(&state.overall_volume);
+
     state.lp_output.write_to(&mut state.output, state.volume);
 }
 
@@ -138,7 +143,18 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 */
 #[inline]
 pub fn trigger(total_sample: usize) -> bool {
-    match DYNAMO.beat(total_sample) {
+    // TOOD: give velocity information procedurally, somehow
+    match DYNAMO.beat(total_sample) + 1. {
+        b if b >= 11. && b < 18. => {
+            let beat_inside = libm::fmodf(b, 2.);
+            let quarter_beat = libm::fmodf(b, 0.5);
+            quarter_beat < INV_SAMPLERATE && beat_inside < 1.5
+        },
+        b if b >= 21. && b < 44. => {
+            let b_quarter = libm::fmodf(b, 0.25);
+            let b_inside = libm::fmodf(b + 0.25, 0.5);
+            b_quarter < INV_SAMPLERATE && b_inside < INV_SAMPLERATE // || libm::fmodf(b + 0.125, 1.) < INV_SAMPLERATE
+        }
         b => {
             let b_5 = libm::fmodf(b, 0.5);
             libm::fmodf(b, 0.25) < INV_SAMPLERATE && b_5 > 0.25
@@ -147,9 +163,19 @@ pub fn trigger(total_sample: usize) -> bool {
 }
 
 fn perlin_noise(t: TimeFloat) -> Sample {
-    let result = crate::math::lpnoise(t, 2000.);
+    let result = 4. * crate::math::lpnoise(t, 2000.);
 
     let amountL = 0.5 + 0.5 * libm::cosf(crate::math::TAU * t * 2.4);
 
     [result * amountL, result * (1. - amountL)]
+}
+
+fn overall_volume(t: TimeFloat) -> Sample {
+    let result = match t {
+        _t if _t < 5. => crate::math::slope(_t, 0., 5., 0., 1.),
+        _t if t > 11. => 1.,
+        _ => 0.
+    };
+
+    [result, result]
 }
