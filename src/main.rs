@@ -1144,8 +1144,11 @@ pub fn sync_trigger(time: f32) -> bool {
                 (eighth_beat_inside >= 8. && eighth_beat_inside <= 11.)
             )
         },
-        b if (b >= 18. && b < 21.) || b >= 44. && b < 50. => {
+        b if (b >= 18. && b < 21.) => {
             libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
+        },
+        b if b >= 44. => {
+            libm::fmodf(b - 44., 1.) < INV_SAMPLERATE
         },
         b if b >= 21. && b < 44. => {
             libm::fmodf(b, 0.5) < INV_SAMPLERATE

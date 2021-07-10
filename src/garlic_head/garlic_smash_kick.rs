@@ -139,8 +139,11 @@ pub fn trigger(total_sample: usize) -> bool {
                 (eighth_beat_inside >= 8. && eighth_beat_inside <= 11.)
             )
         },
-        b if (b >= 18. && b < 21.) || b >= 44. && b < 50. => {
+        b if (b >= 18. && b < 21.) => {
             libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
+        },
+        b if b >= 44. && b < 50. => {
+            libm::fmodf(b - 44., 1.) < INV_SAMPLERATE
         },
         b if b >= 21. && b < 44. => {
             libm::fmodf(b, 0.5) < INV_SAMPLERATE
@@ -156,9 +159,9 @@ const REDUCED_VOLUME: f32 = 0.8;
 #[inline]
 fn overall_volume(t: TimeFloat) -> MonoSample {
     match t {
-        _t if _t > 30. && t < 50. => crate::math::slope(_t, 30., 50., 1., REDUCED_VOLUME),
-        _t if _t >= 50. && _t > 65. => REDUCED_VOLUME,
-        _t if _t >= 65. && _t < 70. => crate::math::slope(_t, 65., 70., REDUCED_VOLUME, 1.),
+        _t if _t > 30. && t < 40. => crate::math::slope(_t, 30., 40., 1., REDUCED_VOLUME),
+        _t if _t >= 40. && _t > 55. => REDUCED_VOLUME,
+        _t if _t >= 55. && _t < 66. => crate::math::slope(_t, 55., 66., REDUCED_VOLUME, 1.),
         _ => 1.
     }
 }
