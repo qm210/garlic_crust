@@ -14,8 +14,10 @@ pub struct SmashState {
     osc: oscillator::Oscillator,
     osc_output: Edge,
 
+    /*
     lfo: oscillator::Oscillator,
     lfo_output: Edge,
+    */
 
     osc_mod: oscillator::Oscillator,
     osc_mod_output: Edge,
@@ -23,7 +25,7 @@ pub struct SmashState {
     env_vca: envelope::Envelope,
     env_vca_output: Edge,
 
-    dist: Edge,
+    // waveshapes are just math blocks (i.e. some function), but their parameters have to be set here
     quad_shape: QuadWaveShape,
 
     filter: filter::Filter,
@@ -33,7 +35,7 @@ pub struct SmashState {
 pub fn create_state() -> SmashState {
     SmashState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.1, // could be parameter in create_state
+        volume: 0.07, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(8000.), // F#1
@@ -43,13 +45,13 @@ pub fn create_state() -> SmashState {
         },
         osc_output: Edge::zero(),
 
+        /* // do this later
         lfo: oscillator::Oscillator {
-            shape: oscillator::BaseWave::Saw,
             frequency: Edge::constant(149. * 0.25),
-            ..Default::default()
+
         },
         lfo_output: Edge::zero(),
-
+        */
         osc_mod: oscillator::Oscillator {
             frequency: Edge::constant(10000.),
             volume: Edge::constant(200.),
@@ -59,28 +61,27 @@ pub fn create_state() -> SmashState {
 
         env_vca: envelope::Envelope {
             shape: envelope::EnvShape::Generic {
-                func: hihat_amp_env
+                func: snare_amp_env
             },
             ..Default::default()
         },
         env_vca_output: Edge::zero(),
 
-        dist: Edge::constant(2.),
-        quad_shape: QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7),
+        quad_shape: QuadWaveShape::create(0., 0.05, 0.9, 0., 0.2, 0.15, 0.7),
 
         filter: filter::Filter {
-            shape: filter::FilterType::HiPass,
-            cutoff: Edge::constant(10456.),
+            shape: filter::FilterType::LowPass,
+            cutoff: Edge::constant(8456.),
             ..Default::default()
         },
         filter_output: Edge::zero(),
     }
 }
 
-const AH: f32 = 0.005;
-const AHD: f32 = AH + 0.005;
+const AH: f32 = 0.0;
+const AHD: f32 = AH + 0.3;
 
-fn hihat_amp_env(t: TimeFloat) -> MonoSample {
+fn snare_amp_env(t: TimeFloat) -> MonoSample {
     match t {
         x if x < AH => 1.,
         x if x < AHD => crate::math::powerslope(t, AH, AHD, 1., 0., 3.),
@@ -101,11 +102,10 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 
     process_operator_dyn(&mut state.osc_mod, &trigger, block_offset, &mut state.osc_mod_output);
 
-    process_operator(&mut state.lfo, &mut state.lfo_output);
     // generate_from_random(make_chaos, block_offset, &mut state.chaos_output); // do this tomorrow or sometime
 
     state.osc.volume = state.env_vca_output;
-    state.osc.volume.multiply(&state.lfo_output);
+    // state.osc.volume.multiply(&state.chaos_output);
     state.osc.detune = state.osc_mod_output;
 
     process_operator(&mut state.osc, &mut state.osc_output);
@@ -115,7 +115,7 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 
     waveshape_quad(&mut state.filter_output, &state.quad_shape);
 
-    math_overdrive(&mut state.filter_output, &state.dist);
+    //math_overdrive(&mut state.filter_output, &state.dist);
 
     state.filter_output.write_to(&mut state.output, state.volume);
 }
@@ -125,9 +125,12 @@ pub fn process(block_offset: usize, state: &mut SmashState) {
 */
 #[inline]
 pub fn trigger(total_sample: usize) -> bool {
+    return false;
+
     match DYNAMO.beat(total_sample) {
         b => {
-            libm::fmodf(b, 0.5 * 0.125) < INV_SAMPLERATE
+            let b_5 = libm::fmodf(b, 0.5);
+            libm::fmodf(b, 0.25) < INV_SAMPLERATE && b_5 > 0.25
         }
     }
 }

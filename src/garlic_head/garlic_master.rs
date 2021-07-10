@@ -17,7 +17,7 @@ impl GarlicMaster {
     pub fn new() -> GarlicMaster {
         GarlicMaster {
             heavy_reverb: GarlicBreath::new(0.5, 0.95, 0.95, 0.9, false), // (wet, width, dampen, size, frozen)
-            soft_reverb: GarlicBreath::new(0.3, 0.9, 0.8, 0.6, false),
+            soft_reverb: GarlicBreath::new(0.5, 0.8, 0.85, 0.6, false),
             waveshape_state: WaveshapeState {
                 amount: 0.,
             },
@@ -57,9 +57,9 @@ impl GarlicMaster {
         }
     }
 
-    pub fn saturate(&mut self, sample: usize) {
+    pub fn saturate(&mut self, sample: usize, gain: MonoSample) {
         for channel in 0 .. 2 {
-            self.data[sample][channel] = crate::math::satanurate(self.data[sample][channel]);
+            self.data[sample][channel] = crate::math::satanurate(gain * self.data[sample][channel]);
         }
     }
 

@@ -16,6 +16,9 @@ pub struct CloveState {
     env: envelope::Envelope,
     env_output: Edge,
 
+    env_duck: envelope::Envelope,
+    env_duck_output: Edge,
+
     lp: filter::Filter,
     lp_output: Edge,
 }
@@ -23,7 +26,7 @@ pub struct CloveState {
 pub fn create_state() -> CloveState {
     CloveState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.1,
+        volume: 0.3,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
@@ -56,6 +59,17 @@ pub fn create_state() -> CloveState {
         },
         env_output: Edge::zero(),
 
+        env_duck: envelope::Envelope {
+            shape: envelope::EnvShape::Common {
+                base: envelope::BaseEnv::Swell,
+                sustain: Edge::constant(30.),
+                attack: Edge::constant(0.24),
+                decay: Edge::zero(),
+            },
+            ..Default::default()
+        },
+        env_duck_output: Edge::zero(),
+
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
             cutoff: Edge::constant(500.),
@@ -76,6 +90,10 @@ pub fn create_state() -> CloveState {
 pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut CloveState) {
     generate_from_func(func_phasemod_gain, block_offset, &mut state.freq_env_amount);
 
+    // generate_from_func_mono(func_volume, block_offset, )
+
+    process_operator_dyn(&mut state.env_duck, &super::garlic_smash_kick::trigger, block_offset, &mut state.env_duck_output); // "side chain" means: get garlic_smash trigger as input, not a sequence
+
     process_operator_seq(&mut state.freq_env, &sequence, block_offset, &mut state.freq_env_output);
     state.osc.phasemod = state.freq_env_output;
     state.osc.phasemod.multiply(&state.freq_env_amount);
@@ -86,6 +104,8 @@ pub fn process(sequence: &[SeqEvent], block_offset: usize, state: &mut CloveStat
 
     state.lp.input = state.osc_output;
     process_operator(&mut state.lp, &mut state.lp_output);
+
+    state.lp_output.multiply(&state.env_duck_output); // irgendeine Verkackung, kann ich grad nicht prüfen
 
     state.lp_output.write_to(&mut state.output, state.volume);
 }
@@ -98,3 +118,4 @@ fn func_phasemod_gain(t: TimeFloat) -> Sample {
     let amountL = 0.5 + 0.5 * libm::cosf(crate::math::TAU * t * 2.4);
     [result * amountL, result * (1. - amountL)]
 }
+

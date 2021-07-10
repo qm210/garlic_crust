@@ -25,7 +25,7 @@ pub struct CloveState {
 pub fn create_state() -> CloveState {
     CloveState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.04,
+        volume: 0.1,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,
@@ -39,7 +39,7 @@ pub fn create_state() -> CloveState {
         freq_env: envelope::Envelope {
             shape: envelope::EnvShape::Sinc {
                 gain: Edge::constant(20.),
-                period: Edge::constant(0.001),
+                period: Edge::constant(0.0034),
                 suppression: Edge::constant(1.5)
             },
             ..Default::default()

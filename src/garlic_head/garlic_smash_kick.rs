@@ -20,7 +20,6 @@ pub struct Smash1State {
     env_freq: envelope::Envelope,
     env_freq_output: Edge,
 
-    // waveshapes are just math blocks (i.e. some function), but their parameters have to be set here
     dist: Edge,
     quad_shape: QuadWaveShape,
 
@@ -58,8 +57,8 @@ pub fn create_state() -> Smash1State {
         },
         env_freq_output: Edge::zero(),
 
-        dist: Edge::constant(2.),
-        quad_shape: QuadWaveShape::create(0., 0.1, 0.4, 0., 0.2, 0.15, 0.7),
+        dist: Edge::constant(5.),
+        quad_shape: QuadWaveShape::create(0., 0.1, 0.8, 0., 0.2, 0.15, 0.7),
 
         lp: filter::Filter {
             shape: filter::FilterType::LowPass,
@@ -113,7 +112,7 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 
     waveshape_quad(&mut state.lp_output, &state.quad_shape);
 
-    math_overdrive(&mut state.lp_output, &state.dist);
+    //math_overdrive(&mut state.lp_output, &state.dist);
 
     state.lp_output.write_to(&mut state.output, state.volume);
 }
@@ -123,13 +122,15 @@ pub fn process(block_offset: usize, state: &mut Smash1State) {
 */
 #[inline]
 pub fn trigger(total_sample: usize) -> bool {
-    match DYNAMO.beat(total_sample) {
+    match DYNAMO.beat(total_sample) + 1. {
         b if b >= 5. && b < 10. => {
             libm::fmodf(b - 5., 2.) < INV_SAMPLERATE
         },
         b if b >= 18. && b < 21. => {
             libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
         },
-        _ => false
+        _ => {
+            false
+        }
     }
 }

@@ -13,6 +13,7 @@ mod garlic_master;
 mod garlic_smash_kick;
 mod garlic_smash_hihat;
 mod garlic_smash_snare;
+mod garlic_smash_clang;
 
 mod garlic_dynamo;
 
@@ -52,6 +53,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
     let mut smash_kick = garlic_smash_kick::create_state(); // this gonne be my kick
     let mut smash_hihat = garlic_smash_hihat::create_state();
+    let mut smash_clang = garlic_smash_clang::create_state();
     let mut smash_snare = garlic_smash_snare::create_state();
 
     let mut master_block_offset = 0;
@@ -71,13 +73,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
             garlic_smash_kick::process(block_offset, &mut smash_kick);
             garlic_smash_hihat::process(block_offset, &mut smash_hihat);
             garlic_smash_snare::process(block_offset, &mut smash_snare);
-            // TODO: fix timing
-            // fix mastering (drums less loud, maybe sidechain)
-            // ADD SNARE
-            // ADD HIHATS
-            // ADD clap?
-            // ADD perlin noise to kick LELELEL
-            // multiple reverb settings?
+            garlic_smash_clang::process(block_offset, &mut smash_clang);
 
             for sample in 0 .. BLOCK_SIZE {
                 let master_sample = sample + master_piece * BLOCK_SIZE;
@@ -89,12 +85,17 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 garlic_master.add_at(master_sample, clove_strings_1.output[sample]);
                 garlic_master.add_at(master_sample, clove_strings_2.output[sample]);
 
+                //garlic_master.saturate(master_sample);
+
+                garlic_master.apply_heavy_reverb(master_sample, 1.0);
+
                 // no idea why it would be there, but remove that first mystery note
                 if master_block_offset + master_sample >= SEQUENCE_LEAD[0].pos {
                     garlic_master.add_at(master_sample, clove_lead_a.output[sample]);
                     garlic_master.add_at(master_sample, clove_lead_b.output[sample]);
                 }
-                garlic_master.apply_heavy_reverb(master_sample, 1.0);
+
+                garlic_master.add_at(master_sample, smash_clang.output[sample]);
 
                 // remove mystery drums in second zero. have to fix process_operator_dyn / trigger logic, but deadline is in 2h
                 if master_block_offset + master_sample >= 10000 {
@@ -104,9 +105,10 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
                 }
 
                 garlic_master.apply_soft_reverb(master_sample, 1.0);
-                garlic_master.saturate(master_sample);
 
                 garlic_master.add_at(master_sample, clove_bass.output[sample]);
+
+                garlic_master.saturate(master_sample, 0.4);
             }
             block_offset += BLOCK_SIZE;
         }
