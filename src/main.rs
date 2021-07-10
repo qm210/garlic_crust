@@ -976,6 +976,10 @@ pub fn main() {
     let iChannel0_location_image: gl::GLint;
     let iFrame_location_buffer_a: gl::GLint;
     let iFrame_location_image: gl::GLint;
+    let iDrumScale_location_buffer_a: gl::GLint;
+    let iDrumScale_location_image: gl::GLint;
+    let iDrumNBeats_location_buffer_a: gl::GLint;
+    let iDrumNBeats_location_image: gl::GLint;
     let mut first_pass_framebuffer: gl::GLuint = 0;
     let mut first_pass_texture: gl::GLuint = 0;
     let program_buffer_a: gl::GLuint;
@@ -990,6 +994,8 @@ pub fn main() {
         iResolution_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iResolution\0".as_ptr());
         iChannel0_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iChannel0\0".as_ptr());
         iFrame_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iFrame\0".as_ptr());
+        iDrumScale_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iDrumScale\0".as_ptr());
+        iDrumNBeats_location_buffer_a = gl::GetUniformLocation(program_buffer_a, "iDrumNBeats\0".as_ptr());
 
         program_image = gl::CreateShaderProgramv(gl::FRAGMENT_SHADER, 1, IMAGE_FRAG);
 
@@ -998,6 +1004,8 @@ pub fn main() {
         iResolution_location_image = gl::GetUniformLocation(program_image, "iResolution\0".as_ptr());
         iChannel0_location_image = gl::GetUniformLocation(program_image, "iChannel0\0".as_ptr());
         iFrame_location_image = gl::GetUniformLocation(program_image, "iFrame\0".as_ptr());
+        iDrumScale_location_image = gl::GetUniformLocation(program_image, "iDrumScale\0".as_ptr());
+        iDrumNBeats_location_image = gl::GetUniformLocation(program_image, "iDrumNBeats\0".as_ptr());
 
         gl::GenFramebuffers(1, &mut first_pass_framebuffer);
         gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
@@ -1043,7 +1051,8 @@ pub fn main() {
         let mut sample: u32 = 0;
         let mut time: f32 = 0.0;
         let mut frame: i32 = 0;
-        let mut kick_swell: f32 = 0.;
+        let mut kick_swell: f32 = 0.0;
+        let mut kick_nbeats: f32 = 0.0;
 
         loop {
 
@@ -1054,8 +1063,7 @@ pub fn main() {
             }
 
             waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
-            sample = *mmtime.u.sample();
-            time = sample as f32 / SAMPLERATE_INT as f32;
+            time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
 
             // bassdrum trigger
             if sync_trigger(time) {
@@ -1064,6 +1072,8 @@ pub fn main() {
                 kick_swell *= 0.99;
             }
 
+            kick_nbeats += kick_swell/60.0;
+
             // Buffer A
             gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
             gl::UseProgram(program_buffer_a);
@@ -1071,6 +1081,9 @@ pub fn main() {
             gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
             gl::Uniform1i(iChannel0_location_buffer_a, 0);
             gl::Uniform1i(iFrame_location_buffer_a, frame);
+            // TODO: set drum scale and nbeats
+            gl::Uniform1f(iDrumScale_location_buffer_a, kick_swell);
+            gl::Uniform1f(iDrumNBeats_location_buffer_a, kick_nbeats);
             gl::ActiveTexture(gl::TEXTURE0);
 
             gl::Recti(-1,-1,1,1);
@@ -1083,6 +1096,9 @@ pub fn main() {
             gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
             gl::Uniform1i(iChannel0_location_image, 0);
             gl::Uniform1i(iFrame_location_image, frame);
+            // TODO: set drum scale and nbeats
+            gl::Uniform1f(iDrumScale_location_image, kick_swell);
+            gl::Uniform1f(iDrumNBeats_location_image, kick_nbeats);
             gl::ActiveTexture(gl::TEXTURE0);
             gl::Recti(-1,-1,1,1);
             gl::Flush();
