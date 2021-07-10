@@ -85,3 +85,14 @@ pub fn logslope(t: f32, t0: f32, t1: f32, y0: f32, y1: f32) -> f32 {
     let f = 1./(1. + (libm::logf(t1/t)) / (libm::logf(t/t0)));
     libm::powf(y1, f) * libm::powf(y0, 1.-f)
 }
+
+pub fn lpnoise(phase: f32, fq: f32) -> f32 {
+    let tt = libm::fmodf(phase, 1.);
+    let tn = phase - tt;
+
+    linstep(pseudorandom(tn) / fq, pseudorandom(libm::floorf(tn + 1.0) / fq), smoothstep(0.0, 1.0, tt))
+}
+
+pub fn pseudorandom(x: f32) -> f32 {
+    libm::fmodf(crate::math::sin(x * 91.2218) * 43758.5453, 1.0)
+}
