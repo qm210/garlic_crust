@@ -173,7 +173,7 @@ fn perlin_noise(t: TimeFloat) -> Sample {
 
 fn overall_volume(t: TimeFloat) -> Sample {
     let result = match t {
-        _t if _t < 5. => crate::math::slope(_t, 0., 5., 0., 1.),
+        _t if _t < 11. => crate::math::slope(_t, 0., 11., 0., 1.),
         _t if t > 11. => 1.,
         _ => 0.
     };

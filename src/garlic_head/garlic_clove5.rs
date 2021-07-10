@@ -25,7 +25,7 @@ pub struct CloveState {
 pub fn create_state() -> CloveState {
     CloveState {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.1,
+        volume: 0.130,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Square,

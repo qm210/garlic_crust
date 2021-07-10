@@ -23,12 +23,12 @@ pub struct Clove3State {
 pub fn create_state() -> Clove3State {
     Clove3State {
         output: EMPTY_BLOCKARRAY,
-        volume: 0.3,
+        volume: 0.42,
 
         osc: oscillator::Oscillator {
             shape: oscillator::BaseWave::Saw,
             freq_factor: Edge::constant(1.00),
-            detune: Edge::constant_stereo([-0.008,0.005]),
+            detune: Edge::constant_stereo([-0.008, 0.005]),
             phasemod: Edge::constant_stereo([-0.04,0.1]),
             ..Default::default()
         },

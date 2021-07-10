@@ -108,7 +108,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
                 garlic_master.add_at(master_sample, clove_bass.output[sample]);
 
-                garlic_master.saturate(master_sample, 0.34);
+                garlic_master.saturate(master_sample, 0.33);
             }
             block_offset += BLOCK_SIZE;
         }
@@ -140,12 +140,11 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
     super::printf("Range: %.3f .. %.3f\n\0".as_ptr(), min_sample as f64, max_sample as f64);
     super::printf("Clipping counter: %d\n\0".as_ptr(), clipping_count);
 
-    /*
-    let reduce_by = if max_sample > -min_sample { max_sample } else { -min_sample };
-    if reduce_by > 0. {
+    let norm = if max_sample > -min_sample { max_sample } else { -min_sample };
+    if norm > 0. {
         for sample in 0 .. SAMPLES_TWICE {
-            data[sample] = data[sample] / reduce_by;
+            data[sample] = data[sample] / norm;
         }
     }
-    */
+
 }
