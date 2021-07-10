@@ -9,8 +9,12 @@ pub struct Dynamo {
 
 impl Dynamo {
 
+    #[inline]
     pub fn beat(self: &Dynamo, sample: usize) -> TimeFloat {
-        let time = as_time(sample);
+        self.beat_from(as_time(sample))
+    }
+
+    pub fn beat_from(self: &Dynamo, time: TimeFloat) -> TimeFloat {
 
         let mut cursor = 0;
         while cursor < (super::DYNAMO_BREAKPOINTS - 1) && self.times[cursor + 1] < time {

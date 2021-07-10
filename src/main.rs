@@ -1058,7 +1058,7 @@ pub fn main() {
             time = sample as f32 / SAMPLERATE_INT as f32;
 
             // bassdrum trigger
-            if crate::garlic_head::garlic_smash_kick::trigger(sample as usize) {
+            if sync_trigger(time) {
                 kick_swell = 1.;
             } else {
                 kick_swell *= 0.99;
@@ -1126,3 +1126,33 @@ pub fn main() {
 pub static _fltused : i32 = 1;
 
 // some day: get why we are not more similar to https://riptutorial.com/rust/example/5870/sharp--no-std--hello--world-
+
+use garlic_crust::INV_SAMPLERATE;
+// QUICK FIX: Had to duplicate, NO TIME
+#[inline]
+pub fn sync_trigger(time: f32) -> bool {
+    match garlic_head::DYNAMO.beat_from(time) + 1. {
+        b if b >= 5. && b < 10. => {
+            libm::fmodf(b - 5., 2.) < INV_SAMPLERATE
+        },
+        b if b >= 11. && b < 18. => {
+            let eighth_beat_inside = libm::fmodf(b, 2.) * 8.;
+            let eighth_beat = libm::fmodf(b, 0.125);
+
+            eighth_beat < INV_SAMPLERATE && (
+                eighth_beat_inside < 5. ||
+                (eighth_beat_inside >= 8. && eighth_beat_inside <= 11.)
+            )
+        },
+        b if (b >= 18. && b < 21.) || b >= 44. && b < 50. => {
+            libm::fmodf(b - 18., 1.) < INV_SAMPLERATE
+        },
+        b if b >= 21. && b < 44. => {
+            libm::fmodf(b, 0.5) < INV_SAMPLERATE
+            || libm::fmodf(b + 0.125, 1.) < INV_SAMPLERATE
+        }
+        _ => {
+            false
+        }
+    }
+}

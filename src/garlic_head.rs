@@ -15,7 +15,7 @@ mod garlic_smash_hihat;
 mod garlic_smash_snare;
 mod garlic_smash_clang;
 
-mod garlic_dynamo;
+pub mod garlic_dynamo;
 
 // TODO: track could be a byte array. if that saves us something?
 
