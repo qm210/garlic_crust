@@ -2,7 +2,8 @@ const vec3 c = vec3(1.,0.,-1.);
 const float pi = 3.14159,
     PHI = 1.618,
     bpm = .5*149.,
-    spb =  60. / bpm;
+    spb =  60. / bpm,
+    minimalTimeStep = spb/8.;
 mat3 RR = mat3(1.),
     RRA = mat3(1.);
 float scale,
@@ -11,7 +12,7 @@ const float tmax = 80.521;
 
 const int NM = 41;
 const float syncMagics[NM] = float[NM](
-    // Intro synth part
+    // Intro synth part; size: 41
     0,1,2,3,6,7,
     8,9,11,12,13,14,
     16,17,18,19,22,23,
@@ -20,6 +21,18 @@ const float syncMagics[NM] = float[NM](
     40,41,43,44,45,46,47,
     48,49,50,51,53,55
 );
+
+// scale == true: compute iScale, scale == false: compute iNBeats
+float scaleBeatsMagic(int start, int end, bool scale)
+{
+    float d = 0.;
+    for(int i = start; i < end; ++i)
+    {
+        float t = iTime-syncMagics[i]*minimalTimeStep;
+        d += smoothstep(-.2*minimalTimeStep,0.,t) * (scale?smoothstep(.2*minimalTimeStep, 0., t):1.);
+    }
+    return d;
+}
 
 // iq's code
 float smoothmin(float a, float b, float k)
@@ -246,15 +259,16 @@ float effect2(vec3 x, float zj, float r, float s)
 float effect3(vec3 x, float zj, float r, float s)
 {
     // spiral effect
-    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
-    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
+    mat2 RA = mat2(cos(iTime+2.*zj), sin(iTime+2.*zj), -sin(iTime+2.*zj), cos(iTime+2.*zj));
+    return -abs(spiral(RA*RA*(x.xy-.005*zj)-.3*r-.05*s, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
 }
 
 float effect4(vec3 x, float zj, float r, float s)
 {
     // Team210 logo
     float rsize = .3;
-    float da = -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    mat2 RA = mat2(cos(iTime+r), sin(iTime+r), -sin(iTime+r), cos(iTime+r));
+    float da = -abs(mod(d210(RA*x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
     return da;
     // return -abs(da) + .01 - .5*zj;
     // circle tornado
