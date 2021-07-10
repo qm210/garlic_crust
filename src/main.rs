@@ -716,7 +716,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float stepTime = mod(iTime, spb)-.5*spb;
     nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
-    // nbeats = iDrumNBeats;
+    nbeats = iDrumNBeats;
+    scale = iDrumScale;
     // nbeats = iDrumScale;
 
     // Marching tools
@@ -1081,10 +1082,10 @@ pub fn main() {
             if sync_trigger(time) {
                 kick_swell = 1.;
             } else {
-                kick_swell *= 0.9;
+                kick_swell *= 0.99;
             }
 
-            kick_nbeats += 1000.0*kick_swell;
+            kick_nbeats += 1.*kick_swell;
 
             // Buffer A
             gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
