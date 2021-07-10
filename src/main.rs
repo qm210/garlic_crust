@@ -716,8 +716,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float stepTime = mod(iTime, spb)-.5*spb;
     nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
-    nbeats = iDrumNBeats;
-    scale = iDrumScale;
+    // nbeats = iDrumNBeats;
+    // scale = iDrumScale;
     // nbeats = iDrumScale;
 
     // Marching tools
@@ -763,7 +763,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         s1 = s;
         d1 = d;
         n1 = n;
-
 
         // Ambient occlusion
         // float calcOcclusion( in vec3 pos, in vec3 nor, float ra )
@@ -1137,7 +1136,7 @@ pub fn main() {
                 gl::RasterPos2f(xv, -0.4);
                 gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
                 gl::RasterPos2f(xv, -0.45);
-                gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::CallLists (126, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, http://die.wissen.de/n, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
                 gl::RasterPos2f(xv, -0.5);
                 gl::CallLists (121, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, metalvotze, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
             }
