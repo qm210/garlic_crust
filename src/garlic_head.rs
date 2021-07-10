@@ -10,7 +10,7 @@ mod garlic_clove4;
 mod garlic_clove5;
 mod garlic_clove6;
 mod garlic_master;
-mod garlic_smash_kick;
+pub mod garlic_smash_kick;
 mod garlic_smash_hihat;
 mod garlic_smash_snare;
 mod garlic_smash_clang;

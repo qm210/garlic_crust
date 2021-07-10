@@ -324,10 +324,10 @@ float zextrude(float z, float d2d, float h)
     return min(max(w.x,w.y),0.0) + length(max(w,0.0));
 }
 
-void dhexagonpattern(in vec2 p, out float d, out vec2 ind) 
+void dhexagonpattern(in vec2 p, out float d, out vec2 ind)
 {
     vec2 q = vec2( p.x*1.2, p.y + p.x*0.6 );
-    
+
     vec2 pi = floor(q);
     vec2 pf = fract(q);
 
@@ -336,7 +336,7 @@ void dhexagonpattern(in vec2 p, out float d, out vec2 ind)
     float ca = step(1.,v);
     float cb = step(2.,v);
     vec2  ma = step(pf.xy,pf.yx);
-    
+
     d = dot( ma, 1.0-pf.yx + ca*(pf.x+pf.y-1.0) + cb*(pf.yx-2.0*pf.xy) );
     ind = pi + ca - cb*ma;
     ind = vec2(ind.x/1.2, ind.y);
@@ -445,11 +445,11 @@ float star(in vec2 x, in float r1, in float r2, in float N)
     	parity = mod(round((p+pi-dp)*.5/k), 2.),
         dk = k,
         dkp = mix(dk,-dk,parity);
-    
+
     vec2 p1 = r1*vec2(cos(k-dkp),sin(k-dkp)),
         p2 = r2*vec2(cos(k+dkp),sin(k+dkp)),
         dpp = p2-p1,
-        n = normalize(p2-p1).yx*c.xz, 
+        n = normalize(p2-p1).yx*c.xz,
         xp = length(x)*vec2(cos(dp), sin(dp));
     float t = dot(xp-p1,dpp)/dot(dpp,dpp);
     float r = mix(1.,-1.,parity)*dot(xp-p1,n);
@@ -478,22 +478,22 @@ struct SceneData
 
         // Material for palette
         material,
-    
+
         // Distance
         dist,
-    
+
         // Light accumulation for clouds
         accumulation,
-    
+
         // Reflectivity
         reflectivity,
-    
+
         // Transmittivity
         transmittivity,
-    
+
         // Illumination
         specular,
-    
+
         // Diffuse
         diffuse;
 };
@@ -569,7 +569,7 @@ float effect6(vec3 x, float zj, float r, float s)
         pj = rp.x-dp,
         dr = mod(rp.y, msize)-.5*msize,
         rj = rp.y-dr;
-    
+
     vec2 yj = (rj - .2*sin(pi*zj-r)) * vec2(cos(pj), sin(pj)),
         aj = rp.y * vec2(cos(rp.x), sin(rp.x));
     float da = -length(mat2(cos(iTime-zj), sin(iTime-zj), -sin(iTime-zj), cos(iTime-zj))*(x.xy-yj)) +.001 +.1*(.5+.5*s)+.05*(.6+.4*scale)+.01*zj*(.5+.5*r);
@@ -649,8 +649,8 @@ vec3 normal(vec3 x)
     float s = scene(x).dist,
         dx = 5.e-5;
     return normalize(vec3(
-        scene(x+dx*c.xyy).dist, 
-        scene(x+dx*c.yxy).dist, 
+        scene(x+dx*c.xyy).dist,
+        scene(x+dx*c.yxy).dist,
         scene(x+dx*c.yyx).dist
     )-s);
 }
@@ -676,8 +676,8 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
     {
         x = o + d * dir;
         s = scene(x);
-        
-        if(s.dist < 1.e-4) 
+
+        if(s.dist < 1.e-4)
         {
             // Blinn-Phong Illumination
             n = normal(x);
@@ -686,7 +686,7 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
             {
                 col = c.yyy;
             }
-            else 
+            else
             {
                 col = palette(s.material+rj*10. - .1*length(x.xy));
             }
@@ -697,7 +697,7 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
 
             return true;
         }
-        
+
         d += min(s.dist,s.dist>1.e0?1.e-2:5.e-3);
         // d += s.dist;
     }
@@ -730,12 +730,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         t = c.yyy,
         dir = normalize(uv.x * r + uv.y * cross(r,normalize(t-o))-o),
         l = c.zzx;
-    SceneData s, 
+    SceneData s,
         s1;
 
     d = -(o.z)/dir.z;
     x = o + d * dir;
-        
+
     // Material ray
     if(ray(col, x, d, dir, s, o, l, n))
     {
@@ -759,7 +759,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         d1 = d;
         n1 = n;
 
-        
+
         // Ambient occlusion
         // float calcOcclusion( in vec3 pos, in vec3 nor, float ra )
         float occ = 0.;
@@ -780,7 +780,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             o = x;
             dir = normalize(l-x);
             d1 = 1.e-2;
-            
+
             // if(d < 1.e2)
             {
                 float res = 1.0;
@@ -790,12 +790,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                 {
                     x = o + d1 * dir;
                     s = scene(x);
-                    if(s.dist < 1.e-4) 
+                    if(s.dist < 1.e-4)
                     {
                         res = 0.;
                         break;
                     }
-                    if(x.z >= .1) // 0? 
+                    if(x.z >= .1) // 0?
                     {
                         res = 1.;
                         break;
@@ -820,15 +820,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         c1 = rgb2hsv(col);
         c1.r = pi*lfnoise(.1*nbeats*c.xx);
         col = mix(col, hsv2rgb(c1),.5);
-        
+
         // Gamma
         col = col + col*col + col*col*col;
-        // col *= col; 
+        // col *= col;
     }
 
     // Highlights
     col = mix(col, mix(col, col + col*col + col*col*col,.5), smoothstep(.9, 1.4, abs(dot(c.xzx, n))));
-    
+
     // fog (looks crap)
     // col = mix(col, palette(length(uv)), smoothstep(.1,.5, d1));
 
@@ -890,7 +890,7 @@ float lfnoise(vec2 t)
     vec2 i = floor(t);
     t = fract(t);
     t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)),
         v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
     v1 = c.zz+2.*mix(v1, v2, t.y);
     return mix(v1.x, v1.y, t.x);
@@ -920,27 +920,27 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 uv2 = uv;
     uv = fragCoord/iResolution.xy;
     vec2 unit = 1./iResolution.xy;
-    
+
     float o = 1.0;
     float p = 3.0;
     float q = 0.0;
-    
-    
+
+
     vec4 col11 = texture(iChannel0, uv + vec2(-unit.x, -unit.y));
     vec4 col12 = texture(iChannel0, uv + vec2( 0., -unit.y));
     vec4 col13 = texture(iChannel0, uv + vec2( unit.x, -unit.y));
-    
+
     vec4 col21 = texture(iChannel0, uv + vec2(-unit.x, 0.));
     vec4 col22 = texture(iChannel0, uv + vec2( 0., 0.));
     vec4 col23 = texture(iChannel0, uv + vec2( unit.x, 0.));
-    
+
     vec4 col31 = texture(iChannel0, uv + vec2(-unit.x, unit.y));
     vec4 col32 = texture(iChannel0, uv + vec2( 0., unit.y));
     vec4 col33 = texture(iChannel0, uv + vec2( unit.x, unit.y));
-    
+
     vec4 x = col11 * -o + col12 * -p + col13 * -o + col31 * o + col32 * p + col33 * o + col22 * q;
     vec4 y = col11 * -o + col21 * -p + col31 * -o + col13 * o + col23 * p + col33 * o + col22 * q;
-    
+
     // Output to screen
     fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
     fragColor = vec4(mix(col, fragColor.rgb, clamp(/*(.25+.5*lfnoise(.5*nbeats*c.xx))+*/.6*alternateScale,0.,1.)),1.0);
@@ -950,7 +950,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     uv *=  1.0 - uv.yx;
     float vig = uv.x*uv.y * 15.0;
     vig = pow(vig, 0.2);
-    fragColor *= vig; 
+    fragColor *= vig;
 
     // team210 watermark
     float d = d210(8.*(uv2-.5*vec2(iResolution.x/iResolution.y,1.)+vec2(.1,.04)));
@@ -1040,69 +1040,77 @@ pub fn main() {
     unsafe {
         let mut mmtime: MMTIME = core::mem::zeroed();
         mmtime.wType = TIME_SAMPLES;
+        let mut sample: u32 = 0;
         let mut time: f32 = 0.0;
         let mut frame: i32 = 0;
+        let mut kick_swell: f32 = 0.;
 
         loop {
 
-            unsafe {
-                if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS
-                {
-                    break;
-                    // libc::exit(0);
-                }
+            if winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_ESCAPE) != 0 || time >= sequence::SECONDS
+            {
+                break;
+                // libc::exit(0);
+            }
 
-                waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
-                time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
+            waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
+            sample = *mmtime.u.sample();
+            time = sample as f32 / SAMPLERATE_INT as f32;
 
-                // Buffer A
-                gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
-                gl::UseProgram(program_buffer_a);
-                gl::Uniform1f(iTime_location_buffer_a, time);
-                gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
-                gl::Uniform1i(iChannel0_location_buffer_a, 0);
-                gl::Uniform1i(iFrame_location_buffer_a, frame);
-                gl::ActiveTexture(gl::TEXTURE0);
+            // bassdrum trigger
+            if crate::garlic_head::garlic_smash_kick::trigger(sample as usize) {
+                kick_swell = 1.;
+            } else {
+                kick_swell *= 0.99;
+            }
 
-                gl::Recti(-1,-1,1,1);
-                gl::Flush();
+            // Buffer A
+            gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
+            gl::UseProgram(program_buffer_a);
+            gl::Uniform1f(iTime_location_buffer_a, time);
+            gl::Uniform2f(iResolution_location_buffer_a, WIDTH as f32, HEIGHT as f32);
+            gl::Uniform1i(iChannel0_location_buffer_a, 0);
+            gl::Uniform1i(iFrame_location_buffer_a, frame);
+            gl::ActiveTexture(gl::TEXTURE0);
 
-                // Image
-                gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-                gl::UseProgram(program_image);
-                gl::Uniform1f(iTime_location_image, time);
-                gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
-                gl::Uniform1i(iChannel0_location_image, 0);
-                gl::Uniform1i(iFrame_location_image, frame);
-                gl::ActiveTexture(gl::TEXTURE0);
-                gl::Recti(-1,-1,1,1);
-                gl::Flush();
+            gl::Recti(-1,-1,1,1);
+            gl::Flush();
 
-                // Text
-                if time > sequence::SECONDS - 10.0
-                {
-                    const xv: f32 = -0.5;
-                    gl::UseProgram(0);
-                    gl::ListBase (1000);
-                    gl::RasterPos2f(xv, 0.2);
-                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, 0.1);
-                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, 0.0);
-                    gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.05);
-                    gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.1);
-                    gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.2);
-                    gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.4);
-                    gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.45);
-                    gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
-                    gl::RasterPos2f(xv, -0.5);
-                    gl::CallLists (121, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, metalvotze, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
-                }
+            // Image
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+            gl::UseProgram(program_image);
+            gl::Uniform1f(iTime_location_image, time);
+            gl::Uniform2f(iResolution_location_image, WIDTH as f32, HEIGHT as f32);
+            gl::Uniform1i(iChannel0_location_image, 0);
+            gl::Uniform1i(iFrame_location_image, frame);
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::Recti(-1,-1,1,1);
+            gl::Flush();
+
+            // Text
+            if time > sequence::SECONDS - 10.0
+            {
+                const xv: f32 = -0.5;
+                gl::UseProgram(0);
+                gl::ListBase (1000);
+                gl::RasterPos2f(xv, 0.2);
+                gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, 0.1);
+                gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, 0.0);
+                gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, -0.05);
+                gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, -0.1);
+                gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, -0.2);
+                gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, -0.4);
+                gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, -0.45);
+                gl::CallLists (117, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, die wissenden, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
+                gl::RasterPos2f(xv, -0.5);
+                gl::CallLists (121, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, metalvotze, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
             }
 
             SwapBuffers(hdc);
