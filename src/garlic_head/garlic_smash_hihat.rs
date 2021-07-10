@@ -138,6 +138,8 @@ const MAX_DIST: f32 = 3.4;
 fn overall_volume(t: TimeFloat) -> MonoSample {
     match t {
         _t if _t < 32. => crate::math::slope(_t, 0., 32., 0.2, MAX_DIST),
+        _t if _t > 64. && _t <= 76. => crate::math::slope(_t, 64., 76., MAX_DIST, 0. ),
+        _t if _t > 76. => 0.,
         _ => MAX_DIST
     }
 }

@@ -108,7 +108,7 @@ pub unsafe fn render_track(data: &mut StereoTrack) {
 
                 garlic_master.add_at(master_sample, clove_bass.output[sample]);
 
-                garlic_master.saturate(master_sample, 0.4);
+                garlic_master.saturate(master_sample, 0.34);
             }
             block_offset += BLOCK_SIZE;
         }

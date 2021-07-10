@@ -31,7 +31,7 @@ pub struct Smash1State {
 pub fn create_state() -> Smash1State {
     Smash1State {
         output: EMPTY_BLOCKARRAY,
-        volume: 1., // could be parameter in create_state
+        volume: 0.7, // could be parameter in create_state
 
         osc: oscillator::Oscillator {
             frequency: Edge::constant(46.25), // F#1
@@ -154,11 +154,9 @@ pub fn trigger(total_sample: usize) -> bool {
 
 #[inline]
 fn overall_volume(t: TimeFloat) -> MonoSample {
-    return 0.5; // quick fix
-
     match t {
-        _t if _t > 30. && t < 50. => crate::math::slope(_t, 30., 50., 1., 0.7),
-        _t if t >= 50. => 0.7,
+        _t if _t > 30. && t < 50. => crate::math::slope(_t, 30., 50., 1., 0.6),
+        _t if t >= 50. => 0.6,
         _ => 1.
     }
 }

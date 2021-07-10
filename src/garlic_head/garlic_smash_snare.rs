@@ -155,10 +155,11 @@ pub fn trigger(total_sample: usize) -> bool {
             let b_inside = libm::fmodf(b + 0.25, 0.5);
             b_quarter < INV_SAMPLERATE && b_inside < INV_SAMPLERATE // || libm::fmodf(b + 0.125, 1.) < INV_SAMPLERATE
         }
-        b => {
+        b if b < 44. => {
             let b_5 = libm::fmodf(b, 0.5);
             libm::fmodf(b, 0.25) < INV_SAMPLERATE && b_5 > 0.25
         }
+        _ => false,
     }
 }
 
