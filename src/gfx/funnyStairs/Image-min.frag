@@ -1,2 +1,0 @@
-#version 450
-uniform sampler2D f;uniform vec2 v;uniform float m;const float y=144.;void s(out vec4 m,in vec2 s){vec3 u=vec3(0.);float o=sqrt(y)-1.;for(float r=-.5*o;r<=.5*o;r+=1.)for(float i=-.5*o;i<=.5*o;i+=1.)u+=texture(f,s/v.xy+vec2(r,i)*mix(3.,20.,2.*abs(s.y/v.y-.5))*exp(-abs(.01*length(s.xy)/v.y-.5))/max(o,1.)/v.xy).xyz;u/=y;m=vec4(u,1.);}void main(){s(gl_FragColor,gl_FragCoord.xy);}

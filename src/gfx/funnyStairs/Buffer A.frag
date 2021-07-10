@@ -1,53 +1,37 @@
 const vec3 c = vec3(1.,0.,-1.);
 const float pi = 3.14159,
     PHI = 1.618,
-    bpm = 60.,
-    spb =  60. / bpm;
+    bpm = .5*149.,
+    spb =  60. / bpm,
+    minimalTimeStep = spb/8.;
 mat3 RR = mat3(1.),
     RRA = mat3(1.);
 float scale,
     nbeats;
-const float tmax = 20.;
+const float tmax = 80.521;
 
-vec3 data[20] = vec3[20](
-    vec3(0, PHI, 1), // Dodecahedron
-    vec3(0, -PHI, 1),
-    vec3(1, 0, PHI),
-    vec3(-1, 0, PHI),
-    vec3(PHI, 1, 0),
-    vec3(-PHI, 1, 0), // Icosahedron, Octahedron
-    vec3(1, 1, 1),
-    vec3(-1, 1, 1),
-    vec3(1, -1, 1),
-    vec3(1, 1, -1),
-    vec3(0, 1, PHI+1.),
-    vec3(0, -1, PHI+1.),
-    vec3(PHI+1., 0, 1),
-    vec3(-PHI-1., 0, 1),
-    vec3(1, PHI+1., 0),
-    vec3(-1, PHI+1., 0),
-    vec3(sqrt(2.), sqrt(6.), 1.), // Tetrahedron
-    vec3(-sqrt(8.), 0., 1.),
-    vec3(sqrt(2.), -sqrt(6.), 1.),
-    vec3(0., 0., -3.)
+const int NM = 41;
+const float syncMagics[NM] = float[NM](
+    // Intro synth part; size: 41
+    0,1,2,3,6,7,
+    8,9,11,12,13,14,
+    16,17,18,19,22,23,
+    24,25,27,29,
+    32,33,34,35,38,39,
+    40,41,43,44,45,46,47,
+    48,49,50,51,53,55
 );
 
-// Inspired here, modified for sizecoding and removed loads of
-// unneccessary code: https://www.shadertoy.com/view/WdlGRf
-// The paper they reference is very useful for understanding the regular polyhedron distances
-// fHedron(0,6): Dodecahedron
-// fHedron(6,10): Octahedron
-// fHedron(6,16): Icosahedron
-float fHedron(vec3 p, int offset, int len, float r, bool symmetric)
+// scale == true: compute iScale, scale == false: compute iNBeats
+float scaleBeatsMagic(int start, int end, bool scale)
 {
-    float d = 0.,
-        da;
-    for(int i=offset; i<len; ++i)
+    float d = 0.;
+    for(int i = start; i < end; ++i)
     {
-        da = dot(p, normalize(data[i]));
-        d = max(d, symmetric?abs(da):da);
+        float t = iTime-syncMagics[i]*minimalTimeStep;
+        d += smoothstep(-.2*minimalTimeStep,0.,t) * (scale?smoothstep(.2*minimalTimeStep, 0., t):1.);
     }
-    return d - r;
+    return d;
 }
 
 // iq's code
@@ -104,12 +88,22 @@ float hash12(vec2 p)
     return fract((p3.x + p3.y) * p3.z);
 }
 
+// Creative Commons Attribution-ShareAlike 4.0 International Public License
+// Created by David Hoskins.
+// See https://www.shadertoy.com/view/4djSRW
+vec2 hash22(vec2 p)
+{
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx+33.33);
+    return fract((p3.xx+p3.yz)*p3.zy);
+}
+
 float lfnoise(vec2 t)
 {
     vec2 i = floor(t);
     t = fract(t);
     t = smoothstep(c.yy, c.xx, t);
-    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)), 
+    vec2 v1 = vec2(hash12(i), hash12(i+c.xy)),
         v2 = vec2(hash12(i+c.yx), hash12(i+c.xx));
     v1 = c.zz+2.*mix(v1, v2, t.y);
     return mix(v1.x, v1.y, t.x);
@@ -161,84 +155,6 @@ float spiral(in vec2 x, in float k)
     float a = abs(dpr.y-dpr.x);
     return k*min(a,tau-a);
 }
-
-// float mn(in vec2 a)
-// {
-//     a = abs(a);
-//     return a.x+a.y;
-// }
-
-// float ml(in vec2 x, in vec2 p1, in vec2 p2)
-// {
-//     return (mn(x-p1)-mn(x-p2))/pow(mn(p2-p1),.5);
-// }
-
-// void dmanhattanvoronoi(in vec2 x, out float d, out vec2 z)
-// {
-//     vec2 y = floor(x);
-//        float ret = 1.;
-//     vec2 pf=c.yy, p;
-//     float df=10.;
-    
-//     for(int i=-1; i<=1; i+=1)
-//         for(int j=-1; j<=1; j+=1)
-//         {
-//             p = y + vec2(float(i), float(j));
-//             vec2 pa = vec2(lfnoise(p-.5*iTime), lfnoise(p+13.-.5*iTime));
-//             pa = .5+.25*pa;
-//             //rand(p, pa);
-//             p += pa;
-            
-//             d = mn(x-p);
-            
-//             if(d < df)
-//             {
-//                 df = d;
-//                 pf = p;
-//             }
-//         }
-//     for(int i=-1; i<=1; i+=1)
-//         for(int j=-1; j<=1; j+=1)
-//         {
-//             p = y + vec2(float(i), float(j));
-//             vec2 pa = vec2(lfnoise(p-.5*iTime), lfnoise(p+13.-.5*iTime));
-//             pa = .5+.25*pa;
-//             //rand(p, pa);
-//             p += pa;
-            
-//             d = abs(ml(x, pf, p));
-//             ret = min(ret, d);
-//         }
-    
-//     d = ret;
-//     z = pf;
-// }
-
-// float circlesegment(in vec2 x, in float r, in float p0, in float p1)
-// {
-//     float p = atan(x.y, x.x),
-//         t = 2.*pi;
-    
-//     vec2 philo = vec2(p0, p1);
-//     philo = sign(philo)*floor(abs(philo)/t)*t;
-//     philo = vec2(min(philo.x, philo.y), max(philo.x,philo.y));
-//     philo.y = mix(philo.y,philo.x,.5+.5*sign(p0-p1));
-    
-//     p0 -= philo.y;
-//     p1 -= philo.y;
-    
-//     philo = vec2(max(p0, p1), min(p0, p1));
-    
-//     if((p < philo.x && p > philo.y) 
-//        || (p+t < philo.x && p+t > philo.y) 
-//        || (p-t < philo.x && p-t > philo.y)
-//       )
-//     	return abs(length(x)-r);
-//     return min(
-//         length(x-r*vec2(cos(p0), sin(p0))),
-//         length(x-r*vec2(cos(p1), sin(p1)))
-//         );
-// }
 
 // Distance to line segment
 float linesegment(in vec2 x, in vec2 p1, in vec2 p2)
@@ -336,33 +252,35 @@ float effect1(vec3 x, float zj, float r, float s)
 
 float effect2(vec3 x, float zj, float r, float s)
 {
-    // spiral effect
-    mat2 RA = mat2(cos(iTime), sin(iTime), -sin(iTime), cos(iTime));
-    return -abs(spiral(RA*RA*(x.xy)-.3*r, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
+    // noise
+    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
 }
 
 float effect3(vec3 x, float zj, float r, float s)
 {
-    // noise
-    return -1.+mfnoise(x.xy-r*.3, 3., 1.e1, .45)-3.*zj;
+    // spiral effect
+    mat2 RA = mat2(cos(iTime+2.*zj), sin(iTime+2.*zj), -sin(iTime+2.*zj), cos(iTime+2.*zj));
+    return -abs(spiral(RA*RA*(x.xy-.005*zj)-.3*r-.05*s, mix(.05,.1,.5+.5*r)))-.3*zj+.01*r;
 }
 
 float effect4(vec3 x, float zj, float r, float s)
 {
     // Team210 logo
     float rsize = .3;
-    return -abs(mod(d210(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
-
+    mat2 RA = mat2(cos(iTime+r), sin(iTime+r), -sin(iTime+r), cos(iTime+r));
+    float da = -abs(mod(d210(RA*x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    return da;
+    // return -abs(da) + .01 - .5*zj;
     // circle tornado
     // float rsize = .3;
-    return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
+    // return -abs(mod(length(x.xy-zj*.4),rsize)+.5*rsize-.4-.2*r-.5*zj)+.01+.01*scale+.001*zj;
 }
 
 float effect5(vec3 x, float zj, float r, float s)
 {
     // hexagon style
     vec2 vi;
-    float vsize = 3.+3.*r,
+    float vsize = 2.+2.*r,
         v;
     dhexagonpattern(vsize*x.xy, v, vi);
     return -abs(v / vsize) + .01 - .5*zj;
@@ -370,10 +288,25 @@ float effect5(vec3 x, float zj, float r, float s)
 
 float effect6(vec3 x, float zj, float r, float s)
 {
-    // box bissle scheise
-    const float bside = .2;
-    // // return -dbox3(RRA*(vec3(x.xy,zj)+1.5*bside*c.yyx*(.5+.5*r)), vec3(bside)*(.5+.5*r));
-    return -fHedron(RRA*(vec3(x.xy,zj)+2.*bside*c.yyx*(.5+.5*r)),6,16,bside, true);  
+    // Steckenmist, sieht fet aus denk ich
+    const float aside = .4,
+        psize = pi/6.,
+        msize = .5;
+    vec2 rp = vec2(atan(x.y,x.x), length(x.xy));
+    float dp = mod(rp.x, psize)-.5*psize,
+        pj = rp.x-dp,
+        dr = mod(rp.y, msize)-.5*msize,
+        rj = rp.y-dr;
+    
+    vec2 yj = (rj - .2*sin(pi*zj-r)) * vec2(cos(pj), sin(pj)),
+        aj = rp.y * vec2(cos(rp.x), sin(rp.x));
+    float da = -length(mat2(cos(iTime-zj), sin(iTime-zj), -sin(iTime-zj), cos(iTime-zj))*(x.xy-yj)) +.001 +.1*(.5+.5*s)+.05*(.6+.4*scale)+.01*zj*(.5+.5*r);
+    return mod(da, .2)-.09*2.1;
+}
+
+float lockToBeat(float selector)
+{
+    return round(selector*tmax/spb)*spb/tmax;
 }
 
 float holeSDF(vec3 x, float zj)
@@ -381,44 +314,29 @@ float holeSDF(vec3 x, float zj)
     float r = lfnoise(.5*nbeats*c.xx-zj),
         s = lfnoise(.5*nbeats*c.xx+1337.-zj);
 
-    // return length(vec3(x.xy, zj+.15*r))-.3*r;
-    // return length(x.xy-zj)+.4*zj;
-
-    // return abs(abs(mfnoise(x.xy-zj-.3*nbeats, 1., 1.e2, .35))-.3)-.2;
-
-    // SLOW manhattan voronoi pattern
-    // vec2 wi;
-    // float wsize = 1.+3.*r,
-    //     w;
-    // dmanhattanvoronoi(wsize*x.xy, w, wi);
-    // return -abs(w / wsize) + .01 - .5*zj;
-
     float selector = 1.-clamp(iTime/tmax,0.,1.);
-    //lfnoise(.05*nbeats*c.xx+133.);
-    // selector = .5+.5*selector;
-    float N = 6.;
 
-    if(selector < 1./N)
-    {        
-        return mix(effect1(x, zj, r, s), effect2(x, zj, r, s), smoothstep(.8/N, .9/N, selector));
-    }
-    else if(selector < 2./N)
+    if(selector < lockToBeat(.25)) // star escalation
     {
-        return mix(effect2(x, zj, r, s), effect3(x, zj, r, s), smoothstep(1.8/N, 1.9/N, selector));
+        return effect1(x, zj, r, s);
     }
-    else if(selector < 3./N)
+    else if(selector < lockToBeat(.45)) // noise
     {
-        return mix(effect3(x, zj, r, s), effect4(x, zj, r, s), smoothstep(2.8/N, 2.9/N, selector));
+        return effect2(x, zj, r, s);
     }
-    else if(selector < 4./N)
+    else if(selector < lockToBeat(.6)) // Spiral
     {
-        return mix(effect4(x, zj, r, s), effect5(x, zj, r, s), smoothstep(3.8/N, 3.9/N, selector));
+        return effect3(x, zj, r, s);
     }
-    else if(selector < 5./N)
+    else if(selector < lockToBeat(.7)) // Team210
     {
-        return mix(effect5(x, zj, r, s), effect6(x, zj, r, s), smoothstep(4.8/N, 4.9/N, selector));
+        return effect4(x, zj, r, s);
     }
-    else
+    else if(selector < lockToBeat(.8)) // Hexagon
+    {
+        return effect5(x, zj, r, s);
+    }
+    else // Stecken
     {
         return effect6(x, zj, r, s);
     }
@@ -482,7 +400,7 @@ vec3 palette(float scale)
 
 bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec3 o, vec3 l, out vec3 n)
 {
-    for(int i=0; i<250; ++i)
+    for(int i=0-min(iFrame, 0); i<250+min(iFrame,0); ++i)
     {
         x = o + d * dir;
         s = scene(x);
@@ -516,19 +434,22 @@ bool ray(out vec3 col, out vec3 x, inout float d, vec3 dir, out SceneData s, vec
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
+    // Rotation tools
     RR = rot3(iTime*vec3(0.,0.,.6));
     RRA = rot3(iTime*vec3(.7,.9,1.32));
+
+    // Sync tools
     float stepTime = mod(iTime, spb)-.5*spb;
-        // stepIndex = (iTime-stepTime)/spb;
     nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
 
+    // Marching tools
     float d = 0.,
         d1;
     vec2 uv = (fragCoord.xy-.5*iResolution.xy)/iResolution.y;
     vec3 o = RR*c.yzx,
-        col,
-        c1,
+        col = c.yyy,
+        c1 = c.yyy,
         x,
         x1,
         n,
@@ -540,7 +461,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     SceneData s, 
         s1;
 
-    d = -(o.z-.01)/dir.z;
+    d = -(o.z)/dir.z;
+    x = o + d * dir;
         
     // Material ray
     if(ray(col, x, d, dir, s, o, l, n))
@@ -559,22 +481,28 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             d1 = 2.e-3;
             if(ray(c1, x1, d1, refract(dir,n, .99), s1, x, l, n1))
                 col = mix(col, c1, s.transmittivity);
-        }    
-        
-        // // Hard Shadow
-        // d1 = 1.e-2;
-        // if(ray(c1, x1, d1, normalize(l-x), s1, x, l, n1))
-        // {
-        //     if(length(l-x1) < length(l-x))
-        //         col *= .5;
-        // }
+        }
 
         s1 = s;
         d1 = d;
         n1 = n;
 
+        
+        // Ambient occlusion
+        // float calcOcclusion( in vec3 pos, in vec3 nor, float ra )
+        float occ = 0.;
+        for(int i=0; i<32; ++i)
+        {
+            float h = .01 + 4.0*pow(float(i)/31.0,2.0);
+            vec2 an = hash22( hash12(iTime*c.xx)*c.xx + float(i)*13.1 )*vec2( 3.14159, 6.2831 );
+            vec3 dir2 = vec3( sin(an.x)*sin(an.y), sin(an.x)*cos(an.y), cos(an.x) );
+            dir2 *= sign( dot(dir2,n) );
+            occ += clamp( 5.0*scene( x + h*dir2 ).dist/h, -1.0, 1.0);
+        }
+        col = mix(sqrt(col), col, clamp(occ/32.,0.,1.));
+
         // Soft shadow
-        if(x.z < 0.)
+        if(x.z <= .1)
         {
             // Soft Shadow
             o = x;
@@ -595,7 +523,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                         res = 0.;
                         break;
                     }
-                    if(x.z > 0.) 
+                    if(x.z >= .1) // 0? 
                     {
                         res = 1.;
                         break;
@@ -607,7 +535,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     d1 += min(s.dist,s.dist>5.e-1?1.e-2:5.e-3);
     //                d1 += min(s.dist,s.dist>1.e-1?1.e-2:5.e-3);
                 }
-                col = mix(.5*col, col, res);    
+                col = mix(.5*col, col, res);
             }
         }
     }
@@ -618,7 +546,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     if(s.material != 0.)
     {
         c1 = rgb2hsv(col);
-        c1.r = pi*lfnoise(.5*nbeats*c.xx);
+        c1.r = pi*lfnoise(.1*nbeats*c.xx);
         col = mix(col, hsv2rgb(c1),.5);
         
         // Gamma
@@ -631,6 +559,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     
     // fog (looks crap)
     // col = mix(col, palette(length(uv)), smoothstep(.1,.5, d1));
+
+    // Fade from and to black
+    col = mix(c.yyy, col, smoothstep(0.,1.,iTime)*smoothstep(tmax+10,tmax,iTime));
 
     fragColor = mix(texture(iChannel0, fragCoord.xy/iResolution.xy), vec4(clamp(col,0.,1.),1.), .5);
 }
