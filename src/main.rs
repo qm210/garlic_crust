@@ -269,6 +269,8 @@ uniform sampler2D iChannel0;
 uniform vec2 iResolution;
 uniform float iTime;
 uniform int iFrame;
+uniform float iDrumScale;
+uniform float iDrumNBeats;
 
 const vec3 c = vec3(1.,0.,-1.);
 const float pi = 3.14159,
@@ -714,6 +716,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float stepTime = mod(iTime, spb)-.5*spb;
     nbeats = (iTime-stepTime-.5)/spb + smoothstep(-.2*spb, .2*spb, stepTime);
     scale = smoothstep(-.3*spb, 0., stepTime)*smoothstep(.3*spb, 0., stepTime);
+    // nbeats = iDrumNBeats;
+    // nbeats = iDrumScale;
 
     // Marching tools
     float d = 0.,
@@ -850,6 +854,8 @@ uniform sampler2D iChannel0;
 uniform vec2 iResolution;
 uniform float iTime;
 uniform int iFrame;
+uniform float iDrumScale;
+uniform float iDrumNBeats;
 
 const float fsaa = 144.;
 const vec3 c = vec3(1.,0.,-1.);
@@ -1018,6 +1024,11 @@ pub fn main() {
         gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, WIDTH as i32, HEIGHT as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, 0 as *mut winapi::ctypes::c_void);
         gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, first_pass_texture, 0);
         gl::DrawBuffer(gl::COLOR_ATTACHMENT0);
+
+        gl::UseProgram(0);
+        gl::Recti(-1,-1,1,1);
+        gl::Flush();
+        SwapBuffers(hdc);
     }
 
     unsafe {
@@ -1051,7 +1062,7 @@ pub fn main() {
         let mut sample: u32 = 0;
         let mut time: f32 = 0.0;
         let mut frame: i32 = 0;
-        let mut kick_swell: f32 = 0.0;
+        let mut kick_swell: f32 = 1.0;
         let mut kick_nbeats: f32 = 0.0;
 
         loop {
@@ -1063,16 +1074,17 @@ pub fn main() {
             }
 
             waveOutGetPosition(H_WAVEOUT, &mut mmtime, core::mem::size_of::<MMTIME>() as u32);
-            time = *mmtime.u.sample() as f32 / SAMPLERATE_INT as f32;
+            sample = *mmtime.u.sample();
+            time = sample as f32 / SAMPLERATE_INT as f32;
 
             // bassdrum trigger
             if sync_trigger(time) {
                 kick_swell = 1.;
             } else {
-                kick_swell *= 0.99;
+                kick_swell *= 0.9;
             }
 
-            kick_nbeats += kick_swell/60.0;
+            kick_nbeats += 1000.0*kick_swell;
 
             // Buffer A
             gl::BindFramebuffer(gl::FRAMEBUFFER, first_pass_framebuffer);
