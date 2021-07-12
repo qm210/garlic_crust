@@ -92,6 +92,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     fragColor = vec4(abs(y.rgb) * 0.5 + abs(x.rgb) * 0.5, 1.);
     fragColor = vec4(mix(col, fragColor.rgb, clamp(/*(.25+.5*lfnoise(.5*nbeats*c.xx))+*/.6*alternateScale,0.,1.)),1.0);
 
+    // TODO: Sparkle
+
     // Vignette
     uv = fragCoord.xy / iResolution.xy;
     uv *=  1.0 - uv.yx;
