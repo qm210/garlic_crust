@@ -40,6 +40,8 @@ pub type StereoTrack = [MonoSample; SAMPLES_TWICE];
 
 pub const EMPTY_BLOCKARRAY: BlockArray = [ZERO_SAMPLE; BLOCK_SIZE];
 
+// implement https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createthread
+
 pub unsafe fn render_track(data: &mut StereoTrack) {
     let mut garlic_master = garlic_master::GarlicMaster::new(); // here would configuration go
 

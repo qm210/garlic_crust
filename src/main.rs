@@ -19,7 +19,7 @@ mod garlic_helper;
 
 // debug profile uses std library (e.g. for .wav file writing).
 // this should better be a "feature" in cargo, but for now, its not.
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature="waveout"))]
 mod debug;
 
 // TODO (NR4): Remove the unused uses.
@@ -168,7 +168,7 @@ fn create_window( ) -> ( HWND, HDC ) {
     }
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(feature="waveout"))]
 #[panic_handler]
 #[no_mangle]
 pub extern fn panic( _info: &PanicInfo ) -> ! { loop {} }
@@ -1042,7 +1042,8 @@ pub fn main() {
         winapi::um::mmeapi::waveOutPrepareHeader(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
         winapi::um::mmeapi::waveOutWrite(H_WAVEOUT, &mut WAVE_HEADER, core::mem::size_of::<winapi::um::mmsystem::WAVEHDR>() as u32 );
 
-        #[cfg(debug_assertions)] {
+        #[cfg(feature="waveout")]
+        {
             debug::write_wave_file(&GARLIC_DATA);
         }
     }
@@ -1118,26 +1119,25 @@ pub fn main() {
             // Text
             if time > sequence::SECONDS - 10.0
             {
-                const xv: f32 = -0.5;
                 gl::UseProgram(0);
                 gl::ListBase (1000);
-                gl::RasterPos2f(xv, 0.2);
+                gl::RasterPos2f(XV, 0.2);
                 gl::CallLists (41, gl::UNSIGNED_BYTE, "Team210 and The Acid Desk proudly present\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, 0.1);
+                gl::RasterPos2f(XV, 0.1);
                 gl::CallLists (12, gl::UNSIGNED_BYTE, "Garlic Rulez\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, 0.0);
+                gl::RasterPos2f(XV, 0.0);
                 gl::CallLists (12, gl::UNSIGNED_BYTE, "Code: QM^NR4\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, -0.05);
+                gl::RasterPos2f(XV, -0.05);
                 gl::CallLists (13, gl::UNSIGNED_BYTE, "Graphics: NR4\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, -0.1);
+                gl::RasterPos2f(XV, -0.1);
                 gl::CallLists (9, gl::UNSIGNED_BYTE, "Music: QM\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, -0.2);
+                gl::RasterPos2f(XV, -0.2);
                 gl::CallLists (41, gl::UNSIGNED_BYTE, "Rust. GLSL. New Synth. Party prod @ UC11.\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, -0.4);
+                gl::RasterPos2f(XV, -0.4);
                 gl::CallLists (8, gl::UNSIGNED_BYTE, "Love to:\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, -0.45);
+                gl::RasterPos2f(XV, -0.45);
                 gl::CallLists (126, gl::UNSIGNED_BYTE, "mercury, alcatraz, vacuum, team210, abyss-connection, k2, http://die.wissen.de/n, farbrausch, team210, the electronic knights,\0".as_ptr() as *const winapi::ctypes::c_void );
-                gl::RasterPos2f(xv, -0.5);
+                gl::RasterPos2f(XV, -0.5);
                 gl::CallLists (121, gl::UNSIGNED_BYTE, "never, copernicium, madboys unlimited virtual enterprises ltd., spacepigs, team210, metalvotze, 5711, TRBL, ctrl-alt-test\0".as_ptr() as *const winapi::ctypes::c_void );
             }
 

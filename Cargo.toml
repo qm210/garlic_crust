@@ -6,7 +6,7 @@ edition = "2018"
 
 [features]
 logger = []
-fullscreen = []
+waveout = []
 
 [profile.release]
 lto = true
