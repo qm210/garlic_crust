@@ -132,8 +132,8 @@ extern "C" {
     ) -> MMRESULT;
 }
 
-const WIDTH: u32 = 1280;
-const HEIGHT: u32 = 720;
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
 
 fn create_window( ) -> ( HWND, HDC ) {
     unsafe {
@@ -627,16 +627,7 @@ SceneData scene(vec3 x)
 
     if(zj <= 0.)
     {
-        vec3 d2d = -vec3(holeSDF(x,zj-dz), holeSDF(x, zj), holeSDF(x, zj+dz));
-        float d = smoothmin(
-            smoothmin(
-                zextrude(z-dz, d2d.x, .5*dz)-.15*dz,
-                zextrude(z, d2d.y, .5*dz)-.15*dz,
-                .01
-            ),
-            zextrude(z+dz, d2d.z, .5*dz)-.15*dz,
-            .01
-        );
+        float d = zextrude(z, -holeSDF(x, zj), .5*dz)-.15*dz;
         sdf = add(
             sdf,
             SceneData(-1.+3.*abs(zjz/.5*dz), d, 0., 0., 0., .7, 1.)
